@@ -3,7 +3,7 @@
 /**
  * 
  * @author me
- * @link http://en.wikipedia.org/wiki/SOCKS#SOCKS_4a
+ * @link http://en.wikipedia.org/wiki/SOCKS#SOCKS_4
  * @see socks5.lib.php
  */
 class Socks4{
@@ -29,14 +29,26 @@ class Socks4{
         return $this->transceive($target,0x02);
     }
     
+    /**
+     * split the given target address into host:ip parts
+     * 
+     * @param string|int  $target      target in the form of 'hostname','hostname:port' or just 'port'
+     * @param string|NULL $defaultHost default host to assume if only a port is given
+     * @param int|NULL    $defaultPort default port to assume if only a hostname is given
+     * @return array {host,port}
+     * @throws Exception if either host or IP remains unknown (i.e. no value and no default value given)
+     */
     protected function splitAdress($target,$defaultHost=NULL,$defaultPort=NULL){
         $ret = array('host'=>$defaultHost,'port'=>$defaultPort);
         if(is_int($target)){
             $ret['port'] = $target;
+        }else{
+            $parts = explode(':',$target);
+            $ret['host'] = $parts[0];
+            if(isset($parts[1])){
+                $ret['port'] = (int)$parts[1];
+            }
         }
-        $parts = explode(':',$target);
-        $ip = $defaultIp;
-        
         if($ret['host'] === NULL || $ret['port'] === NULL){
             throw new Exception();
         }
@@ -46,11 +58,11 @@ class Socks4{
     protected function transceive($target,$method){
         $split = $this->splitAddress($target);
         
-        $ip = ip2long(gethostbyname($host));
+        $ip = ip2long(gethostbyname($split['host']));
         if($ip === false){
             throw new Exception();
         }
-        $this->stream->send(pack('C2nNC', 0x04,$method,$port,$ip,0x00));
+        $this->stream->send(pack('C2nNC',0x04,$method,$split['port'],$ip,0x00));
         
         $response = $this->stream->receive(8);
         $data = unpack('Cnull/Cstatus',substr($response,0,2));
