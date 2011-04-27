@@ -1,12 +1,33 @@
 <?php
 
 /**
+ * class implementing the SOCKS 4a protocol
  * 
- * @author me
+ * SOCKS 4a is a simple extension to the SOCKS 4 protocol that uses the SOCKS server to resolve the target host name instead of the client resolving it locally
+ * 
+ * @author Christian Lück <christian@lueck.tv>
+ * @copyright Copyright (c) 2011, Christian Lück
+ * @license http://www.opensource.org/licenses/isc-license ISC License
+ * @package Socks
+ * @version v0.0.1
  * @link http://en.wikipedia.org/wiki/SOCKS#SOCKS_4a
  * @link http://ss5.sourceforge.net/socks4A.protocol.txt
  */
 class Socks4a extends Socks4{
+    /**
+     * communicate with socks server to establish tunnelled connection to target
+     * 
+     * unlike Socks4::transceive() this method does NOT use gethostname() to
+     * resolve the target host name into an IP address and instead leaves it
+     * up the the SOCKS server to resolve the host name.
+     * 
+     * @param string $target hostname:port to connect to
+     * @param int    $method SOCKS method to use (connect/bind)
+     * @return Stream
+     * @throws Exception if target is invalid or connection fails
+     * @uses Socks4::splitAddress()
+     * @see Socks4::transceive() for comparison (which uses gethostname() to locally resolve the target hostname)
+     */
     protected function transceive($target,$method){
         $split = $this->splitAddress($target);
         

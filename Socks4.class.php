@@ -1,30 +1,70 @@
 <?php
 
 /**
+ * class implementing the SOCKS 4 protocol
  * 
- * @author me
+ * @author Christian Lück <christian@lueck.tv>
+ * @copyright Copyright (c) 2011, Christian Lück
+ * @license http://www.opensource.org/licenses/isc-license ISC License
+ * @package Socks
+ * @version v0.0.1
  * @link http://en.wikipedia.org/wiki/SOCKS#SOCKS_4
+ * @link http://ss5.sourceforge.net/socks4.protocol.txt
  * @see socks5.lib.php
  */
 class Socks4{
+    /**
+     * connection stream to socks server
+     * 
+     * @var Stream
+     */
     protected $stream;
     
+    /**
+     * initialize connection to given socks server
+     * 
+     * @param string|int|resource|Stream $socksServer hostname and/or port or established connection stream
+     * @throws Exception if connection to socks server fails
+     */
     public function __construct($socksServer){
-        if(!is_resource($socksServer)){
-            $split = $this->splitAddress($socksServer,'127.0.0.1',1080);
-            
-            $socksServer = fsockopen($split['host'],$split['port']);
-            if($socksServer === false){
-                throw new Exception();
+        if($socksServer instanceof Stream){
+            $this->stream = $socksServer;
+        }else{
+            if(!is_resource($socksServer)){
+                $split = $this->splitAddress($socksServer,'127.0.0.1',1080);
+                
+                $socksServer = fsockopen($split['host'],$split['port']);
+                if($socksServer === false){
+                    throw new Exception();
+                }
             }
+            $this->stream = new Stream($socksServer);
         }
-        $this->stream = new Stream($socksServer);
     }
     
+    /**
+     * establish connection to given target (SOCKS CONNECT request)
+     * 
+     * @param string $target hostname:port to connect to
+     * @return Stream
+     * @throws Exception if target is invalid or connection fails
+     * @uses Socks4::establish()
+     */
     public function connect($target){
         return $this->transceive($target,0x01);
     }
     
+    /**
+     * experimental: issue a SOCKS BIND request
+     * 
+     * due to limitations of the SOCKS protocol this can not be generically used
+     * to bind to a listening port. carefully read the specs!
+     * 
+     * @param string $target hostname:port to connect to
+     * @return Stream
+     * @throws Exception if target is invalid or connection fails
+     * @uses Socks4::establish()
+     */
     public function bind($target){
         return $this->transceive($target,0x02);
     }
@@ -55,6 +95,16 @@ class Socks4{
         return $ret;
     }
     
+    /**
+     * communicate with socks server to establish tunnelled connection to target
+     * 
+     * @param string $target hostname:port to connect to
+     * @param int    $method SOCKS method to use (connect/bind)
+     * @return Stream
+     * @throws Exception if target is invalid or connection fails
+     * @uses Socks4::splitAddress()
+     * @uses gethostbyname() to resolve hostname to IP
+     */
     protected function transceive($target,$method){
         $split = $this->splitAddress($target);
         
