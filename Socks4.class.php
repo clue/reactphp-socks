@@ -118,6 +118,7 @@ class Socks4{
         $data = unpack('Cnull/Cstatus',substr($response,0,2));
         
         if($data['null'] !== 0x00 || $data['status'] !== 0x5a){
+            $this->stream->close();
             throw new Exception();
         }
         
