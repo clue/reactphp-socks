@@ -36,9 +36,9 @@ class Socks4a extends Socks4{
         if($ip === false){                                                      // host is not a valid IP => send along hostname
             $packet .= $split['host'].pack('C',0x00);
         }
-        $this->stream->send($packet);
+        $this->stream->writeEnsure($packet);
         
-        $response = $this->stream->receive(8);
+        $response = $this->stream->readEnsure(8);
         $data = unpack('Cnull/Cstatus/nport/Nip',$response);
         
         if($data['null'] !== 0x00 || $data['status'] !== 0x5a){

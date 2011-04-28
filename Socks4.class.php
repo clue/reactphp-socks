@@ -112,9 +112,9 @@ class Socks4{
         if($ip === false){
             throw new Exception();
         }
-        $this->stream->send(pack('C2nNC',0x04,$method,$split['port'],$ip,0x00));
+        $this->stream->writeEnsure(pack('C2nNC',0x04,$method,$split['port'],$ip,0x00));
         
-        $response = $this->stream->receive(8);
+        $response = $this->stream->readEnsure(8);
         $data = unpack('Cnull/Cstatus',substr($response,0,2));
         
         if($data['null'] !== 0x00 || $data['status'] !== 0x5a){
