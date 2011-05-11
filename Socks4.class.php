@@ -35,7 +35,7 @@ class Socks4{
                 
                 $socksServer = fsockopen($split['host'],$split['port']);
                 if($socksServer === false){
-                    throw new Exception();
+                    throw new Exception('Unable to connect to SOCKS server');
                 }
             }
             $this->stream = new Stream($socksServer);
@@ -90,7 +90,7 @@ class Socks4{
             }
         }
         if($ret['host'] === NULL || $ret['port'] === NULL){
-            throw new Exception();
+            throw new Exception('Unable to split address');
         }
         return $ret;
     }
@@ -110,7 +110,7 @@ class Socks4{
         
         $ip = ip2long(gethostbyname($split['host']));
         if($ip === false){
-            throw new Exception();
+            throw new Exception('Unable to resolve hostname to IP');
         }
         $this->stream->writeEnsure(pack('C2nNC',0x04,$method,$split['port'],$ip,0x00));
         
@@ -119,7 +119,7 @@ class Socks4{
         
         if($data['null'] !== 0x00 || $data['status'] !== 0x5a){
             $this->stream->close();
-            throw new Exception();
+            throw new Exception('Invalid SOCKS response');
         }
         
         return $this->stream;

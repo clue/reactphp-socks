@@ -43,7 +43,7 @@ class Socks4a extends Socks4{
         
         if($data['null'] !== 0x00 || $data['status'] !== 0x5a){
             $this->stream->close();
-            throw new Exception();
+            throw new Exception('Invalid SOCKS response');
         }
         
         return $this->stream;

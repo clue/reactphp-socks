@@ -80,7 +80,7 @@ class Socks5 extends Socks4{
         $data = unpack('Cversion/Cstatus/Cnull/Ctype',$response);
         
         if($data['version'] !== 0x05 || $data['status'] !== 0x00 || $data['null'] !== 0x00){
-            throw new Exception('Protocol error');
+            throw new Exception('Invalid SOCKS response');
         }
         if($data['type'] === 0x01){                                             // ipv4 address
             $this->stream->readEnsure(6);                                       // skip IP and port
@@ -91,7 +91,7 @@ class Socks5 extends Socks4{
         }else if($data['type'] === 0x04){                                       // IPv6 address
             $this->stream->readEnsure(18);                                      // skip IP and port
         }else{
-            throw new Exception('Protocol error: Invalid address type');
+            throw new Exception('Invalid SOCKS reponse: Invalid address type');
         }
         
         return $this->stream;
