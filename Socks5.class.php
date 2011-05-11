@@ -70,9 +70,9 @@ class Socks5 extends Socks4{
         $packet = pack('C3',0x05,$method,0x00);
         if($ip === false){                                                      // not an IP, send as hostname
             $packet .= pack('C2',0x03,strlen($split['host'])).$split['host'];
-        }else{                                                                  // send as IP
+        }else{                                                                  // send as IPv4
             $packet .= pack('CN',0x01,$ip);
-        }
+        }                                                                       // TODO: support IPv6 target address
         $packet .= pack('n',$split['port']);
         
         $this->stream->writeEnsure($packet);
@@ -88,6 +88,8 @@ class Socks5 extends Socks4{
             $response = $this->stream->readEnsure(1);                           // read domain name length
             $data = unpack('Clength',$response);
             $this->stream->readEnsure($data['length']+2);                       // skip domain name and port
+        }else if($data['type'] === 0x04){                                       // IPv6 address
+            $this->stream->readEnsure(18);                                      // skip IP and port
         }else{
             throw new Exception('Protocol error: Invalid address type');
         }
