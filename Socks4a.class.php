@@ -30,20 +30,21 @@ class Socks4a extends Socks4{
      */
     protected function transceive($target,$method){
         $split = $this->splitAddress($target);
+        $stream = $this->streamConnect();
         
         $ip = ip2long($split['host']);                                          // do not resolve hostname. only try to convert to IP
         $packet = pack('C2nNC',0x04,$method,$split['port'],$ip === false ? 1 : $ip,0x00); // send IP or (0.0.0.1) if invalid
         if($ip === false){                                                      // host is not a valid IP => send along hostname
             $packet .= $split['host'].pack('C',0x00);
         }
-        $this->streamWrite($packet)->streamRead(8);
+        
+        $this->streamWriteRead($stream,$packet,8);
         $data = unpack('Cnull/Cstatus/nport/Nip',$response);
         
         if($data['null'] !== 0x00 || $data['status'] !== 0x5a){
-            $this->streamClose();
             throw new Exception('Invalid SOCKS response');
         }
         
-        return $this->stream;
+        return $stream;
     }
 }

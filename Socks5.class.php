@@ -38,6 +38,7 @@ class Socks5 extends Socks4{
      */
     protected function transceive($target,$method){
         $split = $this->splitAddress($target);
+        $stream = $this->streamConnect();
         
         $packet = pack('C',0x05);
         if($this->auth === NULL){
@@ -46,11 +47,10 @@ class Socks5 extends Socks4{
             $packet .= pack('C3',0x02,0x02,0x00);                               // two methods, username/password and no authentication
         }
         
-        $response = $this->streamWrite($packet)->streamRead(2);
+        $response = $this->streamWriteRead($stream,$packet,2);
         $data = unpack('Cversion/Cmethod',$response);
         
         if($data['version'] !== 0x05){
-            $this->streamClose();
             throw new Exception('Version/Protocol mismatch');
         }
         if($data['method'] === 0x02 && $this->auth !== NULL){                   // username/password authentication
@@ -58,11 +58,9 @@ class Socks5 extends Socks4{
             $data = unpack('Cversion/Cstatus',$response);
             
             if($data['version'] !== 0x01 || $data['status'] !== 0x00){
-                $this->streamClose();
                 throw new Exception('Username/Password authentication failed');
             }
         }else if($data['method'] !== 0x00){                                     // any other method than "no authentication"
-            $this->streamClose();
             throw new Exception('Unacceptable authentication method requested');
         }
         
@@ -76,11 +74,10 @@ class Socks5 extends Socks4{
         }                                                                       // TODO: support IPv6 target address
         $packet .= pack('n',$split['port']);
         
-        $response = $this->streamWrite($packet)->streamRead(4);
+        $response = $this->streamWriteRead($stream,$packet,4);
         $data = unpack('Cversion/Cstatus/Cnull/Ctype',$response);
         
         if($data['version'] !== 0x05 || $data['status'] !== 0x00 || $data['null'] !== 0x00){
-            $this->streamClose();
             throw new Exception('Invalid SOCKS response');
         }
         if($data['type'] === 0x01){                                             // ipv4 address
@@ -92,10 +89,9 @@ class Socks5 extends Socks4{
         }else if($data['type'] === 0x04){                                       // IPv6 address
             $this->streamRead(18);                                              // skip IP and port
         }else{
-            $this->streamClose();
             throw new Exception('Invalid SOCKS reponse: Invalid address type');
         }
         
-        return $this->stream;
+        return $stream;
     }
 }

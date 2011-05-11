@@ -14,11 +14,11 @@
  */
 class Socks4{
     /**
-     * connection stream to socks server
+     * address or established connection stream to socks server
      * 
-     * @var Stream
+     * @var string|int|resource
      */
-    protected $stream;
+    protected $server;
     
     /**
      * initialize connection to given socks server
@@ -27,15 +27,7 @@ class Socks4{
      * @throws Exception if connection to socks server fails
      */
     public function __construct($socksServer){
-        if(!is_resource($socksServer)){
-            $split = $this->splitAddress($socksServer,'127.0.0.1',1080);
-            
-            $socksServer = fsockopen($split['host'],$split['port']);
-            if($socksServer === false){
-                throw new Exception('Unable to connect to SOCKS server');
-            }
-        }
-        $this->stream = $socksServer;
+        $this->server = $socksServer;
     }
     
     /**
@@ -108,28 +100,29 @@ class Socks4{
         if($ip === false){
             throw new Exception('Unable to resolve hostname to IP');
         }
-        $response = $this->streamWrite(pack('C2nNC',0x04,$method,$split['port'],$ip,0x00))->streamRead(8);
+        $stream = $this->streamConnect();
+        $response = $this->streamWriteRead($stream,pack('C2nNC',0x04,$method,$split['port'],$ip,0x00),8);
         $data = unpack('Cnull/Cstatus',substr($response,0,2));
         
         if($data['null'] !== 0x00 || $data['status'] !== 0x5a){
-            $this->streamClose();
             throw new Exception('Invalid SOCKS response');
         }
         
-        return $this->stream;
+        return $stream;
     }
     
     /**
      * read data string with given length from SOCKS server
      * 
-     * @param int $len ensure full length will be read
+     * @param resource $stream to operate on
+     * @param int      $len    ensure full length will be read
      * @return string data string
      * @throws Exception if reading fails
      */
-    protected function streamRead($len){
+    protected function streamRead($stream,$len){
         $ret = '';
         while(strlen($ret) < $len){
-            $part = fread($this->stream,$len-strlen($ret));
+            $part = fread($stream,$len-strlen($ret));
             if($part === false){
                 throw new Exception('Unable to read from stream');
             }
@@ -140,13 +133,14 @@ class Socks4{
     /**
      * write given data string to SOCKS server
      * 
-     * @param string $string ensure full string will be written
+     * @param resource $stream to operate on
+     * @param string   $string ensure full string will be written
      * @return Socks4 $this (chainable)
      * @throws Exception if writing fails
      */
-    protected function streamWrite($string){
+    protected function streamWrite($stream,$string){
         while($string !== ''){
-            $l = fwrite($this->stream,$string);
+            $l = fwrite($stream,$string);
             if($l === false){
                 throw new Exception('Unable to write to stream');
             }
@@ -156,13 +150,42 @@ class Socks4{
     }
     
     /**
-     * close stream to SOCKS server
+     * write given data string to SOCKS server and read $len bytes in response (shortcut function)
      * 
-     * @return Socks4 $this (chainable)
+     * @param resource $stream to operate on
+     * @param string   $string string to be send to server
+     * @param int      $len    number of bytes to be read
+     * @return string response data string
+     * @throws Exception if reading/writing fails
+     * @uses Socks4::streamWrite()
+     * @uses Socks4::streamRead()
      */
-    protected function streamClose(){
-        fclose($this->stream);
-        $this->stream = NULL;
-        return $this;
+    protected function streamWriteRead($stream,$string,$len){
+        return $this->streamWrite($stream,$string)->streamRead($stream,$len);
+    }
+    
+    /**
+     * connect to SOCKS server and return stream resource
+     * 
+     * @return resource
+     * @throws Exception if connection fails
+     */
+    protected function streamConnect(){
+        $ret = NULL;
+        if(is_resource($this->server)){
+            $ret = $this->server;
+            $this->server = NULL; // stream can not be re-used
+            return $ret;
+        }else if($this->server === NULL){
+            throw new Exception('SOCKS was initialized with an established socket which can not be re-used for multiple connections');
+        }else{
+            $split = $this->splitAddress($this->server,'127.0.0.1',1080);
+            
+            $ret = fsockopen($split['host'],$split['port']);                    // create a fresh connection
+            if($ret === false){
+                throw new Exception('Unable to connect to SOCKS server');
+            }
+        }
+        return $ret;
     }
 }
