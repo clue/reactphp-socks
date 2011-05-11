@@ -23,7 +23,7 @@ class Socks4a extends Socks4{
      * 
      * @param string $target hostname:port to connect to
      * @param int    $method SOCKS method to use (connect/bind)
-     * @return Stream
+     * @return resource
      * @throws Exception if target is invalid or connection fails
      * @uses Socks4::splitAddress()
      * @see Socks4::transceive() for comparison (which uses gethostname() to locally resolve the target hostname)
@@ -36,13 +36,11 @@ class Socks4a extends Socks4{
         if($ip === false){                                                      // host is not a valid IP => send along hostname
             $packet .= $split['host'].pack('C',0x00);
         }
-        $this->stream->writeEnsure($packet);
-        
-        $response = $this->stream->readEnsure(8);
+        $this->streamWrite($packet)->streamRead(8);
         $data = unpack('Cnull/Cstatus/nport/Nip',$response);
         
         if($data['null'] !== 0x00 || $data['status'] !== 0x5a){
-            $this->stream->close();
+            $this->streamClose();
             throw new Exception('Invalid SOCKS response');
         }
         

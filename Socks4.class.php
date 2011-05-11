@@ -23,32 +23,28 @@ class Socks4{
     /**
      * initialize connection to given socks server
      * 
-     * @param string|int|resource|Stream $socksServer hostname and/or port or established connection stream
+     * @param string|int|resource $socksServer hostname and/or port or established connection stream
      * @throws Exception if connection to socks server fails
      */
     public function __construct($socksServer){
-        if($socksServer instanceof Stream){
-            $this->stream = $socksServer;
-        }else{
-            if(!is_resource($socksServer)){
-                $split = $this->splitAddress($socksServer,'127.0.0.1',1080);
-                
-                $socksServer = fsockopen($split['host'],$split['port']);
-                if($socksServer === false){
-                    throw new Exception('Unable to connect to SOCKS server');
-                }
+        if(!is_resource($socksServer)){
+            $split = $this->splitAddress($socksServer,'127.0.0.1',1080);
+            
+            $socksServer = fsockopen($split['host'],$split['port']);
+            if($socksServer === false){
+                throw new Exception('Unable to connect to SOCKS server');
             }
-            $this->stream = new Stream($socksServer);
         }
+        $this->stream = $socksServer;
     }
     
     /**
      * establish connection to given target (SOCKS CONNECT request)
      * 
      * @param string $target hostname:port to connect to
-     * @return Stream
+     * @return resource
      * @throws Exception if target is invalid or connection fails
-     * @uses Socks4::establish()
+     * @uses Socks4::transceive()
      */
     public function connect($target){
         return $this->transceive($target,0x01);
@@ -61,9 +57,9 @@ class Socks4{
      * to bind to a listening port. carefully read the specs!
      * 
      * @param string $target hostname:port to connect to
-     * @return Stream
+     * @return resource
      * @throws Exception if target is invalid or connection fails
-     * @uses Socks4::establish()
+     * @uses Socks4::transceive()
      */
     public function bind($target){
         return $this->transceive($target,0x02);
@@ -100,7 +96,7 @@ class Socks4{
      * 
      * @param string $target hostname:port to connect to
      * @param int    $method SOCKS method to use (connect/bind)
-     * @return Stream
+     * @return resource
      * @throws Exception if target is invalid or connection fails
      * @uses Socks4::splitAddress()
      * @uses gethostbyname() to resolve hostname to IP
@@ -112,16 +108,61 @@ class Socks4{
         if($ip === false){
             throw new Exception('Unable to resolve hostname to IP');
         }
-        $this->stream->writeEnsure(pack('C2nNC',0x04,$method,$split['port'],$ip,0x00));
-        
-        $response = $this->stream->readEnsure(8);
+        $response = $this->streamWrite(pack('C2nNC',0x04,$method,$split['port'],$ip,0x00))->streamRead(8);
         $data = unpack('Cnull/Cstatus',substr($response,0,2));
         
         if($data['null'] !== 0x00 || $data['status'] !== 0x5a){
-            $this->stream->close();
+            $this->streamClose();
             throw new Exception('Invalid SOCKS response');
         }
         
         return $this->stream;
+    }
+    
+    /**
+     * read data string with given length from SOCKS server
+     * 
+     * @param int $len ensure full length will be read
+     * @return string data string
+     * @throws Exception if reading fails
+     */
+    protected function streamRead($len){
+        $ret = '';
+        while(strlen($ret) < $len){
+            $part = fread($this->stream,$len-strlen($ret));
+            if($part === false){
+                throw new Exception('Unable to read from stream');
+            }
+        }
+        return $ret;
+    }
+    
+    /**
+     * write given data string to SOCKS server
+     * 
+     * @param string $string ensure full string will be written
+     * @return Socks4 $this (chainable)
+     * @throws Exception if writing fails
+     */
+    protected function streamWrite($string){
+        while($string !== ''){
+            $l = fwrite($this->stream,$string);
+            if($l === false){
+                throw new Exception('Unable to write to stream');
+            }
+            $string = substr($string,$l);
+        }
+        return $this;
+    }
+    
+    /**
+     * close stream to SOCKS server
+     * 
+     * @return Socks4 $this (chainable)
+     */
+    protected function streamClose(){
+        fclose($this->stream);
+        $this->stream = NULL;
+        return $this;
     }
 }
