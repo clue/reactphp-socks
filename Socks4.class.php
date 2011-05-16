@@ -116,7 +116,7 @@ class Socks4{
         $ret = '';
         while(strlen($ret) < $len){
             $part = fread($stream,$len-strlen($ret));
-            if($part === false){
+            if($part === false || $part === ''){
                 throw new Exception('Unable to read from stream');
             }
             $ret .= $part;
@@ -138,7 +138,7 @@ class Socks4{
         //echo '[write '.$string.':';
         while($string !== ''){
             $l = fwrite($stream,$string);
-            if($l === false){
+            if($l === false || $l === 0){
                 throw new Exception('Unable to write to stream');
             }
             $string = (string)substr($string,$l);
