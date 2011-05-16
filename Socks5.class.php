@@ -54,7 +54,7 @@ class Socks5 extends Socks4{
             throw new Exception('Version/Protocol mismatch');
         }
         if($data['method'] === 0x02 && $this->auth !== NULL){                   // username/password authentication
-            $response = $this->streamWrite($this->auth)->streamRead(2);
+            $response = $this->streamWrite($stream,$this->auth)->streamRead($stream,2);
             $data = unpack('Cversion/Cstatus',$response);
             
             if($data['version'] !== 0x01 || $data['status'] !== 0x00){
@@ -81,13 +81,13 @@ class Socks5 extends Socks4{
             throw new Exception('Invalid SOCKS response');
         }
         if($data['type'] === 0x01){                                             // ipv4 address
-            $this->streamRead(6);                                               // skip IP and port
+            $this->streamRead($stream,6);                                       // skip IP and port
         }else if($data['type'] === 0x03){                                       // domain name
-            $response = $this->streamRead(1);                                   // read domain name length
+            $response = $this->streamRead($stream,1);                           // read domain name length
             $data = unpack('Clength',$response);
-            $this->streamRead($data['length']+2);                               // skip domain name and port
+            $this->streamRead($stream,$data['length']+2);                       // skip domain name and port
         }else if($data['type'] === 0x04){                                       // IPv6 address
-            $this->streamRead(18);                                              // skip IP and port
+            $this->streamRead($stream,18);                                      // skip IP and port
         }else{
             throw new Exception('Invalid SOCKS reponse: Invalid address type');
         }

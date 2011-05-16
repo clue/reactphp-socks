@@ -38,7 +38,7 @@ class Socks4a extends Socks4{
             $packet .= $split['host'].pack('C',0x00);
         }
         
-        $this->streamWriteRead($stream,$packet,8);
+        $response = $this->streamWriteRead($stream,$packet,8);
         $data = unpack('Cnull/Cstatus/nport/Nip',$response);
         
         if($data['null'] !== 0x00 || $data['status'] !== 0x5a){

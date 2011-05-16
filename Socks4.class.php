@@ -120,13 +120,17 @@ class Socks4{
      * @throws Exception if reading fails
      */
     protected function streamRead($stream,$len){
+        //echo '[read '.$len.':';
         $ret = '';
         while(strlen($ret) < $len){
             $part = fread($stream,$len-strlen($ret));
             if($part === false){
                 throw new Exception('Unable to read from stream');
             }
+            $ret .= $part;
+            //echo '['.$part.']';
         }
+        //echo ']';
         return $ret;
     }
     
@@ -139,13 +143,16 @@ class Socks4{
      * @throws Exception if writing fails
      */
     protected function streamWrite($stream,$string){
+        //echo '[write '.$string.':';
         while($string !== ''){
             $l = fwrite($stream,$string);
             if($l === false){
                 throw new Exception('Unable to write to stream');
             }
-            $string = substr($string,$l);
+            $string = (string)substr($string,$l);
+            //echo '[sent '.$l.', remaining: '.$string.']';
         }
+        //echo ']';
         return $this;
     }
     
