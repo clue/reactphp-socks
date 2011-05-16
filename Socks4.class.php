@@ -66,7 +66,7 @@ class Socks4{
      * @return array {host,port}
      * @throws Exception if either host or IP remains unknown (i.e. no value and no default value given)
      */
-    protected function splitAdress($target,$defaultHost=NULL,$defaultPort=NULL){
+    protected function splitAddress($target,$defaultHost=NULL,$defaultPort=NULL){
         $ret = array('host'=>$defaultHost,'port'=>$defaultPort);
         if(is_int($target)){
             $ret['port'] = $target;
