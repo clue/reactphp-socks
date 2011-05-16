@@ -63,14 +63,14 @@ class Socks5 extends Socks4{
             throw new Exception('Unacceptable authentication method requested');
         }
         
-        $ip = ip2long($hostname);                                               // do not resolve hostname. only try to convert to IP
+        $ip = inet_pton($hostname);                                             // do not resolve hostname. only try to convert to (binary/packed) IP
         
         $packet = pack('C3',0x05,$method,0x00);
         if($ip === false){                                                      // not an IP, send as hostname
             $packet .= pack('C2',0x03,strlen($hostname)).$hostname;
-        }else{                                                                  // send as IPv4
-            $packet .= pack('CN',0x01,$ip);
-        }                                                                       // TODO: support IPv6 target address
+        }else{                                                                  // send as IPv4 / IPv6
+            $packet .= pack('C',(strpos($hostname,':') === false) ? 0x01 : 0x04).$ip;
+        }
         $packet .= pack('n',$port);
         
         $response = $this->streamWriteRead($stream,$packet,4);
