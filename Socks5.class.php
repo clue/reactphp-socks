@@ -4,6 +4,15 @@
  * class implementing the SOCKS 5 protocol
  * 
  * The SOCKS 5 protocol is an extension of the SOCKS 4 protocol that is defined in RFC 1928. It offers more choices of authentication, adds support for IPv6 and UDP that can be used for DNS lookups. The initial handshake now consists of the following:
+ * 
+ * @author Christian Lück <christian@lueck.tv>
+ * @copyright Copyright (c) 2011, Christian Lück
+ * @license http://www.opensource.org/licenses/mit-license MIT License
+ * @package Socks
+ * @version v0.1.0
+ * @link https://github.com/clue/Socks
+ * @link http://en.wikipedia.org/wiki/SOCKS#SOCKS_5
+ * @see socks5.lib.php
  */
 class Socks5 extends Socks4{
     protected $auth = NULL;

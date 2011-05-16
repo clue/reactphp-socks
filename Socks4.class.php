@@ -5,12 +5,12 @@
  * 
  * @author Christian Lück <christian@lueck.tv>
  * @copyright Copyright (c) 2011, Christian Lück
- * @license http://www.opensource.org/licenses/isc-license ISC License
+ * @license http://www.opensource.org/licenses/mit-license MIT License
  * @package Socks
- * @version v0.0.1
+ * @version v0.1.0
+ * @link https://github.com/clue/Socks
  * @link http://en.wikipedia.org/wiki/SOCKS#SOCKS_4
  * @link http://ss5.sourceforge.net/socks4.protocol.txt
- * @see socks5.lib.php
  */
 class Socks4{
     /**
