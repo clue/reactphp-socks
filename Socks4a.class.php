@@ -21,21 +21,20 @@ class Socks4a extends Socks4{
      * resolve the target host name into an IP address and instead leaves it
      * up the the SOCKS server to resolve the host name.
      * 
-     * @param string $target hostname:port to connect to
-     * @param int    $method SOCKS method to use (connect/bind)
+     * @param string $hostname hostname to connect to
+     * @param int    $port     port to connect to
+     * @param int    $method   SOCKS method to use (connect/bind)
      * @return resource
      * @throws Exception if target is invalid or connection fails
-     * @uses Socks4::splitAddress()
      * @see Socks4::transceive() for comparison (which uses gethostname() to locally resolve the target hostname)
      */
-    protected function transceive($target,$method){
-        $split = $this->splitAddress($target);
+    protected function transceive($hostname,$port,$method){
         $stream = $this->streamConnect();
         
-        $ip = ip2long($split['host']);                                          // do not resolve hostname. only try to convert to IP
-        $packet = pack('C2nNC',0x04,$method,$split['port'],$ip === false ? 1 : $ip,0x00); // send IP or (0.0.0.1) if invalid
+        $ip = ip2long($hostname);                                               // do not resolve hostname. only try to convert to IP
+        $packet = pack('C2nNC',0x04,$method,$port,$ip === false ? 1 : $ip,0x00); // send IP or (0.0.0.1) if invalid
         if($ip === false){                                                      // host is not a valid IP => send along hostname
-            $packet .= $split['host'].pack('C',0x00);
+            $packet .= $hostname.pack('C',0x00);
         }
         
         $response = $this->streamWriteRead($stream,$packet,8);

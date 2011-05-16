@@ -29,15 +29,14 @@ class Socks5 extends Socks4{
      * resolve the target host name into an IP address and instead leaves it
      * up the the SOCKS server to resolve the host name.
      * 
-     * @param string $target hostname:port to connect to
-     * @param int    $method SOCKS method to use (connect/bind)
+     * @param string $hostname hostname to connect to
+     * @param int    $port     port to connect to
+     * @param int    $method   SOCKS method to use (connect/bind)
      * @return Stream
      * @throws Exception if target is invalid or connection fails
-     * @uses Socks4::splitAddress()
      * @see Socks4::transceive() for comparison (which uses gethostname() to locally resolve the target hostname)
      */
-    protected function transceive($target,$method){
-        $split = $this->splitAddress($target);
+    protected function transceive($hostname,$port,$method){
         $stream = $this->streamConnect();
         
         $packet = pack('C',0x05);
@@ -54,7 +53,7 @@ class Socks5 extends Socks4{
             throw new Exception('Version/Protocol mismatch');
         }
         if($data['method'] === 0x02 && $this->auth !== NULL){                   // username/password authentication
-            $response = $this->streamWrite($stream,$this->auth)->streamRead($stream,2);
+            $response = $this->streamWriteRead($stream,$this->auth,2);
             $data = unpack('Cversion/Cstatus',$response);
             
             if($data['version'] !== 0x01 || $data['status'] !== 0x00){
@@ -64,15 +63,15 @@ class Socks5 extends Socks4{
             throw new Exception('Unacceptable authentication method requested');
         }
         
-        $ip = ip2long($split['host']);                                          // do not resolve hostname. only try to convert to IP
+        $ip = ip2long($hostname);                                               // do not resolve hostname. only try to convert to IP
         
         $packet = pack('C3',0x05,$method,0x00);
         if($ip === false){                                                      // not an IP, send as hostname
-            $packet .= pack('C2',0x03,strlen($split['host'])).$split['host'];
+            $packet .= pack('C2',0x03,strlen($hostname)).$hostname;
         }else{                                                                  // send as IPv4
             $packet .= pack('CN',0x01,$ip);
         }                                                                       // TODO: support IPv6 target address
-        $packet .= pack('n',$split['port']);
+        $packet .= pack('n',$port);
         
         $response = $this->streamWriteRead($stream,$packet,4);
         $data = unpack('Cversion/Cstatus/Cnull/Ctype',$response);
