@@ -1,8 +1,8 @@
 <?php
 
-require_once('Socks4.class.php');
-require_once('Socks4a.class.php');
-require_once('Socks5.class.php');
+require_once(__DIR__.'/../Socks4.class.php');
+require_once(__DIR__.'/../Socks4a.class.php');
+require_once(__DIR__.'/../Socks5.class.php');
 
 class Socks4Test extends PHPUnit_Framework_TestCase{
     public function testSocks4(){
