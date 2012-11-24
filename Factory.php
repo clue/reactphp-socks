@@ -11,7 +11,7 @@ class Factory
         $this->loop = $loop;
         $this->resolver = $resolver;
     }
-    
+
     public function createClient($socksHost, $socksPort)
     {
 //         $connector = new ConnectionManager($this->loop, $this->resolver);

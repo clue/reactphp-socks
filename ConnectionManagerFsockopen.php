@@ -16,10 +16,10 @@ class ConnectionManagerFsockopen implements ConnectionManagerInterface
     public function getConnection($callback, $host, $port)
     {
         $socket = fsockopen($host, $port, $errno, $errstr, $this->timeout);
-        if($socket === false){
+        if ($socket === false) {
             $stream = null;
             $error = new Exception('Unable to open connection: "'.$errstr.'" ('.$errno.')');
-        }else{
+        } else {
             $stream = new Stream($socket, $this->loop);
             $error = null;
         }
