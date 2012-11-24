@@ -1,5 +1,6 @@
 <?php
 
+use React\HttpClient\Client as HttpClient;
 use React\Dns\Resolver\Resolver;
 use React\Stream\Stream;
 use React\EventLoop\LoopInterface;
@@ -37,6 +38,11 @@ class Client implements ConnectionManagerInterface
         $this->connectionManager = $connectionManager;
         $this->socksHost = $socksHost;
         $this->socksPort = $socksPort;
+    }
+
+    public function createHttpClient(){
+        // TODO: fix secure connection manager in last parameter
+        return new HttpClient($this->loop, $this, $this);
     }
 
     public function getConnection($callback, $host, $port)
