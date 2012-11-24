@@ -24,6 +24,8 @@ class Client implements ConnectionManagerInterface
     
     private $socksPort;
     
+    private $timeout = 5.0;
+    
     /**
      * @var LoopInterface
      */
@@ -39,16 +41,28 @@ class Client implements ConnectionManagerInterface
     
     public function getConnection($callback, $host, $port)
     {
-        $this->connectionManager->getConnection(function($stream,$error=null) use ($callback, $host, $port){
+        $timeout = microtime(true) + $this->timeout;
+        $timerTimeout = $this->loop->addTimer($this->timeout,function() use ($callback){
+            call_user_func($callback, null, new Exception('Timeout while connecting to socks server'));
+            // TODO: stop initiating connection
+        });
+            
+        $this->connectionManager->getConnection(function($stream,$error=null) use ($callback, $host, $port, $timeout, $timerTimeout){
+            $this->loop->cancelTimer($timerTimeout);
             if ($error === null) {
                 call_user_func($callback, null, new Exception('Unable to connect to socks server',0,$error));
+            } else {
+                $this->handleConnectedSocks($callback, $stream, $host, $port, $timeout);
             }
-            $this->handleConnectedSocks($callback, $stream, $host, $port);
         }, $this->socksHost, $this->socksPort);
     }
     
-    protected function handleConnectedSocks($callback, Stream $stream, $host, $port)
+    protected function handleConnectedSocks($callback, Stream $stream, $host, $port, $timeout)
     {
+        $timerTimeout = $this->loop->addTimer(max($timeout - microtime(true),0.1),function() use ($result){
+            $result(new Exception('Timeout while establishing socks session'));
+        });
+        
         $ip = ip2long($host);                                                   // do not resolve hostname. only try to convert to IP
         $data = pack('C2nNC',0x04,$method,$port,$ip === false ? 1 : $ip,0x00); // send IP or (0.0.0.1) if invalid
         if($ip === false){                                                      // host is not a valid IP => send along hostname
@@ -56,8 +70,10 @@ class Client implements ConnectionManagerInterface
         }
         $stream->write($data);
         
-        $result = function($error=null) use ($callback,$fnEndPremature,$stream) {
+        $result = function($error=null) use ($callback,$fnEndPremature,$stream,$timerTimeout) {
+            $this->loop->cancelTimer($timerTimeout);
             $stream->removeListener('end', $fnEndPremature);
+            $stream->removeAllListeners('timeout');
             call_user_func($callback, $stream, $error);
         };
         
