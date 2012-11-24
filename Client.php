@@ -38,7 +38,7 @@ class Client implements ConnectionManagerInterface
         $this->socksHost = $socksHost;
         $this->socksPort = $socksPort;
     }
-    
+
     public function getConnection($callback, $host, $port)
     {
         $timeout = microtime(true) + $this->timeout;
@@ -77,6 +77,7 @@ class Client implements ConnectionManagerInterface
             $loop->cancelTimer($timerTimeout);
             $stream->removeListener('end', $fnEndPremature);
             $stream->removeAllListeners('timeout');
+            $stream->removeAllListeners('data');
             call_user_func($callback, $stream, $error);
         };
         
