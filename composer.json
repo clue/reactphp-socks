@@ -1,0 +1,6 @@
+{
+    "require": {
+        "react/http-client": "dev-master",
+        "react/event-loop": "dev-master"
+    }
+}
