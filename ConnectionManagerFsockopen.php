@@ -1,5 +1,11 @@
 <?php
 
+use React\Promise\FulfilledPromise;
+
+use React\Promise\RejectedPromise;
+
+use React\Promise\Deferred;
+
 use React\EventLoop\LoopInterface;
 use React\Stream\Stream;
 use React\HttpClient\ConnectionManagerInterface;
@@ -13,16 +19,18 @@ class ConnectionManagerFsockopen implements ConnectionManagerInterface
         $this->loop = $loop;
     }
 
-    public function getConnection($callback, $host, $port)
+    public function setTimeout($timeoutSeconds)
+    {
+        $this->timeout = $timeoutSeconds;
+    }
+
+    public function getConnection($host, $port)
     {
         $socket = fsockopen($host, $port, $errno, $errstr, $this->timeout);
         if ($socket === false) {
-            $stream = null;
-            $error = new Exception('Unable to open connection: "'.$errstr.'" ('.$errno.')');
+            return new RejectedPromise(new Exception('Unable to open connection: "'.$errstr.'" ('.$errno.')'));
         } else {
-            $stream = new Stream($socket, $this->loop);
-            $error = null;
+            return new FulfilledPromise(new Stream($socket, $this->loop));
         }
-        call_user_func($callback, $stream, $error);
     }
 }
