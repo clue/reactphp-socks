@@ -1,5 +1,7 @@
 <?php
 
+use React\Promise\Deferred;
+
 use React\HttpClient\Client as HttpClient;
 use React\Dns\Resolver\Resolver;
 use React\Stream\Stream;
@@ -46,30 +48,37 @@ class Client implements ConnectionManagerInterface
         return new HttpClient($this->loop, $this, $this);
     }
 
-    public function getConnection($callback, $host, $port)
+    public function getConnection($host, $port)
     {
+        $deferred = new Deferred();
+
         $timeout = microtime(true) + $this->timeout;
-        $timerTimeout = $this->loop->addTimer($this->timeout, function () use ($callback) {
-            call_user_func($callback, null, new Exception('Timeout while connecting to socks server'));
+        $timerTimeout = $this->loop->addTimer($this->timeout, function () use ($deferred) {
+            $deferred->reject(new Exception('Timeout while connecting to socks server'));
             // TODO: stop initiating connection
         });
 
         $loop = $this->loop;
         $that = $this;
-        $this->connectionManager->getConnection(function ($stream, $error=null) use ($callback, $host, $port, $timeout, $timerTimeout, $loop, $that) {
-            $loop->cancelTimer($timerTimeout);
-            if ($error !== null) {
-                call_user_func($callback, null, new Exception('Unable to connect to socks server', 0, $error));
-            } else {
-                $that->handleConnectedSocks($callback, $stream, $host, $port, $timeout);
+        return $this->connectionManager->getConnection($this->socksHost, $this->socksPort)->then(
+            function ($stream) use ($deferred, $host, $port, $timeout, $timerTimeout, $loop, $that) {
+                $loop->cancelTimer($timerTimeout);
+                return $deferred->resolve($that->handleConnectedSocks($stream, $host, $port, $timeout));
+            },
+            function ($error) use ($deferred) {
+                $deferred->reject(new Exception('Unable to connect to socks server', 0, $error));
             }
-        }, $this->socksHost, $this->socksPort);
+        );
+        return $deferred->promise();
     }
 
-    public function handleConnectedSocks($callback, Stream $stream, $host, $port, $timeout)
+    public function handleConnectedSocks(Stream $stream, $host, $port, $timeout)
     {
-        $timerTimeout = $this->loop->addTimer(max($timeout - microtime(true), 0.1), function () use (&$result) {
-            $result(new Exception('Timeout while establishing socks session'));
+        $deferred = new Deferred();
+        $resolver = $deferred->resolver();
+
+        $timerTimeout = $this->loop->addTimer(max($timeout - microtime(true), 0.1), function () use ($resolver) {
+            $resolver->reject(new Exception('Timeout while establishing socks session'));
         });
 
         $ip = ip2long($host);                                                   // do not resolve hostname. only try to convert to IP
@@ -80,30 +89,31 @@ class Client implements ConnectionManagerInterface
         $stream->write($data);
 
         $loop = $this->loop;
-        $result = function ($error=null) use ($callback, &$fnEndPremature, $stream, $timerTimeout, $loop) {
+        $result = function ($error=null) use (&$fnEndPremature, $stream, $timerTimeout, $loop) {
             $loop->cancelTimer($timerTimeout);
             $stream->removeListener('end', $fnEndPremature);
             $stream->removeAllListeners('timeout');
             $stream->removeAllListeners('data');
-            call_user_func($callback, $stream, $error);
         };
 
-        $fnEndPremature = function (Stream $stream) use ($result) {
-            $result(new Exception('Premature end while establishing socks session'));
+        $fnEndPremature = function (Stream $stream) use ($resolver) {
+            $resolver->reject(new Exception('Premature end while establishing socks session'));
         };
         $stream->on('end',$fnEndPremature);
 
 
-        $this->readLength(function ($response, Stream $stream) use ($result) {
+        $this->readLength(function ($response, Stream $stream) use ($resolver) {
             $data = unpack('Cnull/Cstatus/nport/Nip', $response);
 
             if ($data['null'] !== 0x00 || $data['status'] !== 0x5a) {
-                $result(new Exception('Invalid SOCKS response'));
+                $resolver->reject(new Exception('Invalid SOCKS response'));
             }
 
             $stream->bufferSize = 1024;
-            $result();
+            $resolver->resolve($stream);
         }, $stream, 8);
+
+        return $deferred->promise();
     }
 
     protected function readLength($callback, Stream $stream, $bytes)
