@@ -65,7 +65,8 @@ class Client implements ConnectionManagerInterface
                 $loop->cancelTimer($timerTimeout);
                 return $deferred->resolve($that->handleConnectedSocks($stream, $host, $port, $timeout));
             },
-            function ($error) use ($deferred) {
+            function ($error) use ($deferred, $loop, $timerTimeout) {
+                $loop->cancelTimer($timerTimeout);
                 $deferred->reject(new Exception('Unable to connect to socks server', 0, $error));
             }
         );
@@ -89,18 +90,22 @@ class Client implements ConnectionManagerInterface
         $stream->write($data);
 
         $loop = $this->loop;
-        $result = function ($error=null) use (&$fnEndPremature, $stream, $timerTimeout, $loop) {
-            $loop->cancelTimer($timerTimeout);
-            $stream->removeListener('end', $fnEndPremature);
-            $stream->removeAllListeners('timeout');
-            $stream->removeAllListeners('data');
-        };
+        $deferred->then(
+            function (Stream $stream) use ($timerTimeout, $loop) {
+                $loop->cancelTimer($timerTimeout);
+                $stream->removeAllListeners('end');
+                return $stream;
+            },
+            function ($error) use ($stream, $timerTimeout, $loop) {
+                $loop->cancelTimer($timerTimeout);
+                $stream->close();
+                return $error;
+            }
+        );
 
-        $fnEndPremature = function (Stream $stream) use ($resolver) {
+        $stream->on('end',function (Stream $stream) use ($resolver) {
             $resolver->reject(new Exception('Premature end while establishing socks session'));
-        };
-        $stream->on('end',$fnEndPremature);
-
+        });
 
         $this->readLength(function ($response, Stream $stream) use ($resolver) {
             $data = unpack('Cnull/Cstatus/nport/Nip', $response);
@@ -109,7 +114,6 @@ class Client implements ConnectionManagerInterface
                 $resolver->reject(new Exception('Invalid SOCKS response'));
             }
 
-            $stream->bufferSize = 1024;
             $resolver->resolve($stream);
         }, $stream, 8);
 
@@ -118,18 +122,23 @@ class Client implements ConnectionManagerInterface
 
     protected function readLength($callback, Stream $stream, $bytes)
     {
+        $oldsize = $stream->bufferSize;
         $stream->bufferSize = $bytes;
 
         $buffer = '';
-        $stream->on('data', function ($data, Stream $stream) use (&$buffer, &$bytes, $callback) {
+
+        $fn = function ($data, Stream $stream) use (&$buffer, &$bytes, $callback, $oldsize, &$fn) {
             $bytes -= strlen($data);
             $buffer .= $data;
 
             if ($bytes === 0) {
+                $stream->bufferSize = $oldsize;
+                $stream->removeListener('data', $fn);
                 call_user_func($callback, $buffer, $stream);
             } else {
                 $stream->bufferSize = $bytes;
             }
-        });
+        };
+        $stream->on('data', $fn);
     }
 }
