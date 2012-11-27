@@ -60,7 +60,7 @@ class Client implements ConnectionManagerInterface
 
         $loop = $this->loop;
         $that = $this;
-        return $this->connectionManager->getConnection($this->socksHost, $this->socksPort)->then(
+        $this->connectionManager->getConnection($this->socksHost, $this->socksPort)->then(
             function ($stream) use ($deferred, $host, $port, $timeout, $timerTimeout, $loop, $that) {
                 $loop->cancelTimer($timerTimeout);
                 return $deferred->resolve($that->handleConnectedSocks($stream, $host, $port, $timeout));
