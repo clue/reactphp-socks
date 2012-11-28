@@ -14,8 +14,8 @@ class Factory
 
     public function createClient($socksHost, $socksPort)
     {
-//         $connector = new ConnectionManager($this->loop, $this->resolver);
-        $connector = new ConnectionManagerFsockopen($this->loop);
+        $connector = new ConnectionManager($this->loop, $this->resolver);
+//         $connector = new ConnectionManagerFsockopen($this->loop);
         return new Client($this->loop, $connector, $this->resolver, $socksHost, $socksPort);
     }
 }
