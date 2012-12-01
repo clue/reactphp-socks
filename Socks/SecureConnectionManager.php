@@ -1,9 +1,9 @@
 <?php
 
+namespace Socks;
+
 use React\Promise\ResolverInterface;
-
 use React\EventLoop\LoopInterface;
-
 use React\Promise\Deferred;
 use React\Stream\Stream;
 use React\HttpClient\ConnectionManagerInterface;

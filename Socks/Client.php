@@ -1,5 +1,7 @@
 <?php
 
+namespace Socks;
+
 use React\Promise\Deferred;
 
 use React\HttpClient\Client as HttpClient;

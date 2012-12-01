@@ -1,4 +1,11 @@
 {
+    "name": "clue/Socks",
+    "type": "library",
+    "homepage": "http://github.com/clue/Socks",
+    "license": "MIT",
+    "autoload": {
+        "psr-0": {"Socks": ""}
+    },
     "require": {
         "react/http-client": "dev-master",
         "react/event-loop": "dev-master"

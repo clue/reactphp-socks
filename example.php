@@ -5,16 +5,13 @@ use React\HttpClient\Response;
 use React\Stream\Stream;
 
 include_once __DIR__.'/vendor/autoload.php';
-include_once __DIR__.'/Factory.php';
-include_once __DIR__.'/Client.php';
-include_once __DIR__.'/ConnectionManagerFsockopen.php';
 
 $loop = $loop = React\EventLoop\Factory::create();
 
 $dnsResolverFactory = new React\Dns\Resolver\Factory();
 $dns = $dnsResolverFactory->createCached('8.8.8.8', $loop);
 
-$factory = new Factory($loop, $dns);
+$factory = new Socks\Factory($loop, $dns);
 
 $client = $factory->createClient('127.0.0.1', 9050);
 

@@ -1,5 +1,7 @@
 <?php
 
+namespace Socks;
+
 use React\Promise\FulfilledPromise;
 
 use React\Promise\RejectedPromise;
