@@ -107,17 +107,47 @@ class Client implements ConnectionManagerInterface
             $resolver->reject(new Exception('Premature end while establishing socks session'));
         });
 
-        $this->readLength(function ($response, Stream $stream) use ($resolver) {
-            $data = unpack('Cnull/Cstatus/nport/Nip', $response);
-
+        $this->readBinary(function ($data, Stream $stream) use ($resolver) {
             if ($data['null'] !== 0x00 || $data['status'] !== 0x5a) {
                 $resolver->reject(new Exception('Invalid SOCKS response'));
             }
 
             $resolver->resolve($stream);
-        }, $stream, 8);
+        }, $stream, array(
+            'null'   => 'C',
+            'status' => 'C',
+            'port'   => 'n',
+            'ip'     => 'N'
+        ));
 
         return $deferred->promise();
+    }
+
+    protected function readBinary($callback, Stream $stream, $structure)
+    {
+        $length = 0;
+        $unpack = '';
+        foreach ($structure as $name=>$format) {
+            if ($length !== 0) {
+                $unpack .= '/';
+            }
+            $unpack .= $format . $name;
+
+            if ($format === 'C') {
+                ++$length;
+            } else if ($format === 'n') {
+                $length += 2;
+            } else if ($format === 'N') {
+                $length += 4;
+            } else {
+                throw new Exception('Invalid format given');
+            }
+        }
+
+        $this->readLength(function ($response, $stream) use ($callback, $unpack) {
+            $data = unpack($unpack, $response);
+            call_user_func($callback, $data, $stream);
+        }, $stream, $length);
     }
 
     protected function readLength($callback, Stream $stream, $bytes)
