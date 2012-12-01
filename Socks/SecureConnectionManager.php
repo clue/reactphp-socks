@@ -7,6 +7,7 @@ use React\EventLoop\LoopInterface;
 use React\Promise\Deferred;
 use React\Stream\Stream;
 use React\HttpClient\ConnectionManagerInterface;
+use \UnexpectedValueException;
 
 class SecureConnectionManager implements ConnectionManagerInterface
 {
@@ -22,7 +23,15 @@ class SecureConnectionManager implements ConnectionManagerInterface
     {
         $that = $this;
         return $this->connectionManager->getConnection($host, $port)->then(function (Stream $stream) use ($that) {
-            return $that->handleConnectedSocket($stream->stream);
+            // get actual stream socket from stream instance
+            $socket = $stream->stream;
+
+            // pause and close actual stream instance to continue operation on raw stream socket
+            $stream->pause();
+            $stream->stream = false;
+            $stream->close();
+
+            return $that->handleConnectedSocket($socket);
         });
     }
 
@@ -45,6 +54,7 @@ class SecureConnectionManager implements ConnectionManagerInterface
 
     public function enableCrypto($socket, ResolverInterface $resolver)
     {
+        // TODO: catch any error via custom error handler
         $result = stream_socket_enable_crypto($socket, true, STREAM_CRYPTO_METHOD_TLS_CLIENT);
 
         if (true === $result) {
@@ -56,9 +66,10 @@ class SecureConnectionManager implements ConnectionManagerInterface
             $this->loop->removeWriteStream($socket);
             $this->loop->removeReadStream($socket);
 
-            $resolver->reject();
+
+            $error = 'unknown error';
+            $resolver->reject(new UnexpectedValueException('Unable to initiate SSL/TLS handshake: "'.$error.'"'));
         } else {
-            //echo 'again';
             // need more data, will retry
         }
     }
