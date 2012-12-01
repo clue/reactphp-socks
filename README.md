@@ -15,7 +15,7 @@ TODO:
 
 // see example.php
 
-```PHP
+```
 
 ### Using SSH as a SOCKS server
 
@@ -43,7 +43,6 @@ TODO: not actually published on packagist yet.
 
 ## TODO
 
-* Namespace/autoload
 * Publish on packagist
 * Support SOCKS 4 and SOCKS 5 (currently hardcoded to use SOCKS 4a)
 * Support local and remote DNS resolving
