@@ -29,7 +29,7 @@ class Client implements ConnectionManagerInterface
 
     private $socksPort;
 
-    private $timeout = 5.0;
+    private $timeout;
 
     /**
      * @var LoopInterface
@@ -42,6 +42,12 @@ class Client implements ConnectionManagerInterface
         $this->connectionManager = $connectionManager;
         $this->socksHost = $socksHost;
         $this->socksPort = $socksPort;
+        $this->timeout = ini_get("default_socket_timeout");
+    }
+
+    public function setTimeout($timeout)
+    {
+        $this->timeout = $timeout;
     }
 
     public function createHttpClient()
