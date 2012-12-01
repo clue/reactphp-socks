@@ -107,24 +107,26 @@ class Client implements ConnectionManagerInterface
             $resolver->reject(new Exception('Premature end while establishing socks session'));
         });
 
-        $this->readBinary(function ($data, Stream $stream) use ($resolver) {
+        $this->readBinary($stream, array(
+            'null'   => 'C',
+            'status' => 'C',
+            'port'   => 'n',
+            'ip'     => 'N'
+        ))->then(function ($data) use ($stream, $resolver) {
             if ($data['null'] !== 0x00 || $data['status'] !== 0x5a) {
                 $resolver->reject(new Exception('Invalid SOCKS response'));
             }
 
             $resolver->resolve($stream);
-        }, $stream, array(
-            'null'   => 'C',
-            'status' => 'C',
-            'port'   => 'n',
-            'ip'     => 'N'
-        ));
+        });
 
         return $deferred->promise();
     }
 
-    protected function readBinary($callback, Stream $stream, $structure)
+    protected function readBinary(Stream $stream, $structure)
     {
+        $deferred = new Deferred();
+
         $length = 0;
         $unpack = '';
         foreach ($structure as $name=>$format) {
@@ -144,31 +146,36 @@ class Client implements ConnectionManagerInterface
             }
         }
 
-        $this->readLength(function ($response, $stream) use ($callback, $unpack) {
+        $this->readLength($stream, $length)->then(function ($response) use ($unpack, $deferred) {
             $data = unpack($unpack, $response);
-            call_user_func($callback, $data, $stream);
-        }, $stream, $length);
+            $deferred->resolve($data);
+        });
+
+        return $deferred->promise();
     }
 
-    protected function readLength($callback, Stream $stream, $bytes)
+    protected function readLength(Stream $stream, $bytes)
     {
+        $deferred = new Deferred();
         $oldsize = $stream->bufferSize;
         $stream->bufferSize = $bytes;
 
         $buffer = '';
 
-        $fn = function ($data, Stream $stream) use (&$buffer, &$bytes, $callback, $oldsize, &$fn) {
+        $fn = function ($data, Stream $stream) use (&$buffer, &$bytes, $deferred, $oldsize, &$fn) {
             $bytes -= strlen($data);
             $buffer .= $data;
 
             if ($bytes === 0) {
                 $stream->bufferSize = $oldsize;
                 $stream->removeListener('data', $fn);
-                call_user_func($callback, $buffer, $stream);
+
+                $deferred->resolve($buffer);
             } else {
                 $stream->bufferSize = $bytes;
             }
         };
         $stream->on('data', $fn);
+        return $deferred->promise();
     }
 }
