@@ -1,5 +1,7 @@
 <?php
 
+use React\Promise\PromiseInterface;
+
 use React\HttpClient\Client as HttpClient;
 use React\HttpClient\Response;
 use React\Stream\Stream;
@@ -25,46 +27,55 @@ function ex(Exception $exception=null)
     }
 }
 
-$client->getConnection('www.google.com', 80)->then(
-    function ($stream) {
-        echo 'connection OK' . PHP_EOL;
-    },
-    function (Exception $error) {
-        echo 'connection ';
-        ex($error);
-    }
-);
+function assertFail(PromiseInterface $promise, $name='end')
+{
+    return $promise->then(
+        function (Stream $stream) use ($name) {
+            echo 'FAIL: connection to '.$name.' OK' . PHP_EOL;
+            $stream->close();
+        },
+        function (Exception $error) use ($name) {
 
-$client->getConnection('www.google.commm', 80)->then(
-    null,
-    function (Exception $error) {
-        echo 'www.google.commm ';
-        ex($error);
-    }
-);
+            echo 'EXPECTED: connection to '.$name.' failed: ';
+            ex($error);
+        }
+    );
+}
 
-$client->getConnection('www.google.com', 8080)->then(
-    null,
-    function (Exception $error) {
-        echo 'www.google.com:8080 ';
-        ex($error);
-    }
-);
+function assertOkay(PromiseInterface $promise, $name='end')
+{
+    return $promise->then(
+        function ($stream) use ($name) {
+            echo 'EXPECTED: connection to '.$name.' OK' . PHP_EOL;
+            $stream->close();
+        },
+        function (Exception $error) use ($name) {
+            echo 'FAIL: connection to '.$name.' failed: ';
+            ex($error);
+        }
+    );
+}
+
+assertOkay($client->getConnection('www.google.com', 80), 'www.google.com:80');
+
+assertFail($client->getConnection('www.google.commm', 80), 'www.google.commm:80');
+
+assertFail($client->getConnection('www.google.com', 8080), 'www.google.com:8080');
 
 
 // $factory = new React\HttpClient\Factory();
 // $httpclient = $factory->create($loop, $dns);
-$httpclient = $client->createHttpClient();
+// $httpclient = $client->createHttpClient();
 
-$request = $httpclient->request('GET', 'http://www.google.com/', array('user-agent'=>'none'));
-$request->on('response', function (Response $response) {
-    echo '[response1]' . PHP_EOL;
-    var_dump($response->getHeaders());
-    $response->on('data', function ($data) {
-        echo $data;
-    });
-});
-$request->end();
+// $request = $httpclient->request('GET', 'http://www.google.com/', array('user-agent'=>'none'));
+// $request->on('response', function (Response $response) {
+//     echo '[response1]' . PHP_EOL;
+//     var_dump($response->getHeaders());
+//     $response->on('data', function ($data) {
+//         echo $data;
+//     });
+// });
+// $request->end();
 
 $loop->addTimer(8, function() use ($loop) {
     $loop->stop();
