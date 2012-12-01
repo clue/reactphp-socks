@@ -13,6 +13,8 @@ class SecureConnectionManager implements ConnectionManagerInterface
 {
     private $connectionManager;
 
+    private $loop;
+
     public function __construct(ConnectionManagerInterface $connectionManager, LoopInterface $loop)
     {
         $this->connectionManager = $connectionManager;
