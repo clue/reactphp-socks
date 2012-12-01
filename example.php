@@ -74,17 +74,17 @@ assertFail($ssl->getConnection('www.google.com', 8080), 'ssl://www.google.com:80
 
 // $factory = new React\HttpClient\Factory();
 // $httpclient = $factory->create($loop, $dns);
-// $httpclient = $client->createHttpClient();
+$httpclient = $client->createHttpClient();
 
-// $request = $httpclient->request('GET', 'http://www.google.com/', array('user-agent'=>'none'));
-// $request->on('response', function (Response $response) {
-//     echo '[response1]' . PHP_EOL;
-//     var_dump($response->getHeaders());
-//     $response->on('data', function ($data) {
-//         echo $data;
-//     });
-// });
-// $request->end();
+$request = $httpclient->request('GET', 'https://www.google.com/', array('user-agent'=>'none'));
+$request->on('response', function (Response $response) {
+    echo '[response1]' . PHP_EOL;
+    //var_dump($response->getHeaders());
+    $response->on('data', function ($data) {
+        echo $data;
+    });
+});
+$request->end();
 
 $loop->addTimer(8, function() use ($loop) {
     $loop->stop();
