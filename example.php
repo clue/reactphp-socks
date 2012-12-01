@@ -1,5 +1,7 @@
 <?php
 
+use Socks\SecureConnectionManager;
+
 use React\Promise\PromiseInterface;
 
 use React\HttpClient\Client as HttpClient;
@@ -62,6 +64,13 @@ assertFail($client->getConnection('www.google.commm', 80), 'www.google.commm:80'
 
 assertFail($client->getConnection('www.google.com', 8080), 'www.google.com:8080');
 
+$ssl = new SecureConnectionManager($client, $loop);
+
+assertOkay($ssl->getConnection('www.google.com', 443), 'ssl://www.google.com:443');
+
+assertFail($ssl->getConnection('www.google.com', 80), 'ssl://www.google.com:80');
+
+assertFail($ssl->getConnection('www.google.com', 8080), 'ssl://www.google.com:8080');
 
 // $factory = new React\HttpClient\Factory();
 // $httpclient = $factory->create($loop, $dns);
