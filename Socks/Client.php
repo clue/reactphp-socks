@@ -236,7 +236,7 @@ class Client implements ConnectionManagerInterface
 
             if ($data['method'] === 0x02 && $auth !== null) {
                 // username/password authentication requested and provided
-                $stream->write($this->auth);
+                $stream->write($auth);
 
                 return $that->readBinary($stream, array(
                     'version' => 'C',
