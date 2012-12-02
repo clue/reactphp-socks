@@ -21,15 +21,23 @@ If you already have an SSH server set up, you can easily use it as a SOCKS tunne
 
 `$ ssh -D 9050 ssh-server`
 
-### Using the TOR network to tunnel SOCKS connection
+```PHP
+$client = $factory->createClient('127.0.0.1', 9050);
+```
 
-TODO: 
+### Using the Tor (anonymity network) to tunnel SOCKS connections
+
+The [Tor anonymity network](http://www.torproject.org) client software is designed to encrypt your traffic and route it over a network of several nodes to conceal its origin. It presents a SOCKS4 and SOCKS5 interface on TCP port 9050 by default which allows you to tunnel any traffic through the anonymity network. In most scenarios you probably don't want your client to resolve the target hostnames, because you would leak DNS information to anybody observing your local traffic. Also, Tor provides hidden services through an `.onion` pseudo top-level domain which have to be resolved by Tor.
+
+```PHP
+
+$client = $factory->createClient('127.0.0.1', 9050);
+$client->setResolveLocal(false);
+```
 
 ## Install
 
 The recommended way to install this library is [through composer](http://getcomposer.org). [New to composer?](http://getcomposer.org/doc/00-intro.md)
-
-TODO: not actually published on packagist yet.
 
 ```JSON
 {
