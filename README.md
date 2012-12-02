@@ -29,14 +29,18 @@ $client = $factory->createClient('127.0.0.1', 9050);
 $loop->start();
 ```
 
+### Tunnelled TCP connections
+
 `Socks` uses a [Promise](https://github.com/reactphp/promise)-based interface which makes working with asynchronous functions a breeze. Let's open up a TCP [Stream](https://github.com/reactphp/stream) connection and write some data:
 ```PHP
-$client->getConnection('www.google.com',80)->then(function (Stream $stream) {
+$client->getConnection('www.google.com',80)->then(function (React\Stream\Stream $stream) {
     echo 'connected to www.google.com:80';
     $stream->write("GET / HTTP/1.0\r\n\r\n");
     // ...
 });
 ```
+
+### HTTP requests
 
 Or if all you want to do is HTTP requests, `Socks` provides an even simpler [HTTP client](https://github.com/reactphp/http-client) interface:
 ```PHP
@@ -55,18 +59,22 @@ $request->end();
 ```
 Yes, this works for both plain HTTP and SSL encrypted HTTPS requests.
 
+### SSL/TLS encrypted
+
 If you want to connect to arbitrary SSL/TLS servers, there sure too is an easy to use API available:
 ```PHP
 $ssl = $client->createSecureConnectionManager();
 
 // now create an SSL encrypted connection (notice the $ssl instead of $client)
-$ssl->getConnection('www.google.com',443)->then(function (Stream $stream) {
+$ssl->getConnection('www.google.com',443)->then(function (React\Stream\Stream $stream) {
     // proceed with just the plain text data and everything is encrypted/decrypted automatically
     echo 'connected to SSL encrypted www.google.com';
     $stream->write("GET / HTTP/1.0\r\n\r\n");
     // ...
 });
 ```
+
+## Usage
 
 ### Using SSH as a SOCKS server
 
