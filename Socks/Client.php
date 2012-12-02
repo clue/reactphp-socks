@@ -66,7 +66,7 @@ class Client implements ConnectionManagerInterface
     public function setProtocolVersion($version)
     {
         $version = (string)$version;
-        if (!in_array($version, array('4','4a','5'), true)) {
+        if (!in_array($version, array('4', '4a', '5'), true)) {
             throw new InvalidArgumentException('Invalid protocol version given');
         }
         $this->protocolVersion = $version;
@@ -178,7 +178,7 @@ class Client implements ConnectionManagerInterface
             }
         );
 
-        $stream->on('end',function (Stream $stream) use ($resolver) {
+        $stream->on('end', function (Stream $stream) use ($resolver) {
             $resolver->reject(new Exception('Premature end while establishing socks session'));
         });
 
@@ -187,11 +187,17 @@ class Client implements ConnectionManagerInterface
 
     protected function handleSocks4($stream, $host, $port)
     {
-        $ip = ip2long($host);                                                   // do not resolve hostname. only try to convert to IP
-        $data = pack('C2nNC', 0x04, 0x01, $port, $ip === false ? 1 : $ip, 0x00); // send IP or (0.0.0.1) if invalid
-        if ($ip === false) {                                                   // host is not a valid IP => send along hostname
-            $data .= $host.pack('C',0x00);
+        // do not resolve hostname. only try to convert to IP
+        $ip = ip2long($host);
+
+        // send IP or (0.0.0.1) if invalid
+        $data = pack('C2nNC', 0x04, 0x01, $port, $ip === false ? 1 : $ip, 0x00);
+
+        if ($ip === false) {
+            // host is not a valid IP => send along hostname (SOCKS4a)
+            $data .= $host . pack('C', 0x00);
         }
+
         $stream->write($data);
 
         return $this->readBinary($stream, array(
@@ -213,7 +219,7 @@ class Client implements ConnectionManagerInterface
         if ($auth === null) {
             // one method, no authentication
             $data .= pack('C2', 0x01, 0x00);
-        }else{
+        } else {
             // two methods, username/password and no authentication
             $data .= pack('C3', 0x02, 0x02, 0x00);
         }
@@ -228,11 +234,11 @@ class Client implements ConnectionManagerInterface
                 throw new Exception('Version/Protocol mismatch');
             }
 
-            // username/password authentication requested and provided
             if ($data['method'] === 0x02 && $auth !== null) {
+                // username/password authentication requested and provided
                 $stream->write($this->auth);
 
-                return $that->readBinary($stream,array(
+                return $that->readBinary($stream, array(
                     'version' => 'C',
                     'status'  => 'C'
                 ))->then(function ($data) {
@@ -240,19 +246,23 @@ class Client implements ConnectionManagerInterface
                         throw new Exception('Username/Password authentication failed');
                     }
                 });
-            } else if($data['method'] !== 0x00) {                              // any other method than "no authentication"
+            } else if ($data['method'] !== 0x00) {
+                // any other method than "no authentication"
                 throw new Exception('Unacceptable authentication method requested');
             }
         })->then(function () use ($stream, $that, $host, $port) {
-            $ip = @inet_pton($host);                                            // do not resolve hostname. only try to convert to (binary/packed) IP
+            // do not resolve hostname. only try to convert to (binary/packed) IP
+            $ip = @inet_pton($host);
 
-            $data = pack('C3',0x05,0x01,0x00);
-            if($ip === false){                                                     // not an IP, send as hostname
-                $data .= pack('C2',0x03,strlen($host)).$host;
-            }else{                                                                 // send as IPv4 / IPv6
-                $data .= pack('C',(strpos($host,':') === false) ? 0x01 : 0x04).$ip;
+            $data = pack('C3', 0x05, 0x01, 0x00);
+            if ($ip === false) {
+                // not an IP, send as hostname
+                $data .= pack('C2', 0x03, strlen($host)) . $host;
+            } else {
+                // send as IPv4 / IPv6
+                $data .= pack('C', (strpos($host, ':') === false) ? 0x01 : 0x04) . $ip;
             }
-            $data .= pack('n',$port);
+            $data .= pack('n', $port);
 
             $stream->write($data);
 
@@ -263,24 +273,24 @@ class Client implements ConnectionManagerInterface
                 'type'    => 'C'
             ));
         })->then(function ($data) use ($stream, $that) {
-            if($data['version'] !== 0x05 || $data['status'] !== 0x00 || $data['null'] !== 0x00){
+            if ($data['version'] !== 0x05 || $data['status'] !== 0x00 || $data['null'] !== 0x00) {
                 throw new Exception('Invalid SOCKS response');
             }
-            if($data['type'] === 0x01){                                             // ipv4 address
-                // $this->streamRead($stream,6);                                       // skip IP and port
+            if ($data['type'] === 0x01) {
+                // IPv4 address => skip IP and port
                 return $that->readLength($stream, 6);
-            }else if($data['type'] === 0x03){                                      // domain name
-                // read domain name length
+            } else if ($data['type'] === 0x03) {
+                // domain name => read domain name length
                 return $that->readBinary($stream, array(
                     'length' => 'C'
                 ))->then(function ($data) use ($stream, $that) {
                     // skip domain name and port
                     return $that->readLength($stream, $data['length'] + 2);
                 });
-            }else if($data['type'] === 0x04){                                      // IPv6 address
-                // $this->streamRead($stream,18);                                      // skip IP and port
+            } else if ($data['type'] === 0x04) {
+                // IPv6 address => skip IP and port
                 return $that->readLength($stream, 18);
-            }else{
+            } else {
                 throw new Exception('Invalid SOCKS reponse: Invalid address type');
             }
         });
