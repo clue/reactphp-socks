@@ -250,8 +250,6 @@ class Client implements ConnectionManagerInterface
 
     public function readBinary(Stream $stream, $structure)
     {
-        $deferred = new Deferred();
-
         $length = 0;
         $unpack = '';
         foreach ($structure as $name=>$format) {
@@ -267,16 +265,13 @@ class Client implements ConnectionManagerInterface
             } else if ($format === 'N') {
                 $length += 4;
             } else {
-                throw new Exception('Invalid format given');
+                throw new InvalidArgumentException('Invalid format given');
             }
         }
 
-        $this->readLength($stream, $length)->then(function ($response) use ($unpack, $deferred) {
-            $data = unpack($unpack, $response);
-            $deferred->resolve($data);
+        return $this->readLength($stream, $length)->then(function ($response) use ($unpack) {
+            return unpack($unpack, $response);
         });
-
-        return $deferred->promise();
     }
 
     public function readLength(Stream $stream, $bytes)
