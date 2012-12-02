@@ -41,6 +41,8 @@ class Client implements ConnectionManagerInterface
 
     private $protocolVersion = '4a';
 
+    protected $auth = null;
+
     public function __construct(LoopInterface $loop, ConnectionManagerInterface $connectionManager, Resolver $resolver, $socksHost, $socksPort)
     {
         $this->loop = $loop;
@@ -70,6 +72,18 @@ class Client implements ConnectionManagerInterface
         $this->protocolVersion = $version;
     }
 
+    /**
+     * set login data for username/password authentication method (RFC1929)
+     *
+     * @param string $username
+     * @param string $password
+     * @link http://tools.ietf.org/html/rfc1929
+     */
+    public function setAuth($username, $password)
+    {
+        $this->auth = pack('C2', 0x01, strlen($username)) . $username . pack('C', strlen($password)) . $password;
+    }
+
     public function createHttpClient()
     {
         return new HttpClient($this->loop, $this, new SecureConnectionManager($this, $this->loop));
@@ -85,7 +99,10 @@ class Client implements ConnectionManagerInterface
             // TODO: stop initiating connection and DNS query
         });
 
+        // create local references as these settings may change later due to its async nature
         $protocolVersion = $this->protocolVersion;
+        $auth = $this->auth;
+
         $loop = $this->loop;
         $that = $this;
         When::all(
@@ -103,11 +120,11 @@ class Client implements ConnectionManagerInterface
                     }
                 )
             ),
-            function ($fulfilled) use ($deferred, $port, $timestampTimeout, $that, $loop, $timerTimeout, $protocolVersion) {
+            function ($fulfilled) use ($deferred, $port, $timestampTimeout, $that, $loop, $timerTimeout, $protocolVersion, $auth) {
                 $loop->cancelTimer($timerTimeout);
 
                 $timeout = max($timestampTimeout - microtime(true), 0.1);
-                $deferred->resolve($that->handleConnectedSocks($fulfilled[0], $fulfilled[1], $port, $timeout, $protocolVersion));
+                $deferred->resolve($that->handleConnectedSocks($fulfilled[0], $fulfilled[1], $port, $timeout, $protocolVersion, $auth));
             },
             function ($error) use ($deferred, $loop, $timerTimeout) {
                 $loop->cancelTimer($timerTimeout);
@@ -127,7 +144,7 @@ class Client implements ConnectionManagerInterface
         return $this->resolver->resolve($host);
     }
 
-    public function handleConnectedSocks(Stream $stream, $host, $port, $timeout, $protocolVersion)
+    public function handleConnectedSocks(Stream $stream, $host, $port, $timeout, $protocolVersion, $auth=null)
     {
         $deferred = new Deferred();
         $resolver = $deferred->resolver();
@@ -136,8 +153,8 @@ class Client implements ConnectionManagerInterface
             $resolver->reject(new Exception('Timeout while establishing socks session'));
         });
 
-        if ($protocolVersion === '5') {
-            $promise = $this->handleSocks5($stream, $host, $port);
+        if ($protocolVersion === '5' || $auth !== null) {
+            $promise = $this->handleSocks5($stream, $host, $port, $auth);
         } else {
             $promise = $this->handleSocks4($stream, $host, $port);
         }
@@ -189,20 +206,41 @@ class Client implements ConnectionManagerInterface
         });
     }
 
-    protected function handleSocks5(Stream $stream, $host, $port)
+    protected function handleSocks5(Stream $stream, $host, $port, $auth=null)
     {
-        // protocol version 5, one method, no authentication
-        $data = pack('C3',0x05,0x01,0x00);
+        // protocol version 5
+        $data = pack('C', 0x05);
+        if ($auth === null) {
+            // one method, no authentication
+            $data .= pack('C2', 0x01, 0x00);
+        }else{
+            // two methods, username/password and no authentication
+            $data .= pack('C3', 0x02, 0x02, 0x00);
+        }
         $stream->write($data);
 
         $that = $this;
         return $this->readBinary($stream, array(
                 'version' => 'C',
                 'method'  => 'C'
-        ))->then(function ($data) {
+        ))->then(function ($data) use ($auth, $stream) {
             if ($data['version'] !== 0x05) {
                 throw new Exception('Version/Protocol mismatch');
-            } else if ($data['method'] !== 0x00) {                            // any other method than "no authentication"
+            }
+
+            // username/password authentication requested and provided
+            if ($data['method'] === 0x02 && $auth !== null) {
+                $stream->write($this->auth);
+
+                return $that->readBinary($stream,array(
+                    'version' => 'C',
+                    'status'  => 'C'
+                ))->then(function ($data) {
+                    if ($data['version'] !== 0x01 || $data['status'] !== 0x00) {
+                        throw new Exception('Username/Password authentication failed');
+                    }
+                });
+            } else if($data['method'] !== 0x00) {                              // any other method than "no authentication"
                 throw new Exception('Unacceptable authentication method requested');
             }
         })->then(function () use ($stream, $that, $host, $port) {
