@@ -79,7 +79,7 @@ class Client implements ConnectionManagerInterface
     {
         $deferred = new Deferred();
 
-        $timeout = microtime(true) + $this->timeout;
+        $timestampTimeout = microtime(true) + $this->timeout;
         $timerTimeout = $this->loop->addTimer($this->timeout, function () use ($deferred) {
             $deferred->reject(new Exception('Timeout while connecting to socks server'));
             // TODO: stop initiating connection and DNS query
@@ -102,8 +102,10 @@ class Client implements ConnectionManagerInterface
                     }
                 )
             ),
-            function ($fulfilled) use ($deferred, $port, $timeout, $that, $loop, $timerTimeout) {
+            function ($fulfilled) use ($deferred, $port, $timestampTimeout, $that, $loop, $timerTimeout) {
                 $loop->cancelTimer($timerTimeout);
+
+                $timeout = max($timestampTimeout - microtime(true), 0.1);
                 $deferred->resolve($that->handleConnectedSocks($fulfilled[0], $fulfilled[1], $port, $timeout));
             },
             function ($error) use ($deferred, $loop, $timerTimeout) {
@@ -129,7 +131,7 @@ class Client implements ConnectionManagerInterface
         $deferred = new Deferred();
         $resolver = $deferred->resolver();
 
-        $timerTimeout = $this->loop->addTimer(max($timeout - microtime(true), 0.1), function () use ($resolver) {
+        $timerTimeout = $this->loop->addTimer($timeout, function () use ($resolver) {
             $resolver->reject(new Exception('Timeout while establishing socks session'));
         });
 
