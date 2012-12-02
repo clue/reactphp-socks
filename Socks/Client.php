@@ -86,7 +86,12 @@ class Client implements ConnectionManagerInterface
 
     public function createHttpClient()
     {
-        return new HttpClient($this->loop, $this, new SecureConnectionManager($this, $this->loop));
+        return new HttpClient($this->loop, $this, $this->createSecureConnectionManager());
+    }
+
+    public function createSecureConnectionManager()
+    {
+        return new SecureConnectionManager($this, $this->loop);
     }
 
     public function getConnection($host, $port)
