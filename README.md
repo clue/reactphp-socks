@@ -1,8 +1,6 @@
 # SOCKS client library
 
-Async SOCKS client library to connect to SOCKS 4, SOCKS 4a and SOCKS 5 servers 
-
-TODO: only SOCKS 4/4a at the moment
+Async SOCKS client library to connect to SOCKS4, SOCKS4a and SOCKS5 servers
 
 ## Description
 
@@ -44,7 +42,6 @@ TODO: not actually published on packagist yet.
 ## TODO
 
 * Publish on packagist
-* Support SOCKS 5 (currently only SOCKS 4 and 4a)
 * Automatically pick *best* SOCKS version available
 
 ## License
