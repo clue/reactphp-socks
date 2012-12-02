@@ -2,7 +2,7 @@
 
 Async SOCKS client library to connect to SOCKS 4, SOCKS 4a and SOCKS 5 servers 
 
-TODO: only SOCKS 4a at the moment
+TODO: only SOCKS 4/4a at the moment
 
 ## Description
 
@@ -44,8 +44,7 @@ TODO: not actually published on packagist yet.
 ## TODO
 
 * Publish on packagist
-* Support SOCKS 4 and SOCKS 5 (currently hardcoded to use SOCKS 4a)
-* Support local and remote DNS resolving
+* Support SOCKS 5 (currently only SOCKS 4 and 4a)
 * Automatically pick *best* SOCKS version available
 
 ## License
