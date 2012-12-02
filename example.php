@@ -18,6 +18,7 @@ $dns = $dnsResolverFactory->createCached('8.8.8.8', $loop);
 $factory = new Socks\Factory($loop, $dns);
 
 $client = $factory->createClient('127.0.0.1', 9050);
+$client->setTimeout(3.0);
 
 function ex(Exception $exception=null)
 {
