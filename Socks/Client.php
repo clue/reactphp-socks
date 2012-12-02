@@ -2,8 +2,8 @@
 
 namespace Socks;
 
+use React\Promise\When;
 use React\Promise\Deferred;
-
 use React\HttpClient\Client as HttpClient;
 use React\Dns\Resolver\Resolver;
 use React\Stream\Stream;
@@ -36,18 +36,26 @@ class Client implements ConnectionManagerInterface
      */
     protected $loop;
 
+    private $resolveLocal = true;
+
     public function __construct(LoopInterface $loop, ConnectionManagerInterface $connectionManager, Resolver $resolver, $socksHost, $socksPort)
     {
         $this->loop = $loop;
         $this->connectionManager = $connectionManager;
         $this->socksHost = $socksHost;
         $this->socksPort = $socksPort;
+        $this->resolver = $resolver;
         $this->timeout = ini_get("default_socket_timeout");
     }
 
     public function setTimeout($timeout)
     {
         $this->timeout = $timeout;
+    }
+
+    public function setResolveLocal($resolveLocal)
+    {
+        $this->resolveLocal = $resolveLocal;
     }
 
     public function createHttpClient()
@@ -62,15 +70,29 @@ class Client implements ConnectionManagerInterface
         $timeout = microtime(true) + $this->timeout;
         $timerTimeout = $this->loop->addTimer($this->timeout, function () use ($deferred) {
             $deferred->reject(new Exception('Timeout while connecting to socks server'));
-            // TODO: stop initiating connection
+            // TODO: stop initiating connection and DNS query
         });
 
         $loop = $this->loop;
         $that = $this;
-        $this->connectionManager->getConnection($this->socksHost, $this->socksPort)->then(
-            function ($stream) use ($deferred, $host, $port, $timeout, $timerTimeout, $loop, $that) {
+        When::all(
+            array(
+                $this->connectionManager->getConnection($this->socksHost, $this->socksPort)->then(
+                    null,
+                    function ($error) {
+                        return new Exception('Unable to connect to socks server', 0, $error);
+                    }
+                ),
+                $this->resolve($host)->then(
+                    null,
+                    function ($error) {
+                        return new Exception('Unable to resolve remote hostname', 0, $error);
+                    }
+                )
+            ),
+            function ($fulfilled) use ($deferred, $port, $timeout, $that, $loop, $timerTimeout) {
                 $loop->cancelTimer($timerTimeout);
-                return $deferred->resolve($that->handleConnectedSocks($stream, $host, $port, $timeout));
+                $deferred->resolve($that->handleConnectedSocks($fulfilled[0], $fulfilled[1], $port, $timeout));
             },
             function ($error) use ($deferred, $loop, $timerTimeout) {
                 $loop->cancelTimer($timerTimeout);
@@ -78,6 +100,15 @@ class Client implements ConnectionManagerInterface
             }
         );
         return $deferred->promise();
+    }
+
+    private function resolve($host)
+    {
+        if (!$this->resolveLocal || false !== filter_var($host, FILTER_VALIDATE_IP)) {
+            return When::resolve($host);
+        }
+
+        return $this->resolver->resolve($host);
     }
 
     public function handleConnectedSocks(Stream $stream, $host, $port, $timeout)
