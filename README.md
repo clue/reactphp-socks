@@ -24,6 +24,9 @@ $dns = $dnsResolverFactory->createCached('8.8.8.8', $loop);
 $factory = new Socks\Factory($loop, $dns);
 $client = $factory->createClient('127.0.0.1', 9050);
 
+// now work with your $client, see below
+
+$loop->start();
 ```
 
 `Socks` uses a [Promise](https://github.com/reactphp/promise)-based interface which makes working with asynchronous functions a breeze. Let's open up a TCP [Stream](https://github.com/reactphp/stream) connection and write some data:
@@ -49,6 +52,20 @@ $request->on('response', function (React\HttpClient\Response $response) {
     });
 });
 $request->end();
+```
+Yes, this works for both plain HTTP and SSL encrypted HTTPS requests.
+
+If you want to connect to arbitrary SSL/TLS servers, there sure too is an easy to use API available:
+```PHP
+$ssl = $client->createSecureConnectionManager();
+
+// now create an SSL encrypted connection (notice the $ssl instead of $client)
+$ssl->getConnection('www.google.com',443)->then(function (Stream $stream) {
+    // proceed with just the plain text data and everything is encrypted/decrypted automatically
+    echo 'connected to SSL encrypted www.google.com';
+    $stream->write("GET / HTTP/1.0\r\n\r\n");
+    // ...
+});
 ```
 
 ### Using SSH as a SOCKS server
