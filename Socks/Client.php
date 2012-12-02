@@ -10,6 +10,7 @@ use React\Stream\Stream;
 use React\EventLoop\LoopInterface;
 use React\HttpClient\ConnectionManagerInterface;
 use \Exception;
+use \InvalidArgumentException;
 
 class Client implements ConnectionManagerInterface
 {
@@ -38,6 +39,8 @@ class Client implements ConnectionManagerInterface
 
     private $resolveLocal = true;
 
+    private $protocolVersion = '4a';
+
     public function __construct(LoopInterface $loop, ConnectionManagerInterface $connectionManager, Resolver $resolver, $socksHost, $socksPort)
     {
         $this->loop = $loop;
@@ -56,6 +59,15 @@ class Client implements ConnectionManagerInterface
     public function setResolveLocal($resolveLocal)
     {
         $this->resolveLocal = $resolveLocal;
+    }
+
+    public function setProtocolVersion($version)
+    {
+        $version = (string)$version;
+        if (!in_array($version, array('4','4a'), true)) {
+            throw new InvalidArgumentException('Invalid protocol version given');
+        }
+        $this->protocolVersion = $version;
     }
 
     public function createHttpClient()
@@ -104,7 +116,7 @@ class Client implements ConnectionManagerInterface
 
     private function resolve($host)
     {
-        if (!$this->resolveLocal || false !== filter_var($host, FILTER_VALIDATE_IP)) {
+        if ($this->protocolVersion !== '4' && (!$this->resolveLocal || false !== filter_var($host, FILTER_VALIDATE_IP))) {
             return When::resolve($host);
         }
 
