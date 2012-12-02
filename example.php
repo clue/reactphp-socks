@@ -19,6 +19,7 @@ $factory = new Socks\Factory($loop, $dns);
 
 $client = $factory->createClient('127.0.0.1', 9050);
 $client->setTimeout(3.0);
+$client->setAuth('test','test');
 
 function ex(Exception $exception=null)
 {
@@ -65,13 +66,21 @@ assertFail($client->getConnection('www.google.commm', 80), 'www.google.commm:80'
 
 assertFail($client->getConnection('www.google.com', 8080), 'www.google.com:8080');
 
-$ssl = new SecureConnectionManager($client, $loop);
+$ssl = $client->createSecureConnectionManager();
 
 assertOkay($ssl->getConnection('www.google.com', 443), 'ssl://www.google.com:443');
 
 assertFail($ssl->getConnection('www.google.com', 80), 'ssl://www.google.com:80');
 
 assertFail($ssl->getConnection('www.google.com', 8080), 'ssl://www.google.com:8080');
+
+// $ssl->getConnection('127.0.0.1','443')->then(function (React\Stream $stream) {
+//     echo 'connected';
+//     $stream->write("GET / HTTP/1.0\r\n\r\n");
+//     $stream->on('data', function ($data) {
+//         echo $data;
+//     });
+// });
 
 // $factory = new React\HttpClient\Factory();
 // $httpclient = $factory->create($loop, $dns);
