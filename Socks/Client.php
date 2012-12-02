@@ -116,7 +116,8 @@ class Client implements ConnectionManagerInterface
 
     private function resolve($host)
     {
-        if ($this->protocolVersion !== '4' && (!$this->resolveLocal || false !== filter_var($host, FILTER_VALIDATE_IP))) {
+        // return if it's already an IP or we want to resolve remotely (socks 4 only supports resolving locally)
+        if (false !== filter_var($host, FILTER_VALIDATE_IP) || ($this->protocolVersion !== '4' && !$this->resolveLocal)) {
             return When::resolve($host);
         }
 
