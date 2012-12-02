@@ -64,7 +64,7 @@ class Client implements ConnectionManagerInterface
     public function setProtocolVersion($version)
     {
         $version = (string)$version;
-        if (!in_array($version, array('4','4a'), true)) {
+        if (!in_array($version, array('4','4a','5'), true)) {
             throw new InvalidArgumentException('Invalid protocol version given');
         }
         $this->protocolVersion = $version;
@@ -85,6 +85,7 @@ class Client implements ConnectionManagerInterface
             // TODO: stop initiating connection and DNS query
         });
 
+        $protocolVersion = $this->protocolVersion;
         $loop = $this->loop;
         $that = $this;
         When::all(
@@ -102,11 +103,11 @@ class Client implements ConnectionManagerInterface
                     }
                 )
             ),
-            function ($fulfilled) use ($deferred, $port, $timestampTimeout, $that, $loop, $timerTimeout) {
+            function ($fulfilled) use ($deferred, $port, $timestampTimeout, $that, $loop, $timerTimeout, $protocolVersion) {
                 $loop->cancelTimer($timerTimeout);
 
                 $timeout = max($timestampTimeout - microtime(true), 0.1);
-                $deferred->resolve($that->handleConnectedSocks($fulfilled[0], $fulfilled[1], $port, $timeout));
+                $deferred->resolve($that->handleConnectedSocks($fulfilled[0], $fulfilled[1], $port, $timeout, $protocolVersion));
             },
             function ($error) use ($deferred, $loop, $timerTimeout) {
                 $loop->cancelTimer($timerTimeout);
@@ -126,7 +127,7 @@ class Client implements ConnectionManagerInterface
         return $this->resolver->resolve($host);
     }
 
-    public function handleConnectedSocks(Stream $stream, $host, $port, $timeout)
+    public function handleConnectedSocks(Stream $stream, $host, $port, $timeout, $protocolVersion)
     {
         $deferred = new Deferred();
         $resolver = $deferred->resolver();
@@ -135,12 +136,16 @@ class Client implements ConnectionManagerInterface
             $resolver->reject(new Exception('Timeout while establishing socks session'));
         });
 
-        $ip = ip2long($host);                                                   // do not resolve hostname. only try to convert to IP
-        $data = pack('C2nNC', 0x04, 0x01, $port, $ip === false ? 1 : $ip, 0x00); // send IP or (0.0.0.1) if invalid
-        if ($ip === false) {                                                   // host is not a valid IP => send along hostname
-            $data .= $host.pack('C',0x00);
+        if ($protocolVersion === '5') {
+            $promise = $this->handleSocks5($stream, $host, $port);
+        } else {
+            $promise = $this->handleSocks4($stream, $host, $port);
         }
-        $stream->write($data);
+        $promise->then(function () use ($resolver, $stream) {
+            $resolver->resolve($stream);
+        }, function($error) use ($resolver) {
+            $resolver->reject(new Exception('Unable to communicate...', 0, $error));
+        });
 
         $loop = $this->loop;
         $deferred->then(
@@ -160,23 +165,87 @@ class Client implements ConnectionManagerInterface
             $resolver->reject(new Exception('Premature end while establishing socks session'));
         });
 
-        $this->readBinary($stream, array(
+        return $deferred->promise();
+    }
+
+    protected function handleSocks4($stream, $host, $port)
+    {
+        $ip = ip2long($host);                                                   // do not resolve hostname. only try to convert to IP
+        $data = pack('C2nNC', 0x04, 0x01, $port, $ip === false ? 1 : $ip, 0x00); // send IP or (0.0.0.1) if invalid
+        if ($ip === false) {                                                   // host is not a valid IP => send along hostname
+            $data .= $host.pack('C',0x00);
+        }
+        $stream->write($data);
+
+        return $this->readBinary($stream, array(
             'null'   => 'C',
             'status' => 'C',
             'port'   => 'n',
             'ip'     => 'N'
-        ))->then(function ($data) use ($stream, $resolver) {
+        ))->then(function ($data) {
             if ($data['null'] !== 0x00 || $data['status'] !== 0x5a) {
-                $resolver->reject(new Exception('Invalid SOCKS response'));
+                throw new Exception('Invalid SOCKS response');
             }
-
-            $resolver->resolve($stream);
         });
-
-        return $deferred->promise();
     }
 
-    protected function readBinary(Stream $stream, $structure)
+    protected function handleSocks5(Stream $stream, $host, $port)
+    {
+        // protocol version 5, one method, no authentication
+        $data = pack('C3',0x05,0x01,0x00);
+        $stream->write($data);
+
+        $that = $this;
+        return $this->readBinary($stream, array(
+                'version' => 'C',
+                'method'  => 'C'
+        ))->then(function ($data) {
+            if ($data['version'] !== 0x05) {
+                throw new Exception('Version/Protocol mismatch');
+            } else if ($data['method'] !== 0x00) {                            // any other method than "no authentication"
+                throw new Exception('Unacceptable authentication method requested');
+            }
+        })->then(function () use ($stream, $that, $host, $port) {
+            $ip = @inet_pton($host);                                            // do not resolve hostname. only try to convert to (binary/packed) IP
+
+            $data = pack('C3',0x05,0x01,0x00);
+            if($ip === false){                                                     // not an IP, send as hostname
+                $data .= pack('C2',0x03,strlen($host)).$host;
+            }else{                                                                 // send as IPv4 / IPv6
+                $data .= pack('C',(strpos($host,':') === false) ? 0x01 : 0x04).$ip;
+            }
+            $data .= pack('n',$port);
+
+            $stream->write($data);
+
+            return $that->readBinary($stream, array(
+                'version' => 'C',
+                'status'  => 'C',
+                'null'    => 'C',
+                'type'    => 'C'
+            ));
+        })->then(function ($data) use ($stream, $that) {
+            if($data['version'] !== 0x05 || $data['status'] !== 0x00 || $data['null'] !== 0x00){
+                throw new Exception('Invalid SOCKS response');
+            }
+            if($data['type'] === 0x01){                                             // ipv4 address
+                // $this->streamRead($stream,6);                                       // skip IP and port
+                return $that->readLength($stream, 6);
+//             }else if($data['type'] === 0x03){                                      // domain name
+// TODO:
+//                 $response = $this->streamRead($stream,1);                           // read domain name length
+//                 $data = unpack('Clength',$response);
+//                 $that->streamRead($stream,$data['length']+2);                       // skip domain name and port
+            }else if($data['type'] === 0x04){                                      // IPv6 address
+                // $this->streamRead($stream,18);                                      // skip IP and port
+                return $that->readLength($stream, 18);
+            }else{
+                throw new Exception('Invalid SOCKS reponse: Invalid address type');
+            }
+        });
+    }
+
+    public function readBinary(Stream $stream, $structure)
     {
         $deferred = new Deferred();
 
@@ -207,7 +276,7 @@ class Client implements ConnectionManagerInterface
         return $deferred->promise();
     }
 
-    protected function readLength(Stream $stream, $bytes)
+    public function readLength(Stream $stream, $bytes)
     {
         $deferred = new Deferred();
         $oldsize = $stream->bufferSize;
