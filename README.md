@@ -8,11 +8,47 @@ TODO: Full description, simple introduction, what is SOCKS, how does it work, wh
 
 ## Example
 
-TODO:
+Initialize connection to remote SOCKS server:
+
 ```PHP
+<?php
+include_once __DIR__.'/vendor/autoload.php';
 
-// see example.php
+$loop = $loop = React\EventLoop\Factory::create();
 
+// use google's dns servers
+$dnsResolverFactory = new React\Dns\Resolver\Factory();
+$dns = $dnsResolverFactory->createCached('8.8.8.8', $loop);
+
+// create SOCKS client which communicates with SOCKS server 127.0.0.1:9050
+$factory = new Socks\Factory($loop, $dns);
+$client = $factory->createClient('127.0.0.1', 9050);
+
+```
+
+`Socks` uses a [Promise](https://github.com/reactphp/promise)-based interface which makes working with asynchronous functions a breeze. Let's open up a TCP [Stream](https://github.com/reactphp/stream) connection and write some data:
+```PHP
+$client->getConnection('www.google.com',80)->then(function (Stream $stream) {
+    echo 'connected to www.google.com:80';
+    $stream->write("GET / HTTP/1.0\r\n\r\n");
+    // ...
+});
+```
+
+Or if all you want to do is HTTP requests, `Socks` provides an even simpler [HTTP client](https://github.com/reactphp/http-client) interface:
+```PHP
+$httpclient = $client->createHttpClient();
+
+$request = $httpclient->request('GET', 'https://www.google.com/', array('user-agent'=>'Custom/1.0'));
+$request->on('response', function (React\HttpClient\Response $response) {
+    var_dump('Headers received:', $response->getHeaders());
+    
+    // dump whole response body
+    $response->on('data', function ($data) {
+        echo $data;
+    });
+});
+$request->end();
 ```
 
 ### Using SSH as a SOCKS server
