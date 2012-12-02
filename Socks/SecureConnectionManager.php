@@ -58,7 +58,7 @@ class SecureConnectionManager implements ConnectionManagerInterface
     {
         $error = 'unknown error';
         set_error_handler(function ($errno, $errstr) use (&$error) {
-            $error = $errstr;
+            $error = str_replace(array("\r","\n"),' ',$errstr);
         });
 
         $result = stream_socket_enable_crypto($socket, true, STREAM_CRYPTO_METHOD_TLS_CLIENT);
