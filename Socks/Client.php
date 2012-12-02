@@ -11,6 +11,7 @@ use React\EventLoop\LoopInterface;
 use React\HttpClient\ConnectionManagerInterface;
 use \Exception;
 use \InvalidArgumentException;
+use \UnexpectedValueException;
 
 class Client implements ConnectionManagerInterface
 {
@@ -39,7 +40,7 @@ class Client implements ConnectionManagerInterface
 
     private $resolveLocal = true;
 
-    private $protocolVersion = '4a';
+    private $protocolVersion = null;
 
     protected $auth = null;
 
@@ -60,6 +61,9 @@ class Client implements ConnectionManagerInterface
 
     public function setResolveLocal($resolveLocal)
     {
+        if ($this->protocolVersion === '4' && !$resolveLocal) {
+            throw new UnexpectedValueException('SOCKS4 requires resolving locally. Consider using another protocol version or resolving locally');
+        }
         $this->resolveLocal = $resolveLocal;
     }
 
@@ -68,6 +72,12 @@ class Client implements ConnectionManagerInterface
         $version = (string)$version;
         if (!in_array($version, array('4', '4a', '5'), true)) {
             throw new InvalidArgumentException('Invalid protocol version given');
+        }
+        if ($version !== '5' && $this->auth){
+            throw new UnexpectedValueException('Unable to change protocol version to anything but SOCKS5 while authentication is used. Consider removing authentication info or sticking to SOCKS5');
+        }
+        if ($version === '4' && !$this->resolveLocal) {
+            throw new UnexpectedValueException('Unable to change to SOCKS4 while resolving locally is turned off. Consider using another protocol version or resolving locally');
         }
         $this->protocolVersion = $version;
     }
@@ -81,6 +91,9 @@ class Client implements ConnectionManagerInterface
      */
     public function setAuth($username, $password)
     {
+        if ($this->protocolVersion !== null && $this->protocolVersion !== '5') {
+            throw new UnexpectedValueException('Authentication requires SOCKS5. Consider using protocol version 5 or waive authentication');
+        }
         $this->auth = pack('C2', 0x01, strlen($username)) . $username . pack('C', strlen($password)) . $password;
     }
 
@@ -105,8 +118,14 @@ class Client implements ConnectionManagerInterface
         });
 
         // create local references as these settings may change later due to its async nature
-        $protocolVersion = $this->protocolVersion;
         $auth = $this->auth;
+        $protocolVersion = $this->protocolVersion;
+
+        // protocol version not explicitly set?
+        if ($protocolVersion === null) {
+            // authentication requires SOCKS5, otherwise use SOCKS4a
+            $protocolVersion = ($auth === null) ? '4a' : '5';
+        }
 
         $loop = $this->loop;
         $that = $this;
