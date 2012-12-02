@@ -231,11 +231,14 @@ class Client implements ConnectionManagerInterface
             if($data['type'] === 0x01){                                             // ipv4 address
                 // $this->streamRead($stream,6);                                       // skip IP and port
                 return $that->readLength($stream, 6);
-//             }else if($data['type'] === 0x03){                                      // domain name
-// TODO:
-//                 $response = $this->streamRead($stream,1);                           // read domain name length
-//                 $data = unpack('Clength',$response);
-//                 $that->streamRead($stream,$data['length']+2);                       // skip domain name and port
+            }else if($data['type'] === 0x03){                                      // domain name
+                // read domain name length
+                return $that->readBinary($stream, array(
+                    'length' => 'C'
+                ))->then(function ($data) use ($stream, $that) {
+                    // skip domain name and port
+                    return $that->readLength($stream, $data['length'] + 2);
+                });
             }else if($data['type'] === 0x04){                                      // IPv6 address
                 // $this->streamRead($stream,18);                                      // skip IP and port
                 return $that->readLength($stream, 18);
