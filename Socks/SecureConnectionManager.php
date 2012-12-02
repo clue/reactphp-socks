@@ -56,8 +56,14 @@ class SecureConnectionManager implements ConnectionManagerInterface
 
     public function enableCrypto($socket, ResolverInterface $resolver)
     {
-        // TODO: catch any error via custom error handler
+        $error = 'unknown error';
+        set_error_handler(function ($errno, $errstr) use (&$error) {
+            $error = $errstr;
+        });
+
         $result = stream_socket_enable_crypto($socket, true, STREAM_CRYPTO_METHOD_TLS_CLIENT);
+
+        restore_error_handler();
 
         if (true === $result) {
             $this->loop->removeWriteStream($socket);
@@ -68,8 +74,6 @@ class SecureConnectionManager implements ConnectionManagerInterface
             $this->loop->removeWriteStream($socket);
             $this->loop->removeReadStream($socket);
 
-
-            $error = 'unknown error';
             $resolver->reject(new UnexpectedValueException('Unable to initiate SSL/TLS handshake: "'.$error.'"'));
         } else {
             // need more data, will retry
