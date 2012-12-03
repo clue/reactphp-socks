@@ -46,16 +46,16 @@ While SOCKS4 already had (a somewhat limited) support for `SOCKS BIND` requests 
     <td>✓ (as per <a href="http://tools.ietf.org/html/rfc1929">RFC 1929</a>)</td>
   </tr>
   <tr>
-    <th># handshake roundtrips</th>
+    <th>Handshake # roundtrips</th>
     <td>1</td>
     <td>1</td>
     <td>2 (3 with authentication)</td>
   </tr>
   <tr>
-    <th>Handshake traffic</th>
-    <td>17 bytes</td>
-    <td>17 bytes<br />(+ hostname + 1 for remote resolving)</td>
-    <td><em>variable</em>?<br />(+ hostname + authentication + IPv6)</td>
+    <th>Handshake traffic<br />+ remote DNS</th>
+    <td>17 bytes<br />✗</td>
+    <td>17 bytes<br />+ hostname + 1</td>
+    <td><em>variable</em> (+ auth + IPv6)<br />+ hostname - 3</td>
   </tr>
   
 </table>
