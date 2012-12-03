@@ -4,7 +4,9 @@ Async SOCKS client library to connect to SOCKS4, SOCKS4a and SOCKS5 servers
 
 ## Description
 
-TODO: Full description, simple introduction, what is SOCKS, how does it work, what does this library actually do.
+The SOCKS protocol family can be used to easily tunnel TCP connections independent of the actual application level protocol, such as HTTP, SMTP, IMAP, Telnet, etc.
+
+While SOCKS4 already had (a somewhat limited) support for `SOCKS BIND` requests and SOCKS5 added generic UDP support (`SOCKS UDPASSOCIATE`), this library focuses on the most commonly used core feature of `SOCKS CONNECT`. In this mode, a SOCKS server acts as a generic proxy allowing higher level application protocols to work through it.
 
 ## Example
 
@@ -107,11 +109,6 @@ The recommended way to install this library is [through composer](http://getcomp
     }
 }
 ```
-
-## TODO
-
-* Publish on packagist
-* Automatically pick *best* SOCKS version available
 
 ## License
 
