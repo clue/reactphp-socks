@@ -7,14 +7,25 @@ use React\Promise\Deferred;
 use React\Stream\Stream;
 use React\EventLoop\LoopInterface;
 use \UnexpectedValueException;
+use \InvalidArgumentException;
 
 class StreamEncryption
 {
     private $loop;
 
+    private $method = STREAM_CRYPTO_METHOD_TLS_CLIENT;
+
     public function __construct(LoopInterface $loop)
     {
         $this->loop = $loop;
+    }
+
+    public function setMethod($method)
+    {
+//         if (!in_array($method, array(), true)) {
+//             throw new InvalidArgumentException('Invalid encryption method given');
+//         }
+        $this->method = $method;
     }
 
     public function enable(Stream $stream)
@@ -54,7 +65,7 @@ class StreamEncryption
             $error = str_replace(array("\r","\n"),' ',$errstr);
         });
 
-        $result = stream_socket_enable_crypto($socket, true, STREAM_CRYPTO_METHOD_TLS_CLIENT);
+        $result = stream_socket_enable_crypto($socket, true, $this->method);
 
         restore_error_handler();
 
