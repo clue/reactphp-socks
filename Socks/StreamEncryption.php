@@ -30,6 +30,16 @@ class StreamEncryption
 
     public function enable(Stream $stream)
     {
+        return $this->toggle($stream, true);
+    }
+
+    public function disable(Stream $stream)
+    {
+        return $this->toggle($stream, false);
+    }
+
+    public function toggle(Stream $stream, $toggle)
+    {
         // pause actual stream instance to continue operation on raw stream socket
         $stream->pause();
 
@@ -41,13 +51,13 @@ class StreamEncryption
         $socket = $stream->stream;
 
         $that = $this;
-        $enableCrypto = function () use ($that, $socket, $deferred) {
-            $that->enableCrypto($socket, $deferred);
+        $toggleCrypto = function () use ($that, $socket, $deferred, $toggle) {
+            $that->toggleCrypto($socket, $deferred, $toggle);
         };
 
-        $this->loop->addWriteStream($socket, $enableCrypto);
-        $this->loop->addReadStream($socket, $enableCrypto);
-        $enableCrypto();
+        $this->loop->addWriteStream($socket, $toggleCrypto);
+        $this->loop->addReadStream($socket, $toggleCrypto);
+        $toggleCrypto();
 
         return $deferred->then(function () use ($stream) {
             $stream->resume();
@@ -58,14 +68,16 @@ class StreamEncryption
         });
     }
 
-    public function enableCrypto($socket, ResolverInterface $resolver)
+
+
+    public function toggleCrypto($socket, ResolverInterface $resolver, $toggle)
     {
         $error = 'unknown error';
         set_error_handler(function ($errno, $errstr) use (&$error) {
             $error = str_replace(array("\r","\n"),' ',$errstr);
         });
 
-        $result = stream_socket_enable_crypto($socket, true, $this->method);
+        $result = stream_socket_enable_crypto($socket, $toggle, $this->method);
 
         restore_error_handler();
 
