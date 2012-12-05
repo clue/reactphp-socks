@@ -26,6 +26,14 @@ class SecureConnectionManager implements ConnectionManagerInterface
 
     public function getConnection($host, $port)
     {
-        return $this->connectionManager->getConnection($host, $port)->then(array($this->streamEncryption,'enable'));
+        $streamEncryption = $this->streamEncryption;
+        return $this->connectionManager->getConnection($host, $port)->then(function (Stream $stream) use ($streamEncryption) {
+            // (unencrypted) connection succeeded => try to enable encryption
+            return $streamEncryption->enable($stream)->then(null, function ($error) use ($stream) {
+                // establishing encryption failed => close invalid connection and return error
+                $stream->close();
+                throw $error;
+            });
+        });
     }
 }
