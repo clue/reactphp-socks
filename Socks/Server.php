@@ -31,8 +31,9 @@ class Server extends SocketServer
 
         $line('connect');
 
-        $this->handshakeSocks4($connection)->then(function() use ($line){
-            $line('yey');
+        $this->handshakeSocks4($connection)->then(function($remote) use ($line, $connection){
+            $line('tunnel successfully estabslished');
+            $connection->emit('ready',array($remote));
         }, function ($error) use ($connection, $line) {
             if ($error instanceof \Exception) {
                 $msg = $error->getMessage();
@@ -58,15 +59,8 @@ class Server extends SocketServer
         $connection->on('target', function ($host, $port) use ( $line) {
             $line('target: ' . $host . ':' . $port);
         });
-        $connection->on('ready', function () use ($line) {
-            $line('ready');
-        });
         $connection->on('close', function () use ($line) {
             $line('disconnect');
-        });
-        $connection->on('error', function ($error) use ($connection){
-            echo 'error: ';
-            $connection->close();
         });
     }
 
@@ -107,7 +101,6 @@ class Server extends SocketServer
                 $stream->pipe($remote);
                 $remote->pipe($stream);
 
-                $stream->emit('ready',array($remote));
                 return $remote;
             }, function($error) use ($stream){
                 $stream->end(pack('C8', 0x00, 0x5b, 0x00, 0x00, 0x00, 0x00, 0x00, 0x00));
