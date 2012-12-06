@@ -49,9 +49,9 @@ class Server extends SocketServer
             }
             $connection->close();
             throw $error;
-        }, function ($progress) use ($line) {
-            //$s = new StreamReader();
-            $line('progress: './*$s->s*/($progress));
+//         }, function ($progress) use ($line) {
+//             //$s = new StreamReader();
+//             $line('progress: './*$s->s*/($progress));
         });
 
         $that = $this;
@@ -64,7 +64,7 @@ class Server extends SocketServer
         });
     }
 
-    private function handleSocks($stream)
+    private function handleSocks(Stream $stream)
     {
         $reader = new StreamReader($stream);
         $that = $this;
@@ -76,7 +76,7 @@ class Server extends SocketServer
         });
     }
 
-    public function handleSocks4($stream)
+    public function handleSocks4(Stream $stream)
     {
         $reader = new StreamReader($stream);
         $connectionManager = $this->connectionManager;
@@ -108,6 +108,10 @@ class Server extends SocketServer
         })->then(function ($target) use ($stream, $connectionManager) {
             $stream->emit('target',$target);
             return $connectionManager->getConnection($target[0], $target[1])->then(function (Stream $remote) use ($stream){
+                if (!$stream->isWritable()) {
+                    $remote->close();
+                    throw new UnexpectedValueException('Remote connection established after client connection closed');
+                }
                 $stream->write(pack('C8', 0x00, 0x5a, 0x00, 0x00, 0x00, 0x00, 0x00, 0x00));
 
                 $stream->pipe($remote);
