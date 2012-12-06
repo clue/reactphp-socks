@@ -129,13 +129,14 @@ class StreamReader
             if ($part === $expect) {
                 $pos += $len;
             } else {
-                $deferred->reject(new UnexpectedValueException('expected "'.$that->s($expect).'", but got "'.$that->s($part).'"'));
+                $deferred->reject(new UnexpectedValueException('Expected "'.$that->escape($expect).'", but got "'.$that->escape($part).'"'));
             }
         });
         return $deferred->promise();
     }
 
-    public function s($bytes){
+    public function escape($bytes)
+    {
         $ret = '';
         for ($i = 0, $l = strlen($bytes); $i < $l; ++$i) {
             if ($i !== 0) {
