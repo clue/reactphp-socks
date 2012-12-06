@@ -90,9 +90,7 @@ class StreamReader
 
     public function readChar()
     {
-        return $this->readChar()->then(function ($byte) {
-            return chr($byte);
-        });
+        return $this->readLength(1);
     }
 
     public function readStringNull()
