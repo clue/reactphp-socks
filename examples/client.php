@@ -8,7 +8,7 @@ use React\HttpClient\Client as HttpClient;
 use React\HttpClient\Response;
 use React\Stream\Stream;
 
-include_once __DIR__.'/vendor/autoload.php';
+include_once __DIR__.'/../vendor/autoload.php';
 
 $loop = $loop = React\EventLoop\Factory::create();
 
@@ -17,7 +17,7 @@ $dns = $dnsResolverFactory->createCached('8.8.8.8', $loop);
 
 $factory = new Socks\Factory($loop, $dns);
 
-$client = $factory->createClient('127.0.0.1', 9050);
+$client = $factory->createClient('127.0.0.1', 9051);
 $client->setTimeout(3.0);
 // $client->setAuth('test','test');
 
