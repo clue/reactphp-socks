@@ -75,45 +75,45 @@ class Server extends SocketServer
         $reader = new StreamReader($stream);
         $connectionManager = $this->connectionManager;
         return $reader->readAssert("\x04\x01")->then(function () use ($reader) {
-        	return $reader->readBinary(array(
-    			'port'   => 'n',
-    			'ipLong' => 'N',
-    			'null'   => 'C'
-        	));
+            return $reader->readBinary(array(
+                'port'   => 'n',
+                'ipLong' => 'N',
+                'null'   => 'C'
+            ));
         })->then(function ($data) use ($reader) {
-        	if ($data['null'] !== 0x00) {
-        		throw new Exception('Not a null byte');
-        	}
-        	if ($data['ipLong'] === 0) {
-        	    throw new Exception('Invalid IP');
-        	}
-        	if ($data['port'] === 0) {
-        	    throw new Exception('Invalid port');
-        	}
-        	if ($data['ipLong'] < 256) {
-        		// invalid IP => probably a SOCKS4a request which appends the hostname
-        		return $reader->readStringNull()->then(function ($string) use ($data){
-        			return array($string, $data['port']);
-        		});
-        	} else {
-        		$ip = long2ip($data['ipLong']);
-        		return array($ip, $data['port']);
-        	}
+            if ($data['null'] !== 0x00) {
+                throw new Exception('Not a null byte');
+            }
+            if ($data['ipLong'] === 0) {
+                throw new Exception('Invalid IP');
+            }
+            if ($data['port'] === 0) {
+                throw new Exception('Invalid port');
+            }
+            if ($data['ipLong'] < 256) {
+                // invalid IP => probably a SOCKS4a request which appends the hostname
+                return $reader->readStringNull()->then(function ($string) use ($data){
+                    return array($string, $data['port']);
+                });
+            } else {
+                $ip = long2ip($data['ipLong']);
+                return array($ip, $data['port']);
+            }
         })->then(function ($target) use ($stream, $connectionManager) {
             $stream->emit('target',$target);
             return $connectionManager->getConnection($target[0], $target[1])->then(function (Stream $remote) use ($stream){
-            	$stream->write(pack('C8', 0x00, 0x5a, 0x00, 0x00, 0x00, 0x00, 0x00, 0x00));
+                $stream->write(pack('C8', 0x00, 0x5a, 0x00, 0x00, 0x00, 0x00, 0x00, 0x00));
 
-            	$stream->pipe($remote);
-            	$remote->pipe($stream);
+                $stream->pipe($remote);
+                $remote->pipe($stream);
 
-            	$stream->emit('ready',array($remote));
-            	return $remote;
+                $stream->emit('ready',array($remote));
+                return $remote;
             }, function($error) use ($stream){
                 $stream->end(pack('C8', 0x00, 0x5b, 0x00, 0x00, 0x00, 0x00, 0x00, 0x00));
 
-            	//$stream->emit('error',array($error));
-            	throw $error;
+                //$stream->emit('error',array($error));
+                throw $error;
             });
         }, function($error) {
             throw new UnexpectedValueException('Protocol error',0,$error);
