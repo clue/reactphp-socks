@@ -5,6 +5,7 @@ namespace Socks;
 use React\Promise\Deferred;
 use React\Stream\Stream;
 use \InvalidArgumentException;
+use \UnexpectedValueException;
 
 class StreamReader
 {
@@ -46,6 +47,8 @@ class StreamReader
             $bytes -= strlen($data);
             $buffer .= $data;
 
+            $deferred->progress($data);
+
             if ($bytes === 0) {
                 $stream->bufferSize = $oldsize;
                 $stream->removeListener('data', $fn);
@@ -57,5 +60,37 @@ class StreamReader
         };
         $stream->on('data', $fn);
         return $deferred->promise();
+    }
+
+    public function readAssert(Stream $stream, $byteSequence)
+    {
+        $deferred = new Deferred();
+        $pos = 0;
+
+        $that = $this;
+        $this->readLength($stream, strlen($byteSequence))->then(function ($data) use ($deferred) {
+            $deferred->resolve($data);
+        }, null, function ($part) use ($byteSequence, &$pos, $deferred, $that){
+            $len = strlen($part);
+            $expect = substr($byteSequence, $pos, $len);
+
+            if ($part === $expect) {
+                $pos += $len;
+            } else {
+                $deferred->reject(new UnexpectedValueException('expected "'.$that->s($expect).'", but got "'.$that->s($part).'"'));
+            }
+        });
+        return $deferred->promise();
+    }
+
+    public function s($bytes){
+        $ret = '';
+        for ($i = 0, $l = strlen($bytes); $i < $l; ++$i) {
+            if ($i !== 0) {
+                $ret .= ' ';
+            }
+            $ret .= sprintf('0x%02X', ord($bytes[$i]));
+        }
+        return $ret;
     }
 }
