@@ -78,6 +78,16 @@ class StreamReader
         });
     }
 
+    public function readByteAssert($expect)
+    {
+        return $this->readByte()->then(function ($byte) use ($expect) {
+            if ($byte !== $expect) {
+                throw new UnexpectedValueException('Unexpected byte encountered');
+            }
+            return $byte;
+        });
+    }
+
     public function readChar()
     {
         return $this->readChar()->then(function ($byte) {
