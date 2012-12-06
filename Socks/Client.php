@@ -224,8 +224,8 @@ class Client implements ConnectionManagerInterface
 
         $stream->write($data);
 
-        $reader = new StreamReader();
-        return $reader->readBinary($stream, array(
+        $reader = new StreamReader($stream);
+        return $reader->readBinary(array(
             'null'   => 'C',
             'status' => 'C',
             'port'   => 'n',
@@ -251,8 +251,8 @@ class Client implements ConnectionManagerInterface
         $stream->write($data);
 
         $that = $this;
-        $reader = new StreamReader();
-        return $reader->readBinary($stream, array(
+        $reader = new StreamReader($stream);
+        return $reader->readBinary(array(
             'version' => 'C',
             'method'  => 'C'
         ))->then(function ($data) use ($auth, $stream, $reader) {
@@ -264,7 +264,7 @@ class Client implements ConnectionManagerInterface
                 // username/password authentication requested and provided
                 $stream->write($auth);
 
-                return $reader->readBinary($stream, array(
+                return $reader->readBinary(array(
                     'version' => 'C',
                     'status'  => 'C'
                 ))->then(function ($data) {
@@ -292,30 +292,30 @@ class Client implements ConnectionManagerInterface
 
             $stream->write($data);
 
-            return $reader->readBinary($stream, array(
+            return $reader->readBinary(array(
                 'version' => 'C',
                 'status'  => 'C',
                 'null'    => 'C',
                 'type'    => 'C'
             ));
-        })->then(function ($data) use ($stream, $reader) {
+        })->then(function ($data) use ($reader) {
             if ($data['version'] !== 0x05 || $data['status'] !== 0x00 || $data['null'] !== 0x00) {
                 throw new Exception('Invalid SOCKS response');
             }
             if ($data['type'] === 0x01) {
                 // IPv4 address => skip IP and port
-                return $reader->readLength($stream, 6);
+                return $reader->readLength(6);
             } else if ($data['type'] === 0x03) {
                 // domain name => read domain name length
-                return $reader->readBinary($stream, array(
+                return $reader->readBinary(array(
                     'length' => 'C'
-                ))->then(function ($data) use ($stream, $that) {
+                ))->then(function ($data) use ($that) {
                     // skip domain name and port
-                    return $that->readLength($stream, $data['length'] + 2);
+                    return $that->readLength($data['length'] + 2);
                 });
             } else if ($data['type'] === 0x04) {
                 // IPv6 address => skip IP and port
-                return $reader->readLength($stream, 18);
+                return $reader->readLength(18);
             } else {
                 throw new Exception('Invalid SOCKS reponse: Invalid address type');
             }

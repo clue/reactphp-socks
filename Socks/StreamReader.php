@@ -9,7 +9,14 @@ use \UnexpectedValueException;
 
 class StreamReader
 {
-    public function readBinary(Stream $stream, $structure)
+    private $stream;
+
+    public function __construct(Stream $stream)
+    {
+        $this->stream = $stream;
+    }
+
+    public function readBinary($structure)
     {
         $length = 0;
         $unpack = '';
@@ -30,16 +37,16 @@ class StreamReader
             }
         }
 
-        return $this->readLength($stream, $length)->then(function ($response) use ($unpack) {
+        return $this->readLength($length)->then(function ($response) use ($unpack) {
             return unpack($unpack, $response);
         });
     }
 
-    public function readLength(Stream $stream, $bytes)
+    public function readLength($bytes)
     {
         $deferred = new Deferred();
-        $oldsize = $stream->bufferSize;
-        $stream->bufferSize = $bytes;
+        $oldsize = $this->stream->bufferSize;
+        $this->stream->bufferSize = $bytes;
 
         $buffer = '';
 
@@ -58,34 +65,34 @@ class StreamReader
                 $stream->bufferSize = $bytes;
             }
         };
-        $stream->on('data', $fn);
+        $this->stream->on('data', $fn);
         return $deferred->promise();
     }
 
-    public function readByte(Stream $stream)
+    public function readByte()
     {
-        return $this->readBinary($stream, array(
+        return $this->readBinary(array(
             'byte' => 'C'
         ))->then(function ($data) {
             return $data['byte'];
         });
     }
 
-    public function readChar(Steam $stream)
+    public function readChar()
     {
-        return $this->readChar($stream)->then(function ($byte) {
+        return $this->readChar()->then(function ($byte) {
             return chr($byte);
         });
     }
 
-    public function readStringNull(Stream $stream)
+    public function readStringNull()
     {
         $deferred = new Deferred();
         $string = '';
 
         $that = $this;
-        $readOne = function () use (&$readOne, $that, $stream, $deferred, &$string) {
-            $that->readByte($stream)->then(function ($byte) use ($deferred, &$string, $readOne) {
+        $readOne = function () use (&$readOne, $that, $deferred, &$string) {
+            $that->readByte()->then(function ($byte) use ($deferred, &$string, $readOne) {
                 if ($byte === 0x00) {
                     $deferred->resolve($string);
                 } else {
@@ -99,13 +106,13 @@ class StreamReader
         return $deferred->promise();
     }
 
-    public function readAssert(Stream $stream, $byteSequence)
+    public function readAssert($byteSequence)
     {
         $deferred = new Deferred();
         $pos = 0;
 
         $that = $this;
-        $this->readLength($stream, strlen($byteSequence))->then(function ($data) use ($deferred) {
+        $this->readLength(strlen($byteSequence))->then(function ($data) use ($deferred) {
             $deferred->resolve($data);
         }, null, function ($part) use ($byteSequence, &$pos, $deferred, $that) {
             $len = strlen($part);
