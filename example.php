@@ -19,7 +19,7 @@ $factory = new Socks\Factory($loop, $dns);
 
 $client = $factory->createClient('127.0.0.1', 9050);
 $client->setTimeout(3.0);
-$client->setAuth('test','test');
+// $client->setAuth('test','test');
 
 function ex(Exception $exception=null)
 {
