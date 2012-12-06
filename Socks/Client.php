@@ -134,13 +134,13 @@ class Client implements ConnectionManagerInterface
                 $this->connectionManager->getConnection($this->socksHost, $this->socksPort)->then(
                     null,
                     function ($error) {
-                        return new Exception('Unable to connect to socks server', 0, $error);
+                        throw new Exception('Unable to connect to socks server', 0, $error);
                     }
                 ),
                 $this->resolve($host)->then(
                     null,
                     function ($error) {
-                        return new Exception('Unable to resolve remote hostname', 0, $error);
+                        throw new Exception('Unable to resolve remote hostname', 0, $error);
                     }
                 )
             ),
