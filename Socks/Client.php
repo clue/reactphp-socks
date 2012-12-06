@@ -224,7 +224,8 @@ class Client implements ConnectionManagerInterface
 
         $stream->write($data);
 
-        return $this->readBinary($stream, array(
+        $reader = new StreamReader();
+        return $reader->readBinary($stream, array(
             'null'   => 'C',
             'status' => 'C',
             'port'   => 'n',
@@ -250,10 +251,11 @@ class Client implements ConnectionManagerInterface
         $stream->write($data);
 
         $that = $this;
-        return $this->readBinary($stream, array(
-                'version' => 'C',
-                'method'  => 'C'
-        ))->then(function ($data) use ($auth, $stream) {
+        $reader = new StreamReader();
+        return $reader->readBinary($stream, array(
+            'version' => 'C',
+            'method'  => 'C'
+        ))->then(function ($data) use ($auth, $stream, $reader) {
             if ($data['version'] !== 0x05) {
                 throw new Exception('Version/Protocol mismatch');
             }
@@ -262,7 +264,7 @@ class Client implements ConnectionManagerInterface
                 // username/password authentication requested and provided
                 $stream->write($auth);
 
-                return $that->readBinary($stream, array(
+                return $reader->readBinary($stream, array(
                     'version' => 'C',
                     'status'  => 'C'
                 ))->then(function ($data) {
@@ -274,7 +276,7 @@ class Client implements ConnectionManagerInterface
                 // any other method than "no authentication"
                 throw new Exception('Unacceptable authentication method requested');
             }
-        })->then(function () use ($stream, $that, $host, $port) {
+        })->then(function () use ($stream, $reader, $host, $port) {
             // do not resolve hostname. only try to convert to (binary/packed) IP
             $ip = @inet_pton($host);
 
@@ -290,22 +292,22 @@ class Client implements ConnectionManagerInterface
 
             $stream->write($data);
 
-            return $that->readBinary($stream, array(
+            return $reader->readBinary($stream, array(
                 'version' => 'C',
                 'status'  => 'C',
                 'null'    => 'C',
                 'type'    => 'C'
             ));
-        })->then(function ($data) use ($stream, $that) {
+        })->then(function ($data) use ($stream, $reader) {
             if ($data['version'] !== 0x05 || $data['status'] !== 0x00 || $data['null'] !== 0x00) {
                 throw new Exception('Invalid SOCKS response');
             }
             if ($data['type'] === 0x01) {
                 // IPv4 address => skip IP and port
-                return $that->readLength($stream, 6);
+                return $reader->readLength($stream, 6);
             } else if ($data['type'] === 0x03) {
                 // domain name => read domain name length
-                return $that->readBinary($stream, array(
+                return $reader->readBinary($stream, array(
                     'length' => 'C'
                 ))->then(function ($data) use ($stream, $that) {
                     // skip domain name and port
@@ -313,61 +315,10 @@ class Client implements ConnectionManagerInterface
                 });
             } else if ($data['type'] === 0x04) {
                 // IPv6 address => skip IP and port
-                return $that->readLength($stream, 18);
+                return $reader->readLength($stream, 18);
             } else {
                 throw new Exception('Invalid SOCKS reponse: Invalid address type');
             }
         });
-    }
-
-    public function readBinary(Stream $stream, $structure)
-    {
-        $length = 0;
-        $unpack = '';
-        foreach ($structure as $name=>$format) {
-            if ($length !== 0) {
-                $unpack .= '/';
-            }
-            $unpack .= $format . $name;
-
-            if ($format === 'C') {
-                ++$length;
-            } else if ($format === 'n') {
-                $length += 2;
-            } else if ($format === 'N') {
-                $length += 4;
-            } else {
-                throw new InvalidArgumentException('Invalid format given');
-            }
-        }
-
-        return $this->readLength($stream, $length)->then(function ($response) use ($unpack) {
-            return unpack($unpack, $response);
-        });
-    }
-
-    public function readLength(Stream $stream, $bytes)
-    {
-        $deferred = new Deferred();
-        $oldsize = $stream->bufferSize;
-        $stream->bufferSize = $bytes;
-
-        $buffer = '';
-
-        $fn = function ($data, Stream $stream) use (&$buffer, &$bytes, $deferred, $oldsize, &$fn) {
-            $bytes -= strlen($data);
-            $buffer .= $data;
-
-            if ($bytes === 0) {
-                $stream->bufferSize = $oldsize;
-                $stream->removeListener('data', $fn);
-
-                $deferred->resolve($buffer);
-            } else {
-                $stream->bufferSize = $bytes;
-            }
-        };
-        $stream->on('data', $fn);
-        return $deferred->promise();
     }
 }
