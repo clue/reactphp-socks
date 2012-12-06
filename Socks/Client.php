@@ -97,6 +97,11 @@ class Client implements ConnectionManagerInterface
         $this->auth = pack('C2', 0x01, strlen($username)) . $username . pack('C', strlen($password)) . $password;
     }
 
+    public function unsetAuth()
+    {
+        $this->auth = null;
+    }
+
     public function createHttpClient()
     {
         return new HttpClient($this->loop, $this, $this->createSecureConnectionManager());
@@ -134,13 +139,13 @@ class Client implements ConnectionManagerInterface
                 $this->connectionManager->getConnection($this->socksHost, $this->socksPort)->then(
                     null,
                     function ($error) {
-                        return new Exception('Unable to connect to socks server', 0, $error);
+                        throw new Exception('Unable to connect to socks server', 0, $error);
                     }
                 ),
                 $this->resolve($host)->then(
                     null,
                     function ($error) {
-                        return new Exception('Unable to resolve remote hostname', 0, $error);
+                        throw new Exception('Unable to resolve remote hostname', 0, $error);
                     }
                 )
             ),
