@@ -31,7 +31,7 @@ class Server extends SocketServer
 
         $line('connect');
 
-        $this->handshakeSocks4($connection)->then(function($remote) use ($line, $connection){
+        $this->handleSocks($connection)->then(function($remote) use ($line, $connection){
             $line('tunnel successfully estabslished');
             $connection->emit('ready',array($remote));
         }, function ($error) use ($connection, $line) {
@@ -64,11 +64,23 @@ class Server extends SocketServer
         });
     }
 
-    private function handshakeSocks4($stream)
+    private function handleSocks($stream)
+    {
+        $reader = new StreamReader($stream);
+        $that = $this;
+        return $reader->readByte()->then(function ($version) use ($stream, $that){
+            if ($version === 0x04) {
+                return $that->handleSocks4($stream);
+            }
+            throw new UnexpectedValueException('Unexpected version number');
+        });
+    }
+
+    public function handleSocks4($stream)
     {
         $reader = new StreamReader($stream);
         $connectionManager = $this->connectionManager;
-        return $reader->readAssert("\x04\x01")->then(function () use ($reader) {
+        return $reader->readByteAssert(0x01)->then(function () use ($reader) {
             return $reader->readBinary(array(
                 'port'   => 'n',
                 'ipLong' => 'N',
@@ -109,7 +121,7 @@ class Server extends SocketServer
                 throw $error;
             });
         }, function($error) {
-            throw new UnexpectedValueException('Protocol error',0,$error);
+            throw new UnexpectedValueException('SOCKS4 protocol error',0,$error);
         });
     }
 }
