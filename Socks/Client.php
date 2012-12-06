@@ -97,6 +97,11 @@ class Client implements ConnectionManagerInterface
         $this->auth = pack('C2', 0x01, strlen($username)) . $username . pack('C', strlen($password)) . $password;
     }
 
+    public function unsetAuth()
+    {
+        $this->auth = null;
+    }
+
     public function createHttpClient()
     {
         return new HttpClient($this->loop, $this, $this->createSecureConnectionManager());
