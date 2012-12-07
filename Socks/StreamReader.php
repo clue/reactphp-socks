@@ -78,6 +78,10 @@ class StreamReader
         });
     }
 
+    public function readNull(){
+        return $this->readByteAssert(0x00);
+    }
+
     public function readByteAssert($expect)
     {
         return $this->readByte()->then(function ($byte) use ($expect) {
