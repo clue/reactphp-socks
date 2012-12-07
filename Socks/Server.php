@@ -73,6 +73,8 @@ class Server extends SocketServer
         return $reader->readByte()->then(function ($version) use ($stream, $that){
             if ($version === 0x04) {
                 return $that->handleSocks4($stream);
+            } else if ($version === 0x05) {
+                return $that->handleSocks5($stream);
             }
             throw new UnexpectedValueException('Unexpected version number');
         });
@@ -126,15 +128,91 @@ class Server extends SocketServer
         });
     }
 
+    public function handleSocks5(Stream $stream)
+    {
+        $reader = new StreamReader($stream);
+        $that = $this;
+        return $reader->readByte()->then(function ($num) use ($reader) {
+            // $num different authentication mechanisms offered
+            return $reader->readLength($num);
+        })->then(function ($methods) use ($reader, $stream) {
+            if (strpos($methods,"\x00") !== false) {
+                // accept "no authentication"
+                $stream->write(pack('C2', 0x05, 0x00));
+                return 0x00;
+            } else if (false) {
+                // TODO: support username/password authentication (0x01)
+            } else {
+                // reject all offered authentication methods
+                $stream->end(pack('C2', 0x05, 0xFF));
+                throw new UnexpectedValueException('No acceptable authentication mechanism found');
+            }
+        })->then(function ($method) use ($reader, $stream) {
+            $stream->emit('authenticate',array($method));
+            return $reader->readBinary(array(
+                'version' => 'C',
+                'command' => 'C',
+                'null'    => 'C',
+                'type'    => 'C'
+            ));
+        })->then(function ($data) use ($reader) {
+            if ($data['version'] !== 0x05) {
+                throw new UnexpectedValueException('Invalid SOCKS version');
+            }
+            if ($data['command'] !== 0x01) {
+                throw new UnexpectedValueException('Only CONNECT requests supported');
+            }
+//             if ($data['null'] !== 0x00) {
+//                 throw new UnexpectedValueException('Reserved byte has to be NULL');
+//             }
+            if ($data['type'] === 0x03) {
+                // target hostname string
+                return $reader->readByte()->then(function ($len) use ($reader) {
+                    return $reader->readLength($len);
+                });
+            } else if ($data['type'] === 0x01) {
+                // target IPv4
+                return $reader->readLength(4)->then(function ($addr) {
+                    return inet_ntop($addr);
+                });
+            } else if ($data['type'] === 0x04) {
+                // target IPv6
+                return $reader->readLength(16)->then(function ($addr) {
+                    return inet_ntop($addr);
+                });
+            } else {
+                throw new UnexpectedValueException('Invalid target type');
+            }
+        })->then(function ($host) use ($reader) {
+            return $reader->readBinary(array('port'=>'n'))->then(function ($data) use ($host) {
+                return array($host, $data['port']);
+            });
+        })->then(function ($target) use ($that, $stream) {
+            return $that->connectTarget($stream, $target);
+        }, function($error) use ($stream) {
+            throw new UnexpectedValueException('SOCKS5 protocol error',0,$error);
+        })->then(function ($remote) use ($stream) {
+            $stream->write(pack('C4Nn', 0x05, 0x00, 0x00, 0x01, 0, 0));
+
+            $stream->pipe($remote);
+            $remote->pipe($stream);
+        }, function($error) use ($stream){
+            $code = 0x01;
+            $stream->write(pack('C4Nn', 0x05, $code, 0x00, 0x01, 0, 0));
+            $stream->end();
+            throw new UnexpectedValueException('Unable to connect to remote target', 0, $error);
+        });
+    }
+
     public function connectTarget(Stream $stream, $target)
     {
-    	$stream->emit('target',$target);
-    	return $this->connectionManager->getConnection($target[0], $target[1])->then(function ($remote) use ($stream) {
-    		if (!$stream->isWritable()) {
-    			$remote->close();
-    			throw new UnexpectedValueException('Remote connection successfully established after client connection closed');
-    		}
-    		return $remote;
-    	});
+        $stream->emit('target',$target);
+        return $this->connectionManager->getConnection($target[0], $target[1])->then(function ($remote) use ($stream) {
+            if (!$stream->isWritable()) {
+                $remote->close();
+                throw new UnexpectedValueException('Remote connection successfully established after client connection closed');
+            }
+            return $remote;
+        });
     }
 }
