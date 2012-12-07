@@ -26,7 +26,7 @@ class Server extends SocketServer
     {
 
         $line = function($msg) use ($connection) {
-            echo '#' . (int)$connection->stream . ' ' . $msg . PHP_EOL;
+            echo date('Y-m-d H:i:s') . ' #' . (int)$connection->stream . ' ' . $msg . PHP_EOL;
         };
 
         $line('connect');
@@ -47,7 +47,9 @@ class Server extends SocketServer
                 $line('error');
                 var_dump($error);
             }
-            $connection->close();
+            // $connection->end();
+            // TODO: start timeout to call $connection->close()
+
             throw $error;
 //         }, function ($progress) use ($line) {
 //             //$s = new StreamReader();
