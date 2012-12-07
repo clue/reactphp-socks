@@ -79,7 +79,7 @@ class Server extends SocketServer
     public function handleSocks4(Stream $stream)
     {
         $reader = new StreamReader($stream);
-        $connectionManager = $this->connectionManager;
+        $that = $this;
         return $reader->readByteAssert(0x01)->then(function () use ($reader) {
             return $reader->readBinary(array(
                 'port'   => 'n',
@@ -105,13 +105,8 @@ class Server extends SocketServer
                 $ip = long2ip($data['ipLong']);
                 return array($ip, $data['port']);
             }
-        })->then(function ($target) use ($stream, $connectionManager) {
-            $stream->emit('target',$target);
-            return $connectionManager->getConnection($target[0], $target[1])->then(function (Stream $remote) use ($stream){
-                if (!$stream->isWritable()) {
-                    $remote->close();
-                    throw new UnexpectedValueException('Remote connection established after client connection closed');
-                }
+        })->then(function ($target) use ($stream, $that) {
+            return $that->connectTarget($stream, $target)->then(function (Stream $remote) use ($stream){
                 $stream->write(pack('C8', 0x00, 0x5a, 0x00, 0x00, 0x00, 0x00, 0x00, 0x00));
 
                 $stream->pipe($remote);
@@ -127,5 +122,17 @@ class Server extends SocketServer
         }, function($error) {
             throw new UnexpectedValueException('SOCKS4 protocol error',0,$error);
         });
+    }
+
+    public function connectTarget(Stream $stream, $target)
+    {
+    	$stream->emit('target',$target);
+    	return $this->connectionManager->getConnection($target[0], $target[1])->then(function ($remote) use ($stream) {
+    		if (!$stream->isWritable()) {
+    			$remote->close();
+    			throw new UnexpectedValueException('Remote connection successfully established after client connection closed');
+    		}
+    		return $remote;
+    	});
     }
 }
