@@ -11,12 +11,15 @@ use \UnexpectedValueException;
 
 class Server extends SocketServer
 {
+    protected $loop;
+
     private $connectionManager;
 
     public function __construct(LoopInterface $loop, ConnectionManagerInterface $connectionManager)
     {
         parent::__construct($loop);
 
+        $this->loop = $loop;
         $this->connectionManager = $connectionManager;
 
         $this->on('connection', array($this, 'onConnection'));
@@ -31,10 +34,11 @@ class Server extends SocketServer
 
         $line('connect');
 
+        $loop = $this->loop;
         $this->handleSocks($connection)->then(function($remote) use ($line, $connection){
             $line('tunnel successfully estabslished');
             $connection->emit('ready',array($remote));
-        }, function ($error) use ($connection, $line) {
+        }, function ($error) use ($connection, $line, $loop) {
             if ($error instanceof \Exception) {
                 $msg = $error->getMessage();
                 while ($error->getPrevious() !== null) {
@@ -47,8 +51,12 @@ class Server extends SocketServer
                 $line('error');
                 var_dump($error);
             }
-            // $connection->end();
-            // TODO: start timeout to call $connection->close()
+
+            // shut down connection by pausing input data, flushing outgoing buffer and then exit
+            $connection->pause();
+            $connection->end();
+            // fall back to forcefully close connection in 3 seconds if buffer can not be flushed
+            $loop->addTimer(3.0, array($connection,'close'));
 
             throw $error;
 //         }, function ($progress) use ($line) {
