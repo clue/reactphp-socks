@@ -11,6 +11,7 @@ $factory = new Socks\Factory($loop, $dns);
 
 // set next SOCKS server as target
 $target = $factory->createClient('127.0.0.1',9050);
+$target->setAuth('user','p@ssw0rd');
 
 // start a new server which forwards all connections to another SOCKS server
 $server = new Socks\Server($loop, $target);
