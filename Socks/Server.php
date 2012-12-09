@@ -8,6 +8,7 @@ use React\Socket\Connection;
 use React\EventLoop\LoopInterface;
 use React\Socket\Server as SocketServer;
 use \UnexpectedValueException;
+use \Exception;
 
 class Server extends SocketServer
 {
@@ -216,8 +217,21 @@ class Server extends SocketServer
                 throw new UnexpectedValueException('Remote connection successfully established after client connection closed');
             }
 
-            $stream->pipe($remote);
-            $remote->pipe($stream);
+            $stream->pipe($remote, array('end'=>false));
+            $remote->pipe($stream, array('end'=>false));
+
+            // remote end closes connection => stop reading from local end, try to flush buffer to local and disconnect local
+            $remote->on('end', function() use ($stream) {
+                $stream->pause();
+                $stream->end();
+            });
+
+            // local end closes connection => stop reading from remote end, try to flush buffer to remote and disconnect remote
+            $stream->on('end', function() use ($remote) {
+                $remote->pause();
+                $remote->end();
+            });
+
 
             // set bigger buffer size of 100k to improve performance
             $stream->bufferSize = $remote->bufferSize = 100 * 1024 * 1024;
