@@ -91,6 +91,9 @@ class Client implements ConnectionManagerInterface
      */
     public function setAuth($username, $password)
     {
+        if (strlen($username) > 255 || strlen($password) > 255) {
+            throw new InvalidArgumentException('Both username and password MUST NOT exceed a length of 255 bytes each');
+        }
         if ($this->protocolVersion !== null && $this->protocolVersion !== '5') {
             throw new UnexpectedValueException('Authentication requires SOCKS5. Consider using protocol version 5 or waive authentication');
         }
