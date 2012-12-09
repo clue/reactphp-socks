@@ -2,12 +2,15 @@
 
 namespace Socks;
 
+use React\Promise\When;
+use React\Promise\PromiseInterface;
 use React\Stream\Stream;
 use React\HttpClient\ConnectionManagerInterface;
 use React\Socket\Connection;
 use React\EventLoop\LoopInterface;
 use React\Socket\Server as SocketServer;
 use \UnexpectedValueException;
+use \InvalidArgumentException;
 use \Exception;
 
 class Server extends SocketServer
@@ -15,6 +18,8 @@ class Server extends SocketServer
     protected $loop;
 
     private $connectionManager;
+
+    private $auth = null;
 
     public function __construct(LoopInterface $loop, ConnectionManagerInterface $connectionManager)
     {
@@ -24,6 +29,28 @@ class Server extends SocketServer
         $this->connectionManager = $connectionManager;
 
         $this->on('connection', array($this, 'onConnection'));
+    }
+
+    public function setAuth($auth)
+    {
+        if (!is_callable($auth)) {
+            throw new InvalidArgumentException('Given authenticator is not a valid callable');
+        }
+        // wrap authentication callback in order to cast its return value to a promise
+        $this->auth = function($username, $password) use ($auth) {
+            $ret = call_user_func($auth, $username, $password);
+            if ($ret instanceof PromiseInterface) {
+                return $ret;
+            }
+            return $ret ? When::resolve() : When::reject();
+        };
+    }
+
+    public function setAuthArray(array $login)
+    {
+        $this->setAuth(function ($username, $password) use ($login) {
+            return (isset($login[$username]) && (string)$login[$username] === $password);
+        });
     }
 
     public function onConnection(Connection $connection)
@@ -79,11 +106,15 @@ class Server extends SocketServer
     {
         $reader = new StreamReader($stream);
         $that = $this;
-        return $reader->readByte()->then(function ($version) use ($stream, $that){
+        $auth = $this->auth;
+        return $reader->readByte()->then(function ($version) use ($stream, $that, $auth){
             if ($version === 0x04) {
+                if ($auth !== null) {
+                    throw new UnexpectedValueException('SOCKS4 not support when authentication is enabled');
+                }
                 return $that->handleSocks4($stream);
             } else if ($version === 0x05) {
-                return $that->handleSocks5($stream);
+                return $that->handleSocks5($stream, $auth);
             }
             throw new UnexpectedValueException('Unexpected version number');
         });
@@ -133,20 +164,40 @@ class Server extends SocketServer
         });
     }
 
-    public function handleSocks5(Stream $stream)
+    public function handleSocks5(Stream $stream, $auth=null)
     {
         $reader = new StreamReader($stream);
         $that = $this;
         return $reader->readByte()->then(function ($num) use ($reader) {
             // $num different authentication mechanisms offered
             return $reader->readLength($num);
-        })->then(function ($methods) use ($reader, $stream) {
-            if (strpos($methods,"\x00") !== false) {
+        })->then(function ($methods) use ($reader, $stream, $auth) {
+            if ($auth === null && strpos($methods,"\x00") !== false) {
                 // accept "no authentication"
                 $stream->write(pack('C2', 0x05, 0x00));
                 return 0x00;
-            } else if (false) {
-                // TODO: support username/password authentication (0x01)
+            } else if ($auth !== null && strpos($methods,"\x02") !== false) {
+                // username/password authentication (RFC 1929) sub negotiation
+                $stream->write(pack('C2', 0x05, 0x02));
+                return $reader->readByteAssert(0x01)->then(function () use ($reader) {
+                    return $reader->readByte();
+                })->then(function ($length) use ($reader) {
+                    return $reader->readLength($length);
+                })->then(function ($username) use ($reader, $auth, $stream) {
+                    return $reader->readByte()->then(function ($length) use ($reader) {
+                        return $reader->readLength($length);
+                    })->then(function ($password) use ($username, $auth, $stream) {
+                        // username and password known => authenticate
+                        // echo 'auth: ' . $username.' : ' . $password . PHP_EOL;
+                        return $auth($username, $password)->then(function () use ($stream) {
+                            // accept
+                            $stream->write(pack('C2', 0x01, 0x00));
+                        }, function() use ($stream) {
+                            // reject => send any code but 0x00
+                            $stream->write(pack('C2', 0x01, 0xFF));
+                        });
+                    });
+                });
             } else {
                 // reject all offered authentication methods
                 $stream->end(pack('C2', 0x05, 0xFF));
