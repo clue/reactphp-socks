@@ -121,14 +121,10 @@ class Server extends SocketServer
             return $that->connectTarget($stream, $target)->then(function (Stream $remote) use ($stream){
                 $stream->write(pack('C8', 0x00, 0x5a, 0x00, 0x00, 0x00, 0x00, 0x00, 0x00));
 
-                $stream->pipe($remote);
-                $remote->pipe($stream);
-
                 return $remote;
             }, function($error) use ($stream){
                 $stream->end(pack('C8', 0x00, 0x5b, 0x00, 0x00, 0x00, 0x00, 0x00, 0x00));
 
-                //$stream->emit('error',array($error));
                 throw $error;
             });
         }, function($error) {
@@ -199,28 +195,36 @@ class Server extends SocketServer
             return $that->connectTarget($stream, $target);
         }, function($error) use ($stream) {
             throw new UnexpectedValueException('SOCKS5 protocol error',0,$error);
-        })->then(function ($remote) use ($stream) {
+        })->then(function (Stream $remote) use ($stream) {
             $stream->write(pack('C4Nn', 0x05, 0x00, 0x00, 0x01, 0, 0));
 
-            $stream->pipe($remote);
-            $remote->pipe($stream);
-        }, function($error) use ($stream){
+            return $remote;
+        }, function(Exception $error) use ($stream){
             $code = 0x01;
-            $stream->write(pack('C4Nn', 0x05, $code, 0x00, 0x01, 0, 0));
-            $stream->end();
-            throw new UnexpectedValueException('Unable to connect to remote target', 0, $error);
+            $stream->end(pack('C4Nn', 0x05, $code, 0x00, 0x01, 0, 0));
+
+            throw $error;
         });
     }
 
     public function connectTarget(Stream $stream, $target)
     {
         $stream->emit('target',$target);
-        return $this->connectionManager->getConnection($target[0], $target[1])->then(function ($remote) use ($stream) {
+        return $this->connectionManager->getConnection($target[0], $target[1])->then(function (Stream $remote) use ($stream) {
             if (!$stream->isWritable()) {
                 $remote->close();
                 throw new UnexpectedValueException('Remote connection successfully established after client connection closed');
             }
+
+            $stream->pipe($remote);
+            $remote->pipe($stream);
+
+            // set bigger buffer size of 100k to improve performance
+            $stream->bufferSize = $remote->bufferSize = 100 * 1024 * 1024;
+
             return $remote;
+        }, function(Exception $error) {
+            throw new UnexpectedValueException('Unable to connect to remote target', 0, $error);
         });
     }
 }
