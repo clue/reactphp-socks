@@ -6,60 +6,6 @@ Async SOCKS client library to connect to SOCKS4, SOCKS4a and SOCKS5 servers
 
 The SOCKS protocol family can be used to easily tunnel TCP connections independent of the actual application level protocol, such as HTTP, SMTP, IMAP, Telnet, etc.
 
-While SOCKS4 already had (a somewhat limited) support for `SOCKS BIND` requests and SOCKS5 added generic UDP support (`SOCKS UDPASSOCIATE`), this library focuses on the most commonly used core feature of `SOCKS CONNECT`. In this mode, a SOCKS server acts as a generic proxy allowing higher level application protocols to work through it.
-
-<table>
-  <tr>
-    <th></th>
-    <th>SOCKS4</th>
-    <th>SOCKS4a</th>
-    <th>SOCKS5</th>
-  </tr>
-  <tr>
-    <th>Protocol specification</th>
-    <td><a href="http://ftp.icm.edu.pl/packages/socks/socks4/SOCKS4.protocol">SOCKS4.protocol</a></td>
-    <td><a href="http://ftp.icm.edu.pl/packages/socks/socks4/SOCKS4A.protocol">SOCKS4A.protocol</a></td>
-    <td><a href="http://tools.ietf.org/html/rfc1928">RFC 1928</a></td>
-  </tr>
-  <tr>
-    <th>Tunnel connections</th>
-    <td>✓</td>
-    <td>✓</td>
-    <td>✓</td>
-  </tr>
-  <tr>
-    <th>Remote DNS resolving</th>
-    <td>✗</td>
-    <td>✓</td>
-    <td>✓</td>
-  </tr>
-  <tr>
-    <th>IPv6 addresses</th>
-    <td>✗</td>
-    <td>✗</td>
-    <td>✓</td>
-  </tr>
-  <tr>
-    <th>Username/Password authentication</th>
-    <td>✗</td>
-    <td>✗</td>
-    <td>✓ (as per <a href="http://tools.ietf.org/html/rfc1929">RFC 1929</a>)</td>
-  </tr>
-  <tr>
-    <th>Handshake # roundtrips</th>
-    <td>1</td>
-    <td>1</td>
-    <td>2 (3 with authentication)</td>
-  </tr>
-  <tr>
-    <th>Handshake traffic<br />+ remote DNS</th>
-    <td>17 bytes<br />✗</td>
-    <td>17 bytes<br />+ hostname + 1</td>
-    <td><em>variable</em> (+ auth + IPv6)<br />+ hostname - 3</td>
-  </tr>
-  
-</table>
-
 ## Example
 
 Initialize connection to remote SOCKS server:
@@ -127,6 +73,62 @@ $ssl->getConnection('www.google.com',443)->then(function (React\Stream\Stream $s
     // ...
 });
 ```
+
+## SOCKS Protocol versions & differences
+
+While SOCKS4 already had (a somewhat limited) support for `SOCKS BIND` requests and SOCKS5 added generic UDP support (`SOCKS UDPASSOCIATE`), this library focuses on the most commonly used core feature of `SOCKS CONNECT`. In this mode, a SOCKS server acts as a generic proxy allowing higher level application protocols to work through it.
+
+<table>
+  <tr>
+    <th></th>
+    <th>SOCKS4</th>
+    <th>SOCKS4a</th>
+    <th>SOCKS5</th>
+  </tr>
+  <tr>
+    <th>Protocol specification</th>
+    <td><a href="http://ftp.icm.edu.pl/packages/socks/socks4/SOCKS4.protocol">SOCKS4.protocol</a></td>
+    <td><a href="http://ftp.icm.edu.pl/packages/socks/socks4/SOCKS4A.protocol">SOCKS4A.protocol</a></td>
+    <td><a href="http://tools.ietf.org/html/rfc1928">RFC 1928</a></td>
+  </tr>
+  <tr>
+    <th>Tunnel connections</th>
+    <td>✓</td>
+    <td>✓</td>
+    <td>✓</td>
+  </tr>
+  <tr>
+    <th>Remote DNS resolving</th>
+    <td>✗</td>
+    <td>✓</td>
+    <td>✓</td>
+  </tr>
+  <tr>
+    <th>IPv6 addresses</th>
+    <td>✗</td>
+    <td>✗</td>
+    <td>✓</td>
+  </tr>
+  <tr>
+    <th>Username/Password authentication</th>
+    <td>✗</td>
+    <td>✗</td>
+    <td>✓ (as per <a href="http://tools.ietf.org/html/rfc1929">RFC 1929</a>)</td>
+  </tr>
+  <tr>
+    <th>Handshake # roundtrips</th>
+    <td>1</td>
+    <td>1</td>
+    <td>2 (3 with authentication)</td>
+  </tr>
+  <tr>
+    <th>Handshake traffic<br />+ remote DNS</th>
+    <td>17 bytes<br />✗</td>
+    <td>17 bytes<br />+ hostname + 1</td>
+    <td><em>variable</em> (+ auth + IPv6)<br />+ hostname - 3</td>
+  </tr>
+  
+</table>
 
 ## Usage
 
