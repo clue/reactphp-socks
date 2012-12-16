@@ -1,14 +1,17 @@
-# SOCKS client library
+# SOCKS client and server
 
-Async SOCKS client library to connect to SOCKS4, SOCKS4a and SOCKS5 servers
+Async SOCKS client library to connect to SOCKS4, SOCKS4a and SOCKS5 proxy servers,
+as well as a SOCKS server implementation, capable of handling multiple concurrent
+connections in a non-blocking fashion.
 
 ## Description
 
-The SOCKS protocol family can be used to easily tunnel TCP connections independent of the actual application level protocol, such as HTTP, SMTP, IMAP, Telnet, etc.
+The SOCKS protocol family can be used to easily tunnel TCP connections independent
+of the actual application level protocol, such as HTTP, SMTP, IMAP, Telnet, etc.
 
 ## Example
 
-Initialize connection to remote SOCKS server:
+Once [installed](#install), initialize a connection to remote SOCKS proxy server:
 
 ```PHP
 <?php
