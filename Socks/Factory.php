@@ -2,7 +2,7 @@
 
 namespace Socks;
 
-use React\HttpClient\ConnectionManager;
+use ConnectionManager\ConnectionManager;
 use React\Dns\Resolver\Resolver;
 use React\EventLoop\LoopInterface;
 
