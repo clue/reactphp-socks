@@ -69,15 +69,17 @@ class Client implements ConnectionManagerInterface
 
     public function setProtocolVersion($version)
     {
-        $version = (string)$version;
-        if (!in_array($version, array('4', '4a', '5'), true)) {
-            throw new InvalidArgumentException('Invalid protocol version given');
-        }
-        if ($version !== '5' && $this->auth){
-            throw new UnexpectedValueException('Unable to change protocol version to anything but SOCKS5 while authentication is used. Consider removing authentication info or sticking to SOCKS5');
-        }
-        if ($version === '4' && !$this->resolveLocal) {
-            throw new UnexpectedValueException('Unable to change to SOCKS4 while resolving locally is turned off. Consider using another protocol version or resolving locally');
+        if ($version !== null) {
+            $version = (string)$version;
+            if (!in_array($version, array('4', '4a', '5'), true)) {
+                throw new InvalidArgumentException('Invalid protocol version given');
+            }
+            if ($version !== '5' && $this->auth){
+                throw new UnexpectedValueException('Unable to change protocol version to anything but SOCKS5 while authentication is used. Consider removing authentication info or sticking to SOCKS5');
+            }
+            if ($version === '4' && !$this->resolveLocal) {
+                throw new UnexpectedValueException('Unable to change to SOCKS4 while resolving locally is turned off. Consider using another protocol version or resolving locally');
+            }
         }
         $this->protocolVersion = $version;
     }
