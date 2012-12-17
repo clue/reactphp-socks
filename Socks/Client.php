@@ -120,6 +120,9 @@ class Client implements ConnectionManagerInterface
 
     public function getConnection($host, $port)
     {
+        if (strlen($host) > 255 || $port > 65535 || $port < 0) {
+            return When::reject(new InvalidArgumentException('Invalid target specified'));
+        }
         $deferred = new Deferred();
 
         $timestampTimeout = microtime(true) + $this->timeout;
