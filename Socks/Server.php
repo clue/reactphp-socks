@@ -21,6 +21,8 @@ class Server extends SocketServer
 
     private $auth = null;
 
+    private $protocolVersion = null;
+
     public function __construct(LoopInterface $loop, ConnectionManagerInterface $connectionManager)
     {
         parent::__construct($loop);
@@ -31,10 +33,27 @@ class Server extends SocketServer
         $this->on('connection', array($this, 'onConnection'));
     }
 
+    public function setProtocolVersion($version)
+    {
+        if ($version !== null) {
+            $version = (string)$version;
+            if (!in_array($version, array('4', '4a', '5'), true)) {
+                throw new InvalidArgumentException('Invalid protocol version given');
+            }
+            if ($version !== '5' && $this->auth !== null){
+                throw new UnexpectedValueException('Unable to change protocol version to anything but SOCKS5 while authentication is used. Consider removing authentication info or sticking to SOCKS5');
+            }
+        }
+        $this->protocolVersion = $version;
+    }
+
     public function setAuth($auth)
     {
         if (!is_callable($auth)) {
             throw new InvalidArgumentException('Given authenticator is not a valid callable');
+        }
+        if ($this->protocolVersion !== null && $this->protocolVersion !== '5') {
+            throw new UnexpectedValueException('Authentication requires SOCKS5. Consider using protocol version 5 or waive authentication');
         }
         // wrap authentication callback in order to cast its return value to a promise
         $this->auth = function($username, $password) use ($auth) {
@@ -51,6 +70,11 @@ class Server extends SocketServer
         $this->setAuth(function ($username, $password) use ($login) {
             return (isset($login[$username]) && (string)$login[$username] === $password);
         });
+    }
+
+    public function unsetAuth()
+    {
+        $this->auth = null;
     }
 
     public function onConnection(Connection $connection)
@@ -106,22 +130,36 @@ class Server extends SocketServer
     {
         $reader = new StreamReader($stream);
         $that = $this;
+
         $auth = $this->auth;
-        return $reader->readByte()->then(function ($version) use ($stream, $that, $auth){
+        $protocolVersion = $this->protocolVersion;
+
+        // authentication requires SOCKS5
+        if ($auth !== null) {
+        	$protocolVersion = '5';
+        }
+
+        return $reader->readByte()->then(function ($version) use ($stream, $that, $protocolVersion, $auth){
             if ($version === 0x04) {
-                if ($auth !== null) {
-                    throw new UnexpectedValueException('SOCKS4 not support when authentication is enabled');
+                if ($protocolVersion === '5') {
+                    throw new UnexpectedValueException('SOCKS4 not allowed due to configuration');
                 }
-                return $that->handleSocks4($stream);
+                return $that->handleSocks4($stream, $protocolVersion);
             } else if ($version === 0x05) {
+                if ($protocolVersion !== null && $protocolVersion !== '5') {
+                    throw new UnexpectedValueException('SOCKS5 not allowed due to configuration');
+                }
                 return $that->handleSocks5($stream, $auth);
             }
-            throw new UnexpectedValueException('Unexpected version number');
+            throw new UnexpectedValueException('Unexpected/unknown version number');
         });
     }
 
-    public function handleSocks4(Stream $stream)
+    public function handleSocks4(Stream $stream, $protocolVersion)
     {
+        // suppliying hostnames is only allowed for SOCKS4a (or automatically detected version)
+        $supportsHostname = ($protocolVersion === null || $protocolVersion === '4a');
+
         $reader = new StreamReader($stream);
         $that = $this;
         return $reader->readByteAssert(0x01)->then(function () use ($reader) {
@@ -130,7 +168,7 @@ class Server extends SocketServer
                 'ipLong' => 'N',
                 'null'   => 'C'
             ));
-        })->then(function ($data) use ($reader) {
+        })->then(function ($data) use ($reader, $supportsHostname) {
             if ($data['null'] !== 0x00) {
                 throw new Exception('Not a null byte');
             }
@@ -140,7 +178,7 @@ class Server extends SocketServer
             if ($data['port'] === 0) {
                 throw new Exception('Invalid port');
             }
-            if ($data['ipLong'] < 256) {
+            if ($data['ipLong'] < 256 && $supportsHostname) {
                 // invalid IP => probably a SOCKS4a request which appends the hostname
                 return $reader->readStringNull()->then(function ($string) use ($data){
                     return array($string, $data['port']);
