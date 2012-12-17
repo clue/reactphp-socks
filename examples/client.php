@@ -1,9 +1,7 @@
 <?php
 
-use Socks\SecureConnectionManager;
-
+use ConnectionManager\SecureConnectionManager;
 use React\Promise\PromiseInterface;
-
 use React\HttpClient\Client as HttpClient;
 use React\HttpClient\Response;
 use React\Stream\Stream;

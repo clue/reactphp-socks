@@ -1,10 +1,6 @@
 <?php
 
-use React\HttpClient\ConnectionManager;
-
 use React\Socket\Connection;
-
-use Socks\Server;
 
 include_once __DIR__.'/../vendor/autoload.php';
 
