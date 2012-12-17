@@ -5,7 +5,7 @@ namespace Socks;
 use React\Promise\When;
 use React\Promise\PromiseInterface;
 use React\Stream\Stream;
-use React\HttpClient\ConnectionManagerInterface;
+use ConnectionManager\ConnectionManagerInterface;
 use React\Socket\Connection;
 use React\EventLoop\LoopInterface;
 use React\Socket\Server as SocketServer;
