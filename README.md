@@ -17,7 +17,7 @@ Once [installed](#install), initialize a connection to remote SOCKS proxy server
 <?php
 include_once __DIR__.'/vendor/autoload.php';
 
-$loop = $loop = React\EventLoop\Factory::create();
+$loop = React\EventLoop\Factory::create();
 
 // use google's dns servers
 $dnsResolverFactory = new React\Dns\Resolver\Factory();
@@ -34,7 +34,8 @@ $loop->start();
 
 ### Tunnelled TCP connections
 
-`Socks` uses a [Promise](https://github.com/reactphp/promise)-based interface which makes working with asynchronous functions a breeze. Let's open up a TCP [Stream](https://github.com/reactphp/stream) connection and write some data:
+The `Socks/Client` uses a [Promise](https://github.com/reactphp/promise)-based interface which makes working with asynchronous functions a breeze.
+Let's open up a TCP [Stream](https://github.com/reactphp/stream) connection and write some data:
 ```PHP
 $client->getConnection('www.google.com',80)->then(function (React\Stream\Stream $stream) {
     echo 'connected to www.google.com:80';
@@ -45,7 +46,7 @@ $client->getConnection('www.google.com',80)->then(function (React\Stream\Stream 
 
 ### HTTP requests
 
-Or if all you want to do is HTTP requests, `Socks` provides an even simpler [HTTP client](https://github.com/reactphp/http-client) interface:
+Or if all you want to do is HTTP requests, `Socks/Client` provides an even simpler [HTTP client](https://github.com/reactphp/http-client) interface:
 ```PHP
 $httpclient = $client->createHttpClient();
 
@@ -138,8 +139,8 @@ Note, this is __not__ a full SOCKS5 implementation due to missing GSSAPI authent
 
 This library supports the SOCKS4, SOCKS4a and SOCKS5 protocol versions.
 Usually, there's no need to worry about which protocol version is being used.
-Depending on which features you use (e.g. [remote DNS resolving](#remote-vs-local-dns-resolving) and [authentication](#username--password-authentication)), the `Client` automatically uses the _best_ protocol available. In general this library automatically switches to higher protocol versions when needed, but tries to keep things simple otherwise and sticks to lower protocol versions when possible.
-The `Server` supports all protocol versions by default.
+Depending on which features you use (e.g. [remote DNS resolving](#remote-vs-local-dns-resolving) and [authentication](#username--password-authentication)), the `Socks/Client` automatically uses the _best_ protocol available. In general this library automatically switches to higher protocol versions when needed, but tries to keep things simple otherwise and sticks to lower protocol versions when possible.
+The `Socks/Server` supports all protocol versions by default.
 
 If want to explicitly set the protocol version, use the supported values `4`, `4a` or `5`:
 
@@ -158,7 +159,7 @@ $server->setProtocolVersion(null);
 
 ### Remote vs. local DNS resolving
 
-By default, the `Client` uses local DNS resolving to resolve target hostnames
+By default, the `Socks/Client` uses local DNS resolving to resolve target hostnames
 into IP addresses and only transmits the resulting target IP to the socks server.
 
 Resolving locally usually results in better performance as for each outgoing
@@ -167,7 +168,7 @@ SOCKS server can be done simultanously. So by the time the SOCKS connection is
 established (requires a TCP handshake for each connection), the target hostname
 will likely already be resolved ( _usually_ either already cached or requires a simple DNS query via UDP).
 
-You may want to switch to remote DNS resolving if your local `Client` either can not
+You may want to switch to remote DNS resolving if your local `Socks/Client` either can not
 resolve target hostnames because it has no direct access to the internet or if
 it should not resolve target hostnames because its outgoing DNS traffic might
 be intercepted (in particular when using the [Tor network](#using-the-tor-anonymity-network-to-tunnel-socks-connections)). 
@@ -189,13 +190,13 @@ On the client side, simply set your username and password to use for authenticat
 For each further connection the client will merely send a flag to the server indicating authentication information is available. Only if the server requests authentication during the initial handshake, the actual authentication credentials will be transmitted to the server.
 
 Note that the password is transmitted in cleartext to the SOCKS proxy server, so this methods should not be used on a network where you have to worry about eavesdropping.
-Authentication is only supported by protocol version 5 (SOCKS5), so setting authentication on the `Client` enforces communication with protocol version 5 and complains if you have explicitly set anything else. 
+Authentication is only supported by protocol version 5 (SOCKS5), so setting authentication on the `Socks/Client` enforces communication with protocol version 5 and complains if you have explicitly set anything else. 
 
 ```PHP
 $client->setAuth('username', 'password');
 ```
 
-Setting authentication on the `Server` enforces each further connected client to use protocol version 5. If a client tries to use any other protocol version, does not send along authentication details or if authentication details can not be verified, the connection will be rejected.
+Setting authentication on the `Socks/Server` enforces each further connected client to use protocol version 5. If a client tries to use any other protocol version, does not send along authentication details or if authentication details can not be verified, the connection will be rejected.
 
 Because your authentication mechanism might take some time to actually check the provided authentication credentials (like querying a remote database or webservice), the server side uses a [Promise](https://github.com/reactphp/promise) based interface. While this might seem complex at first, it actually provides a very simple way to handle simultanous connections in a non-blocking fashion and increases overall performance.
 
