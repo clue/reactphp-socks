@@ -1,14 +1,14 @@
 {
     "name": "clue/socks",
     "type": "library",
-    "homepage": "http://github.com/clue/Socks",
+    "homepage": "http://github.com/clue/socks",
     "license": "MIT",
     "autoload": {
         "psr-0": {"Socks": ""}
     },
     "require": {
-        "react/http-client": "dev-master",
-        "react/event-loop": "dev-master",
-        "clue/connection-manager": "dev-master"
+        "react/http-client": "0.2.*",
+        "react/event-loop": "0.2.*",
+        "clue/connection-manager": "0.1.*"
     }
 }
