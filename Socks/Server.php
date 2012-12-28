@@ -86,11 +86,12 @@ class Server extends SocketServer
 
         $line('connect');
 
+        $that = $this;
         $loop = $this->loop;
         $this->handleSocks($connection)->then(function($remote) use ($line, $connection){
             $line('tunnel successfully estabslished');
             $connection->emit('ready',array($remote));
-        }, function ($error) use ($connection, $line, $loop) {
+        }, function ($error) use ($connection, $line, $that) {
             if ($error instanceof \Exception) {
                 $msg = $error->getMessage();
                 while ($error->getPrevious() !== null) {
@@ -104,13 +105,8 @@ class Server extends SocketServer
                 var_dump($error);
             }
 
-            // shut down connection by pausing input data, flushing outgoing buffer and then exit
-            $connection->pause();
-            $connection->end();
-            // fall back to forcefully close connection in 3 seconds if buffer can not be flushed
-            $loop->addTimer(3.0, array($connection,'close'));
-
-            throw $error;
+            $that->endConnection($connection);
+            
 //         }, function ($progress) use ($line) {
 //             //$s = new StreamReader();
 //             $line('progress: './*$s->s*/($progress));
@@ -124,6 +120,38 @@ class Server extends SocketServer
         $connection->on('close', function () use ($line) {
             $line('disconnect');
         });
+    }
+    
+    /**
+     * gracefully shutdown connection by flushing all remaining data and closing stream
+     * 
+     * @param Stream $stream
+     */
+    public function endConnection(Stream $stream)
+    {
+        $tid = true;
+        $loop = $this->loop;
+        
+        // cancel below timer in case connection is closed in time
+        $stream->once('close', function () use (&$tid, $loop) {
+            // close event called before the timer was set up, so everything is okay
+            if ($tid === true) {
+                // make sure to not start a useless timer
+                $tid = false;
+            } else {
+                $loop->cancelTimer($tid);
+            }
+        });
+        
+        // shut down connection by pausing input data, flushing outgoing buffer and then exit
+        $stream->pause();
+        $stream->end();
+        
+        // check if connection is not already closed
+        if ($tid === true) {
+            // fall back to forcefully close connection in 3 seconds if buffer can not be flushed
+            $tid = $loop->addTimer(3.0, array($stream,'close'));
+        }
     }
 
     private function handleSocks(Stream $stream)
@@ -300,7 +328,8 @@ class Server extends SocketServer
     public function connectTarget(Stream $stream, $target)
     {
         $stream->emit('target',$target);
-        return $this->connectionManager->getConnection($target[0], $target[1])->then(function (Stream $remote) use ($stream) {
+        $that = $this;
+        return $this->connectionManager->getConnection($target[0], $target[1])->then(function (Stream $remote) use ($stream, $that) {
             if (!$stream->isWritable()) {
                 $remote->close();
                 throw new UnexpectedValueException('Remote connection successfully established after client connection closed');
@@ -310,17 +339,15 @@ class Server extends SocketServer
             $remote->pipe($stream, array('end'=>false));
 
             // remote end closes connection => stop reading from local end, try to flush buffer to local and disconnect local
-            $remote->on('end', function() use ($stream) {
-                $stream->pause();
-                $stream->end();
+            $remote->on('end', function() use ($stream, $that) {
+                $stream->emit('shutdown', array('remote', null));
+                $that->endConnection($stream);
             });
 
             // local end closes connection => stop reading from remote end, try to flush buffer to remote and disconnect remote
-            $stream->on('end', function() use ($remote) {
-                $remote->pause();
-                $remote->end();
+            $stream->on('end', function() use ($remote, $that) {
+                $that->endConnection($remote);
             });
-
 
             // set bigger buffer size of 100k to improve performance
             $stream->bufferSize = $remote->bufferSize = 100 * 1024 * 1024;
