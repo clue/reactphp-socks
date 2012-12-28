@@ -79,46 +79,18 @@ class Server extends SocketServer
 
     public function onConnection(Connection $connection)
     {
-
-        $line = function($msg) use ($connection) {
-            echo date('Y-m-d H:i:s') . ' #' . (int)$connection->stream . ' ' . $msg . PHP_EOL;
-        };
-
-        $line('connect');
+        // $this->emit('connection', array($connection));
 
         $that = $this;
         $loop = $this->loop;
-        $this->handleSocks($connection)->then(function($remote) use ($line, $connection){
-            $line('tunnel successfully estabslished');
+        $this->handleSocks($connection)->then(function($remote) use ($connection){
             $connection->emit('ready',array($remote));
-        }, function ($error) use ($connection, $line, $that) {
-            if ($error instanceof \Exception) {
-                $msg = $error->getMessage();
-                while ($error->getPrevious() !== null) {
-                    $error = $error->getPrevious();
-                    $msg .= ' - ' . $error->getMessage();
-                }
-
-                $line('error: ' . $msg);
-            } else {
-                $line('error');
-                var_dump($error);
+        }, function ($error) use ($connection, $that) {
+            if (!($error instanceof \Exception)) {
+                $error = new \Exception($error);
             }
-
+            $connection->emit('error', array($error));
             $that->endConnection($connection);
-            
-//         }, function ($progress) use ($line) {
-//             //$s = new StreamReader();
-//             $line('progress: './*$s->s*/($progress));
-        });
-
-        $that = $this;
-        $connectionManager = $this->connectionManager;
-        $connection->on('target', function ($host, $port) use ( $line) {
-            $line('target: ' . $host . ':' . $port);
-        });
-        $connection->on('close', function () use ($line) {
-            $line('disconnect');
         });
     }
     
@@ -325,9 +297,9 @@ class Server extends SocketServer
         });
     }
 
-    public function connectTarget(Stream $stream, $target)
+    public function connectTarget(Stream $stream, array $target)
     {
-        $stream->emit('target',$target);
+        $stream->emit('target', $target);
         $that = $this;
         return $this->connectionManager->getConnection($target[0], $target[1])->then(function (Stream $remote) use ($stream, $that) {
             if (!$stream->isWritable()) {
