@@ -9,9 +9,9 @@ connections in a non-blocking fashion.
 The SOCKS protocol family can be used to easily tunnel TCP connections independent
 of the actual application level protocol, such as HTTP, SMTP, IMAP, Telnet, etc.
 
-## Example
+## Quickstart examples
 
-Once [installed](#install), initialize a connection to remote SOCKS proxy server:
+Once [installed](#install), initialize a connection to a remote SOCKS proxy server:
 
 ```PHP
 <?php
@@ -251,7 +251,7 @@ The recommended way to install this library is [through composer](http://getcomp
 ```JSON
 {
     "require": {
-        "clue/Socks": "dev-master"
+        "clue/Socks": "0.3.*"
     }
 }
 ```
