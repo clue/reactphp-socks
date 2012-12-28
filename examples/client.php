@@ -8,7 +8,7 @@ use React\Stream\Stream;
 
 include_once __DIR__.'/../vendor/autoload.php';
 
-$loop = $loop = React\EventLoop\Factory::create();
+$loop = React\EventLoop\Factory::create();
 
 $dnsResolverFactory = new React\Dns\Resolver\Factory();
 $dns = $dnsResolverFactory->createCached('8.8.8.8', $loop);
@@ -98,7 +98,7 @@ $request->end();
 
 $loop->addTimer(8, function() use ($loop) {
     $loop->stop();
-    echo 'STOP - stopping mainloop after 5 seconds' . PHP_EOL;
+    echo 'STOP - stopping mainloop after 8 seconds' . PHP_EOL;
 });
 
 $loop->run();
