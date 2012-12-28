@@ -21,6 +21,8 @@ $client->setResolveLocal(false);
 //$client->setProtocolVersion(5);
 // $client->setAuth('test','test');
 
+echo 'Demo SOCKS client connecting to SOCKS server 127.0.0.1:9051' . PHP_EOL;
+
 function ex(Exception $exception=null)
 {
     if ($exception !== null) {

@@ -1,7 +1,5 @@
 <?php
 
-use React\Socket\Connection;
-
 include_once __DIR__.'/../vendor/autoload.php';
 
 $loop = React\EventLoop\Factory::create();
@@ -17,8 +15,6 @@ $server->setAuthArray(array(
     'user' => 'p@ssw0rd'
 ));
 
-$server->on('ready', function(Connection $connection) {
-
-});
+echo 'SOCKS server listening on localhost:9050' . PHP_EOL;
 
 $loop->run();
