@@ -2,18 +2,19 @@
 
 namespace Socks;
 
+use Evenement\EventEmitter;
+use React\Socket\ServerInterface;
 use React\Promise\When;
 use React\Promise\PromiseInterface;
 use React\Stream\Stream;
 use ConnectionManager\ConnectionManagerInterface;
 use React\Socket\Connection;
 use React\EventLoop\LoopInterface;
-use React\Socket\Server as SocketServer;
 use \UnexpectedValueException;
 use \InvalidArgumentException;
 use \Exception;
 
-class Server extends SocketServer
+class Server extends EventEmitter
 {
     protected $loop;
 
@@ -23,14 +24,16 @@ class Server extends SocketServer
 
     private $protocolVersion = null;
 
-    public function __construct(LoopInterface $loop, ConnectionManagerInterface $connectionManager)
+    public function __construct(ServerInterface $serverInterface, LoopInterface $loop, ConnectionManagerInterface $connectionManager)
     {
-        parent::__construct($loop);
-
         $this->loop = $loop;
         $this->connectionManager = $connectionManager;
 
-        $this->on('connection', array($this, 'onConnection'));
+        $that = $this;
+        $serverInterface->on('connection', function ($connection) use ($that) {
+            $that->emit('connection', array($connection));
+            $that->onConnection($connection);
+        });
     }
 
     public function setProtocolVersion($version)
@@ -79,10 +82,7 @@ class Server extends SocketServer
 
     public function onConnection(Connection $connection)
     {
-        // $this->emit('connection', array($connection));
-
         $that = $this;
-        $loop = $this->loop;
         $this->handleSocks($connection)->then(function($remote) use ($connection){
             $connection->emit('ready',array($remote));
         }, function ($error) use ($connection, $that) {

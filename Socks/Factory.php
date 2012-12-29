@@ -20,10 +20,10 @@ class Factory
         return new Client($this->loop, $connector, $this->resolver, $socksHost, $socksPort);
     }
 
-    public function createServer()
+    public function createServer($socket)
     {
         $connector = $this->createConnectionManager();
-        return new Server($this->loop, $connector);
+        return new Server($socket, $this->loop, $connector);
     }
 
     protected function createConnectionManager()
