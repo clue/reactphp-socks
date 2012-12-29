@@ -227,12 +227,14 @@ class Server extends EventEmitter
                     })->then(function ($password) use ($username, $auth, $stream) {
                         // username and password known => authenticate
                         // echo 'auth: ' . $username.' : ' . $password . PHP_EOL;
-                        return $auth($username, $password)->then(function () use ($stream) {
+                        return $auth($username, $password)->then(function () use ($stream, $username) {
                             // accept
+                            $stream->emit('auth', array($username));
                             $stream->write(pack('C2', 0x01, 0x00));
                         }, function() use ($stream) {
                             // reject => send any code but 0x00
-                            $stream->write(pack('C2', 0x01, 0xFF));
+                            $stream->end(pack('C2', 0x01, 0xFF));
+                            throw new UnexpectedValueException('Unable to authenticate');
                         });
                     });
                 });
@@ -242,7 +244,6 @@ class Server extends EventEmitter
                 throw new UnexpectedValueException('No acceptable authentication mechanism found');
             }
         })->then(function ($method) use ($reader, $stream) {
-            $stream->emit('authenticate',array($method));
             return $reader->readBinary(array(
                 'version' => 'C',
                 'command' => 'C',
