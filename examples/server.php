@@ -7,21 +7,15 @@ $loop = React\EventLoop\Factory::create();
 $dnsResolverFactory = new React\Dns\Resolver\Factory();
 $dns = $dnsResolverFactory->createCached('8.8.8.8', $loop);
 
-$factory = new Socks\Factory($loop, $dns);
-
-$connectionManager = new ConnectionManager\ConnectionManager($loop, $dns);
-
 $socket = new React\Socket\Server($loop);
+$socket->listen('9050','localhost');
 
-$server = new Socks\Server($socket, $loop, $connectionManager);
-
-$server = $factory->createServer();
+$factory = new Socks\Factory($loop, $dns);
+$server = $factory->createServer($socket);
 $server->setAuthArray(array(
     'tom' => 'god',
     'user' => 'p@ssw0rd'
 ));
-
-$socket->listen('9050','localhost');
 
 echo 'SOCKS server listening on localhost:9050' . PHP_EOL;
 
