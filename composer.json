@@ -9,8 +9,8 @@
         "psr-0": {"Socks": ""}
     },
     "require": {
-        "react/http-client": "0.2.*",
-        "react/event-loop": "0.2.*",
-        "clue/connection-manager": "0.1.*"
+        "react/http-client": "0.3.*",
+        "react/event-loop": "0.3.*",
+        "react/socket-client": "0.3.*"
     }
 }
