@@ -62,19 +62,21 @@ function assertOkay(PromiseInterface $promise, $name='end')
     );
 }
 
-assertOkay($client->getConnection('www.google.com', 80), 'www.google.com:80');
+$tcp = $client->createConnector();
 
-assertFail($client->getConnection('www.google.commm', 80), 'www.google.commm:80');
+assertOkay($tcp->create('www.google.com', 80), 'www.google.com:80');
 
-assertFail($client->getConnection('www.google.com', 8080), 'www.google.com:8080');
+assertFail($tcp->create('www.google.commm', 80), 'www.google.commm:80');
 
-$ssl = $client->createSecureConnectionManager();
+assertFail($tcp->create('www.google.com', 8080), 'www.google.com:8080');
 
-assertOkay($ssl->getConnection('www.google.com', 443), 'ssl://www.google.com:443');
+$ssl = $client->createSecureConnector();
 
-assertFail($ssl->getConnection('www.google.com', 80), 'ssl://www.google.com:80');
+assertOkay($ssl->create('www.google.com', 443), 'ssl://www.google.com:443');
 
-assertFail($ssl->getConnection('www.google.com', 8080), 'ssl://www.google.com:8080');
+assertFail($ssl->create('www.google.com', 80), 'ssl://www.google.com:80');
+
+assertFail($ssl->create('www.google.com', 8080), 'ssl://www.google.com:8080');
 
 // $ssl->getConnection('127.0.0.1','443')->then(function (React\Stream $stream) {
 //     echo 'connected';
