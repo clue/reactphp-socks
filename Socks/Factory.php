@@ -2,9 +2,9 @@
 
 namespace Socks;
 
-use ConnectionManager\ConnectionManager;
 use React\Dns\Resolver\Resolver;
 use React\EventLoop\LoopInterface;
+use React\SocketClient\Connector;
 
 class Factory
 {
@@ -16,18 +16,18 @@ class Factory
 
     public function createClient($socksHost, $socksPort)
     {
-        $connector = $this->createConnectionManager();
+        $connector = $this->createConnector();
         return new Client($this->loop, $connector, $this->resolver, $socksHost, $socksPort);
     }
 
     public function createServer($socket)
     {
-        $connector = $this->createConnectionManager();
+        $connector = $this->createConnector();
         return new Server($socket, $this->loop, $connector);
     }
 
-    protected function createConnectionManager()
+    protected function createConnector()
     {
-        return new ConnectionManager($this->loop, $this->resolver);
+        return new Connector($this->loop, $this->resolver);
     }
 }
