@@ -10,6 +10,7 @@ use React\Stream\Stream;
 use React\EventLoop\LoopInterface;
 use React\SocketClient\ConnectorInterface;
 use React\SocketClient\SecureConnector;
+use Socks\Connector;
 use \Exception;
 use \InvalidArgumentException;
 use \UnexpectedValueException;
@@ -116,6 +117,11 @@ class Client
     public function createSecureConnector()
     {
         return new SecureConnector($this->createConnector(), $this->loop);
+    }
+    
+    public function createConnector()
+    {
+        return new Connector($this);
     }
 
     public function getConnection($host, $port)
