@@ -1,6 +1,8 @@
 {
     "name": "clue/socks",
     "type": "library",
+    "description": "Async SOCKS proxy client and server (SOCKS4, SOCKS4a and SOCKS5)",
+    "keywords": ["socks client", "socks server", "tcp tunnel", "socks protocol", "async", "react"],
     "homepage": "http://github.com/clue/socks",
     "license": "MIT",
     "autoload": {
