@@ -4,6 +4,12 @@ This file is a manually maintained list of changes for each release. Feel free
 to add your changes here when sending pull requests. Also send corrections if
 you spot any mistakes.
 
+## 0.4.0 (2013-XX-XX)
+
+* BC break: Update react to current v0.3 and thus also replace `ConnectionManager` with `Connector`
+* BC break: New `Client::createConnector()` replaces inheriting `ConnectionManagerInterface`
+* BC break: New `Client::createSecureConnector()` replaces `Client::createSecureConnectionManager()` 
+
 ## 0.3.1 (2012-12-29)
 
 * Fix: Server event logging
@@ -24,7 +30,6 @@ you spot any mistakes.
 * Feature: Simple interface for HTTP over SOCKS: `HttpClient Client::createHttpClient()`
 * Feature: Simple interface for SSL/TLS over SOCKS: `Client` now implements `ConnectionManagerInterface`
 * Feature: Simple interface for TCP over SOCKS: `SecureConnectionManager Client::createSecureConnectionManager()`
-
 
 ## 0.1.0 (2011-05-16)
 
