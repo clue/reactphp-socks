@@ -86,9 +86,9 @@ class ClientApiTest extends PHPUnit_Framework_TestCase{
         $this->assertInstanceOf('\React\HttpClient\Client', $this->client->createHttpClient());
     }
 
-    public function testCreateSecureConnectionManager()
+    public function testCreateSecureConnector()
     {
-        $this->assertInstanceOf('\Socks\SecureConnectionManager', $this->client->createSecureConnectionManager());
+        $this->assertInstanceOf('\React\SocketClient\SecureConnector', $this->client->createSecureConnector());
     }
 
     /**
