@@ -8,19 +8,20 @@ use React\HttpClient\Client as HttpClient;
 use React\Dns\Resolver\Resolver;
 use React\Stream\Stream;
 use React\EventLoop\LoopInterface;
-use ConnectionManager\ConnectionManagerInterface;
-use ConnectionManager\SecureConnectionManager;
+use React\SocketClient\ConnectorInterface;
+use React\SocketClient\SecureConnector;
+use Socks\Connector;
 use \Exception;
 use \InvalidArgumentException;
 use \UnexpectedValueException;
 
-class Client implements ConnectionManagerInterface
+class Client
 {
     /**
      *
-     * @var ConnectionManagerInterface
+     * @var ConnectorInterface
      */
-    private $connectionManager;
+    private $connector;
 
     /**
      *
@@ -45,10 +46,10 @@ class Client implements ConnectionManagerInterface
 
     protected $auth = null;
 
-    public function __construct(LoopInterface $loop, ConnectionManagerInterface $connectionManager, Resolver $resolver, $socksHost, $socksPort)
+    public function __construct(LoopInterface $loop, ConnectorInterface $connector, Resolver $resolver, $socksHost, $socksPort)
     {
         $this->loop = $loop;
-        $this->connectionManager = $connectionManager;
+        $this->connector = $connector;
         $this->socksHost = $socksHost;
         $this->socksPort = $socksPort;
         $this->resolver = $resolver;
@@ -110,12 +111,17 @@ class Client implements ConnectionManagerInterface
 
     public function createHttpClient()
     {
-        return new HttpClient($this->loop, $this, $this->createSecureConnectionManager());
+        return new HttpClient($this->loop, $this->createConnector(), $this->createSecureConnector());
     }
 
-    public function createSecureConnectionManager()
+    public function createSecureConnector()
     {
-        return new SecureConnectionManager($this, $this->loop);
+        return new SecureConnector($this->createConnector(), $this->loop);
+    }
+    
+    public function createConnector()
+    {
+        return new Connector($this);
     }
 
     public function getConnection($host, $port)
@@ -145,7 +151,7 @@ class Client implements ConnectionManagerInterface
         $that = $this;
         When::all(
             array(
-                $this->connectionManager->getConnection($this->socksHost, $this->socksPort)->then(
+                $this->connector->create($this->socksHost, $this->socksPort)->then(
                     null,
                     function ($error) {
                         throw new Exception('Unable to connect to socks server', 0, $error);

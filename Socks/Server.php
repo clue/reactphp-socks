@@ -7,7 +7,7 @@ use React\Socket\ServerInterface;
 use React\Promise\When;
 use React\Promise\PromiseInterface;
 use React\Stream\Stream;
-use ConnectionManager\ConnectionManagerInterface;
+use React\SocketClient\ConnectorInterface;
 use React\Socket\Connection;
 use React\EventLoop\LoopInterface;
 use \UnexpectedValueException;
@@ -18,16 +18,16 @@ class Server extends EventEmitter
 {
     protected $loop;
 
-    private $connectionManager;
+    private $connector;
 
     private $auth = null;
 
     private $protocolVersion = null;
 
-    public function __construct(ServerInterface $serverInterface, LoopInterface $loop, ConnectionManagerInterface $connectionManager)
+    public function __construct(ServerInterface $serverInterface, LoopInterface $loop, ConnectorInterface $connector)
     {
         $this->loop = $loop;
-        $this->connectionManager = $connectionManager;
+        $this->connector = $connector;
 
         $that = $this;
         $serverInterface->on('connection', function ($connection) use ($that) {
@@ -302,7 +302,7 @@ class Server extends EventEmitter
     {
         $stream->emit('target', $target);
         $that = $this;
-        return $this->connectionManager->getConnection($target[0], $target[1])->then(function (Stream $remote) use ($stream, $that) {
+        return $this->connector->create($target[0], $target[1])->then(function (Stream $remote) use ($stream, $that) {
             if (!$stream->isWritable()) {
                 $remote->close();
                 throw new UnexpectedValueException('Remote connection successfully established after client connection closed');

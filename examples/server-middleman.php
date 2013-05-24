@@ -15,7 +15,7 @@ $target->setAuth('user','p@ssw0rd');
 
 // start a new server which forwards all connections to another SOCKS server
 $socket = new React\Socket\Server($loop);
-$server = new Socks\Server($socket, $loop, $target);
+$server = new Socks\Server($socket, $loop, $target->createConnector());
 
 $socket->listen('9051','localhost');
 

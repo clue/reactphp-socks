@@ -37,7 +37,9 @@ $loop->start();
 The `Socks/Client` uses a [Promise](https://github.com/reactphp/promise)-based interface which makes working with asynchronous functions a breeze.
 Let's open up a TCP [Stream](https://github.com/reactphp/stream) connection and write some data:
 ```PHP
-$client->getConnection('www.google.com',80)->then(function (React\Stream\Stream $stream) {
+$tcp = $client->createConnector();
+
+$tcp->create('www.google.com',80)->then(function (React\Stream\Stream $stream) {
     echo 'connected to www.google.com:80';
     $stream->write("GET / HTTP/1.0\r\n\r\n");
     // ...
@@ -67,10 +69,10 @@ Yes, this works for both plain HTTP and SSL encrypted HTTPS requests.
 
 If you want to connect to arbitrary SSL/TLS servers, there sure too is an easy to use API available:
 ```PHP
-$ssl = $client->createSecureConnectionManager();
+$ssl = $client->createSecureConnector();
 
-// now create an SSL encrypted connection (notice the $ssl instead of $client)
-$ssl->getConnection('www.google.com',443)->then(function (React\Stream\Stream $stream) {
+// now create an SSL encrypted connection (notice the $ssl instead of $tcp)
+$ssl->create('www.google.com',443)->then(function (React\Stream\Stream $stream) {
     // proceed with just the plain text data and everything is encrypted/decrypted automatically
     echo 'connected to SSL encrypted www.google.com';
     $stream->write("GET / HTTP/1.0\r\n\r\n");

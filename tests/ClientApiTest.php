@@ -1,9 +1,9 @@
 <?php
 
-(include_once __DIR__.'/../vendor/autoload.php') OR die(PHP_EOL.'ERROR: composer autoloader not found, run "composer install" or see README for instructions'.PHP_EOL);
-
-class ClientApiTest extends PHPUnit_Framework_TestCase{
-    public function setUp(){
+class ClientApiTest extends TestCase
+{
+    public function setUp()
+    {
         $loop = React\EventLoop\Factory::create();
 
         $dnsResolverFactory = new React\Dns\Resolver\Factory();
@@ -12,6 +12,14 @@ class ClientApiTest extends PHPUnit_Framework_TestCase{
         $factory = new Socks\Factory($loop, $dns);
 
         $this->client = $factory->createClient('127.0.0.1', 9050);
+    }
+    
+    /**
+     * @expectedException InvalidArgumentException
+     */
+    public function testInvalidAuthInformation()
+    {
+        $this->client->setAuth(str_repeat('a', 256), 'test');
     }
 
     /**
@@ -33,6 +41,24 @@ class ClientApiTest extends PHPUnit_Framework_TestCase{
     {
         $this->client->setAuth('username', 'password');
         $this->assertNull($this->client->setProtocolVersion(5));
+    }
+    
+    /**
+     * @expectedException UnexpectedValueException
+     */
+    public function testInvalidCanNotSetAuthenticationForSocks4()
+    {
+        $this->client->setProtocolVersion(4);
+        $this->client->setAuth('username', 'password');
+    }
+    
+    public function testUnsetAuth()
+    {
+        // unset auth even if it's not set is valid
+        $this->client->unsetAuth();
+    
+        $this->client->setAuth('username', 'password');
+        $this->client->unsetAuth();
     }
 
     /**
@@ -80,15 +106,27 @@ class ClientApiTest extends PHPUnit_Framework_TestCase{
         $this->client->setResolveLocal(false);
         $this->client->setProtocolVersion('4');
     }
+    
+    public function testSetTimeout()
+    {
+        $this->client->setTimeout(1);
+        $this->client->setTimeout(2.0);
+        $this->client->setTimeout(3);
+    }
 
     public function testCreateHttpClient()
     {
         $this->assertInstanceOf('\React\HttpClient\Client', $this->client->createHttpClient());
     }
-
-    public function testCreateSecureConnectionManager()
+    
+    public function testCreateConnector()
     {
-        $this->assertInstanceOf('\Socks\SecureConnectionManager', $this->client->createSecureConnectionManager());
+        $this->assertInstanceOf('\React\SocketClient\ConnectorInterface', $this->client->createConnector());
+    }
+
+    public function testCreateSecureConnector()
+    {
+        $this->assertInstanceOf('\React\SocketClient\SecureConnector', $this->client->createSecureConnector());
     }
 
     /**
