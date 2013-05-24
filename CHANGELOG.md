@@ -4,7 +4,7 @@ This file is a manually maintained list of changes for each release. Feel free
 to add your changes here when sending pull requests. Also send corrections if
 you spot any mistakes.
 
-## 0.4.0 (2013-XX-XX)
+## 0.4.0 (2013-05-24)
 
 * BC break: Update react to current v0.3 and thus also replace `ConnectionManager` with `Connector`
 * BC break: New `Client::createConnector()` replaces inheriting `ConnectionManagerInterface`

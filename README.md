@@ -253,7 +253,7 @@ The recommended way to install this library is [through composer](http://getcomp
 ```JSON
 {
     "require": {
-        "clue/Socks": "0.3.*"
+        "clue/Socks": "0.4.*"
     }
 }
 ```
