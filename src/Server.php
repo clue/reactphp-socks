@@ -1,6 +1,6 @@
 <?php
 
-namespace Socks;
+namespace Clue\React\Socks;
 
 use Evenement\EventEmitter;
 use React\Socket\ServerInterface;
@@ -93,17 +93,17 @@ class Server extends EventEmitter
             $that->endConnection($connection);
         });
     }
-    
+
     /**
      * gracefully shutdown connection by flushing all remaining data and closing stream
-     * 
+     *
      * @param Stream $stream
      */
     public function endConnection(Stream $stream)
     {
         $tid = true;
         $loop = $this->loop;
-        
+
         // cancel below timer in case connection is closed in time
         $stream->once('close', function () use (&$tid, $loop) {
             // close event called before the timer was set up, so everything is okay
@@ -114,11 +114,11 @@ class Server extends EventEmitter
                 $loop->cancelTimer($tid);
             }
         });
-        
+
         // shut down connection by pausing input data, flushing outgoing buffer and then exit
         $stream->pause();
         $stream->end();
-        
+
         // check if connection is not already closed
         if ($tid === true) {
             // fall back to forcefully close connection in 3 seconds if buffer can not be flushed

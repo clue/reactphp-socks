@@ -1,6 +1,6 @@
 <?php
 
-namespace Socks;
+namespace Clue\React\Socks;
 
 use React\Promise\Deferred;
 use React\Stream\Stream;

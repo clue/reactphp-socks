@@ -1,6 +1,6 @@
 <?php
 
-namespace Socks;
+namespace Clue\React\Socks;
 
 use React\Promise\When;
 use React\Promise\Deferred;
@@ -10,7 +10,7 @@ use React\Stream\Stream;
 use React\EventLoop\LoopInterface;
 use React\SocketClient\ConnectorInterface;
 use React\SocketClient\SecureConnector;
-use Socks\Connector;
+use Clue\React\Socks\Connector;
 use \Exception;
 use \InvalidArgumentException;
 use \UnexpectedValueException;
@@ -118,7 +118,7 @@ class Client
     {
         return new SecureConnector($this->createConnector(), $this->loop);
     }
-    
+
     public function createConnector()
     {
         return new Connector($this);
