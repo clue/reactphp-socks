@@ -4,7 +4,6 @@ namespace Clue\React\Socks;
 
 use React\Promise\When;
 use React\Promise\Deferred;
-use React\HttpClient\Client as HttpClient;
 use React\Dns\Resolver\Resolver;
 use React\Stream\Stream;
 use React\EventLoop\LoopInterface;
@@ -107,11 +106,6 @@ class Client
     public function unsetAuth()
     {
         $this->auth = null;
-    }
-
-    public function createHttpClient()
-    {
-        return new HttpClient($this->loop, $this->createConnector(), $this->createSecureConnector());
     }
 
     public function createSecureConnector()

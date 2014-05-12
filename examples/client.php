@@ -2,8 +2,6 @@
 
 use ConnectionManager\SecureConnectionManager;
 use React\Promise\PromiseInterface;
-use React\HttpClient\Client as HttpClient;
-use React\HttpClient\Response;
 use React\Stream\Stream;
 
 include_once __DIR__.'/../vendor/autoload.php';
@@ -85,20 +83,6 @@ assertFail($ssl->create('www.google.com', 8080), 'ssl://www.google.com:8080');
 //         echo $data;
 //     });
 // });
-
-// $factory = new React\HttpClient\Factory();
-// $httpclient = $factory->create($loop, $dns);
-$httpclient = $client->createHttpClient();
-
-$request = $httpclient->request('GET', 'https://www.google.com/', array('user-agent'=>'none'));
-$request->on('response', function (Response $response) {
-    echo '[response1]' . PHP_EOL;
-    //var_dump($response->getHeaders());
-    $response->on('data', function ($data) {
-        echo $data;
-    });
-});
-$request->end();
 
 $loop->addTimer(8, function() use ($loop) {
     $loop->stop();
