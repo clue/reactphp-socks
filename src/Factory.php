@@ -1,6 +1,6 @@
 <?php
 
-namespace Socks;
+namespace Clue\React\Socks;
 
 use React\Dns\Resolver\Resolver;
 use React\EventLoop\LoopInterface;

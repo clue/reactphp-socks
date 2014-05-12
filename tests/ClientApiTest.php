@@ -1,5 +1,7 @@
 <?php
 
+use Clue\React\Socks;
+
 class ClientApiTest extends TestCase
 {
     public function setUp()
@@ -13,7 +15,7 @@ class ClientApiTest extends TestCase
 
         $this->client = $factory->createClient('127.0.0.1', 9050);
     }
-    
+
     /**
      * @expectedException InvalidArgumentException
      */
@@ -42,7 +44,7 @@ class ClientApiTest extends TestCase
         $this->client->setAuth('username', 'password');
         $this->assertNull($this->client->setProtocolVersion(5));
     }
-    
+
     /**
      * @expectedException UnexpectedValueException
      */
@@ -51,12 +53,12 @@ class ClientApiTest extends TestCase
         $this->client->setProtocolVersion(4);
         $this->client->setAuth('username', 'password');
     }
-    
+
     public function testUnsetAuth()
     {
         // unset auth even if it's not set is valid
         $this->client->unsetAuth();
-    
+
         $this->client->setAuth('username', 'password');
         $this->client->unsetAuth();
     }
@@ -106,7 +108,7 @@ class ClientApiTest extends TestCase
         $this->client->setResolveLocal(false);
         $this->client->setProtocolVersion('4');
     }
-    
+
     public function testSetTimeout()
     {
         $this->client->setTimeout(1);
@@ -118,7 +120,7 @@ class ClientApiTest extends TestCase
     {
         $this->assertInstanceOf('\React\HttpClient\Client', $this->client->createHttpClient());
     }
-    
+
     public function testCreateConnector()
     {
         $this->assertInstanceOf('\React\SocketClient\ConnectorInterface', $this->client->createConnector());
