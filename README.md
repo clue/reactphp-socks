@@ -1,4 +1,4 @@
-# clue/socks-react - SOCKS client and server [![Build Status](https://travis-ci.org/clue/reactphp-socks.png?branch=master)](https://travis-ci.org/clue/socks)
+# clue/socks-react - SOCKS client and server [![Build Status](https://travis-ci.org/clue/reactphp-socks.png?branch=master)](https://travis-ci.org/clue/reactphp-socks)
 
 Async SOCKS client library to connect to SOCKS4, SOCKS4a and SOCKS5 proxy servers,
 as well as a SOCKS server implementation, capable of handling multiple concurrent
