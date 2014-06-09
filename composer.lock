@@ -1,9 +1,10 @@
 {
     "_readme": [
         "This file locks the dependencies of your project to a known state",
-        "Read more about it at http://getcomposer.org/doc/01-basic-usage.md#composer-lock-the-lock-file"
+        "Read more about it at http://getcomposer.org/doc/01-basic-usage.md#composer-lock-the-lock-file",
+        "This file is @generated automatically"
     ],
-    "hash": "b52b2826c3c96a5473877957f87ab1fe",
+    "hash": "2611546beab1568c17637d0c3709cf93",
     "packages": [
         {
             "name": "evenement/evenement",

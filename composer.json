@@ -17,6 +17,10 @@
         "react/http-client": "0.3.*",
         "react/event-loop": "0.3.*",
         "react/socket-client": "0.3.*",
-        "react/socket": "0.3.*"
+        "react/socket": "0.3.*",
+        "react/dns": "0.3.*",
+        "react/stream": "0.3.*",
+        "react/promise": "~1.0",
+        "evenement/evenement": "~1.0"
     }
 }
