@@ -14,6 +14,7 @@
         "psr-4": {"Clue\\React\\Socks\\": "src"}
     },
     "require": {
+        "php": ">=5.3",
         "react/http-client": "0.3.*",
         "react/event-loop": "0.3.*",
         "react/socket-client": "0.3.*",
