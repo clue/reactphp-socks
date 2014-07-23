@@ -2,7 +2,7 @@
     "name": "clue/socks-react",
     "description": "Async SOCKS proxy client and server (SOCKS4, SOCKS4a and SOCKS5)",
     "keywords": ["socks client", "socks server", "tcp tunnel", "socks protocol", "async", "react"],
-    "homepage": "https://github.com/clue/reactphp-socks",
+    "homepage": "https://github.com/clue/php-socks-react",
     "license": "MIT",
     "authors": [
         {
