@@ -29,7 +29,7 @@ $client = $factory->createClient('127.0.0.1', 9050);
 
 // now work with your $client, see below
 
-$loop->start();
+$loop->run();
 ```
 
 ### Tunnelled TCP connections
