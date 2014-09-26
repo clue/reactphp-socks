@@ -1,9 +1,13 @@
 <?php
 
 use Clue\React\Socks;
+use Clue\React\Socks\Client;
 
 class ClientApiTest extends TestCase
 {
+    /** @var  Client */
+    private $client;
+
     public function setUp()
     {
         $loop = React\EventLoop\Factory::create();

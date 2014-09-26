@@ -229,7 +229,7 @@ class Client
         return $deferred->promise();
     }
 
-    protected function handleSocks4($stream, $host, $port)
+    protected function handleSocks4(Stream $stream, $host, $port)
     {
         // do not resolve hostname. only try to convert to IP
         $ip = ip2long($host);
