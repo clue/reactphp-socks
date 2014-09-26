@@ -7,7 +7,7 @@ $loop = React\EventLoop\Factory::create();
 $dnsResolverFactory = new React\Dns\Resolver\Factory();
 $dns = $dnsResolverFactory->createCached('8.8.8.8', $loop);
 
-$factory = new Socks\Factory($loop, $dns);
+$factory = new Clue\React\Socks\Factory($loop, $dns);
 
 // set next SOCKS server as target
 $target = $factory->createClient('127.0.0.1',9050);
@@ -15,7 +15,7 @@ $target->setAuth('user','p@ssw0rd');
 
 // start a new server which forwards all connections to another SOCKS server
 $socket = new React\Socket\Server($loop);
-$server = new Socks\Server($socket, $loop, $target->createConnector());
+$server = new Clue\React\Socks\Server($socket, $loop, $target->createConnector());
 
 $socket->listen('9051','localhost');
 

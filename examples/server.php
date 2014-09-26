@@ -10,7 +10,7 @@ $dns = $dnsResolverFactory->createCached('8.8.8.8', $loop);
 $socket = new React\Socket\Server($loop);
 $socket->listen('9050','localhost');
 
-$factory = new Socks\Factory($loop, $dns);
+$factory = new Clue\React\Socks\Factory($loop, $dns);
 $server = $factory->createServer($socket);
 $server->setAuthArray(array(
     'tom' => 'god',

@@ -24,7 +24,7 @@ $dnsResolverFactory = new React\Dns\Resolver\Factory();
 $dns = $dnsResolverFactory->createCached('8.8.8.8', $loop);
 
 // create SOCKS client which communicates with SOCKS server 127.0.0.1:9050
-$factory = new Socks\Factory($loop, $dns);
+$factory = new Clue\React\Socks\Factory($loop, $dns);
 $client = $factory->createClient('127.0.0.1', 9050);
 
 // now work with your $client, see below

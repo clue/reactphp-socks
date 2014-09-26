@@ -13,7 +13,7 @@ $loop = React\EventLoop\Factory::create();
 $dnsResolverFactory = new React\Dns\Resolver\Factory();
 $dns = $dnsResolverFactory->createCached('8.8.8.8', $loop);
 
-$factory = new Socks\Factory($loop, $dns);
+$factory = new Clue\React\Socks\Factory($loop, $dns);
 
 $client = $factory->createClient('127.0.0.1', 9051);
 $client->setTimeout(3.0);
