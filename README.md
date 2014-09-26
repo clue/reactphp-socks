@@ -19,13 +19,8 @@ include_once __DIR__.'/vendor/autoload.php';
 
 $loop = React\EventLoop\Factory::create();
 
-// use google's dns servers
-$dnsResolverFactory = new React\Dns\Resolver\Factory();
-$dns = $dnsResolverFactory->createCached('8.8.8.8', $loop);
-
 // create SOCKS client which communicates with SOCKS server 127.0.0.1:9050
-$factory = new Clue\React\Socks\Factory($loop, $dns);
-$client = $factory->createClient('127.0.0.1', 9050);
+$client = new Clue\React\Socks\Client($loop, '127.0.0.1', 9050);
 
 // now work with your $client, see below
 
@@ -34,7 +29,7 @@ $loop->run();
 
 ### Tunnelled TCP connections
 
-The `Socks/Client` uses a [Promise](https://github.com/reactphp/promise)-based interface which makes working with asynchronous functions a breeze.
+The `Client` uses a [Promise](https://github.com/reactphp/promise)-based interface which makes working with asynchronous functions a breeze.
 Let's open up a TCP [Stream](https://github.com/reactphp/stream) connection and write some data:
 ```PHP
 $tcp = $client->createConnector();
@@ -223,7 +218,7 @@ If you already have an SSH server set up, you can easily use it as a SOCKS tunne
 `$ ssh -D 9050 ssh-server`
 
 ```PHP
-$client = $factory->createClient('127.0.0.1', 9050);
+$client = new Client($loop, '127.0.0.1', 9050);
 ```
 
 ### Using the Tor (anonymity network) to tunnel SOCKS connections
@@ -232,7 +227,7 @@ The [Tor anonymity network](http://www.torproject.org) client software is design
 
 ```PHP
 
-$client = $factory->createClient('127.0.0.1', 9050);
+$client = new Client($loop, '127.0.0.1', 9050);
 $client->setResolveLocal(false);
 ```
 

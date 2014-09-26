@@ -7,6 +7,8 @@ use React\Socket\ServerInterface;
 use React\Promise\When;
 use React\Promise\PromiseInterface;
 use React\Stream\Stream;
+use React\Dns\Resolver\Factory as DnsFactory;
+use React\SocketClient\Connector as TcpConnector;
 use React\SocketClient\ConnectorInterface;
 use React\Socket\Connection;
 use React\EventLoop\LoopInterface;
@@ -24,8 +26,15 @@ class Server extends EventEmitter
 
     private $protocolVersion = null;
 
-    public function __construct(ServerInterface $serverInterface, LoopInterface $loop, ConnectorInterface $connector)
+    public function __construct(LoopInterface $loop, ServerInterface $serverInterface, ConnectorInterface $connector = null)
     {
+        if ($connector === null) {
+            // default to using Google's public DNS server
+            $dnsResolverFactory = new DnsFactory();
+            $resolver = $dnsResolverFactory->createCached('8.8.8.8', $loop);
+            $connector = new TcpConnector($loop, $resolver);
+        }
+
         $this->loop = $loop;
         $this->connector = $connector;
 

@@ -21,7 +21,7 @@ class ServerApiTest extends TestCase
             ->disableOriginalConstructor()
             ->getMock();
 
-        $this->server = new Server($socket, $loop, $connector);
+        $this->server = new Server($loop, $socket, $connector);
     }
 
     public function testSetProtocolVersion()

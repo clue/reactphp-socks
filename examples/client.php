@@ -3,17 +3,13 @@
 use ConnectionManager\SecureConnectionManager;
 use React\Promise\PromiseInterface;
 use React\Stream\Stream;
+use Clue\React\Socks\Client;
 
 include_once __DIR__.'/../vendor/autoload.php';
 
 $loop = React\EventLoop\Factory::create();
 
-$dnsResolverFactory = new React\Dns\Resolver\Factory();
-$dns = $dnsResolverFactory->createCached('8.8.8.8', $loop);
-
-$factory = new Clue\React\Socks\Factory($loop, $dns);
-
-$client = $factory->createClient('127.0.0.1', 9051);
+$client = new Client($loop, '127.0.0.1', 9051);
 $client->setTimeout(3.0);
 $client->setResolveLocal(false);
 //$client->setProtocolVersion(5);

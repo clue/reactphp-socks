@@ -1,6 +1,5 @@
 <?php
 
-use Clue\React\Socks;
 use Clue\React\Socks\Client;
 
 class ClientApiTest extends TestCase
@@ -11,13 +10,7 @@ class ClientApiTest extends TestCase
     public function setUp()
     {
         $loop = React\EventLoop\Factory::create();
-
-        $dnsResolverFactory = new React\Dns\Resolver\Factory();
-        $dns = $dnsResolverFactory->createCached('8.8.8.8', $loop);
-
-        $factory = new Socks\Factory($loop, $dns);
-
-        $this->client = $factory->createClient('127.0.0.1', 9050);
+        $this->client = new Client($loop, '127.0.0.1', 9050);
     }
 
     /**

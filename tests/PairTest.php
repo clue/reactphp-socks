@@ -1,21 +1,16 @@
 <?php
 
-use Clue\React\Socks\Factory;
 use React\Stream\Stream;
+use Clue\React\Socks\Client;
+use Clue\React\Socks\Server;
 
 class PairTest extends TestCase
 {
     private $loop;
-    private $factory;
 
     public function setUp()
     {
         $this->loop = React\EventLoop\Factory::create();
-
-        $dnsResolverFactory = new React\Dns\Resolver\Factory();
-        $dns = $dnsResolverFactory->createCached('8.8.8.8', $this->loop);
-
-        $this->factory = new Factory($this->loop, $dns);
     }
 
     public function testClientConnection()
@@ -24,14 +19,14 @@ class PairTest extends TestCase
         $port = $socket->getPort();
         $this->assertNotEquals(0, $port);
 
-        $server = $this->factory->createServer($socket);
+        $server = new Server($this->loop, $socket);
 
         $server->on('connection', function () use ($socket) {
             // close server socket once first connection has been established
             $socket->shutdown();
         });
 
-        $client = $this->factory->createClient('127.0.0.1', $port);
+        $client = new Client($this->loop, '127.0.0.1', $port);
 
         $that = $this;
         $client->getConnection('www.google.com', 80)->then(
