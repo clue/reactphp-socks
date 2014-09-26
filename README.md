@@ -48,22 +48,12 @@ $tcp->create('www.google.com',80)->then(function (React\Stream\Stream $stream) {
 
 ### HTTP requests
 
-Or if all you want to do is HTTP requests, `Socks/Client` provides an even simpler [HTTP client](https://github.com/reactphp/http-client) interface:
-```PHP
-$httpclient = $client->createHttpClient();
-
-$request = $httpclient->request('GET', 'https://www.google.com/', array('user-agent'=>'Custom/1.0'));
-$request->on('response', function (React\HttpClient\Response $response) {
-    var_dump('Headers received:', $response->getHeaders());
-    
-    // dump whole response body
-    $response->on('data', function ($data) {
-        echo $data;
-    });
-});
-$request->end();
-```
-Yes, this works for both plain HTTP and SSL encrypted HTTPS requests.
+HTTP operates on a higher layer than this low-level SOCKS implementation.
+If you want to issue HTTP requests, you can add a dependency for
+[clue/buzz-react](https://github.com/clue/php-buzz-react).
+It can interact with this library by issuing all
+[http requests through a SOCKS server](https://github.com/clue/php-buzz-react/#via-socks-server).
+This works for both plain HTTP and SSL encrypted HTTPS requests.
 
 ### SSL/TLS encrypted
 

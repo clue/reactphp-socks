@@ -120,11 +120,6 @@ class ClientApiTest extends TestCase
         $this->client->setTimeout(3);
     }
 
-    public function testCreateHttpClient()
-    {
-        $this->assertInstanceOf('\React\HttpClient\Client', $this->client->createHttpClient());
-    }
-
     public function testCreateConnector()
     {
         $this->assertInstanceOf('\React\SocketClient\ConnectorInterface', $this->client->createConnector());

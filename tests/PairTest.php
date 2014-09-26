@@ -1,6 +1,7 @@
 <?php
 
 use Clue\React\Socks\Factory;
+use React\Stream\Stream;
 
 class PairTest extends TestCase
 {
@@ -17,7 +18,7 @@ class PairTest extends TestCase
         $this->factory = new Factory($this->loop, $dns);
     }
 
-    public function testClientHttpRequest()
+    public function testClientConnection()
     {
         $socket = $this->createSocketServer();
         $port = $socket->getPort();
@@ -32,21 +33,15 @@ class PairTest extends TestCase
 
         $client = $this->factory->createClient('127.0.0.1', $port);
 
-        $http = $client->createHttpClient();
-
-        $request = $http->request('GET', 'https://www.google.com/', array('user-agent'=>'none'));
-        $request->on('response', function (React\HttpClient\Response $response) {
-            // response received, do not care for the rest of the response body
-            $response->close();
-        });
-        $request->end();
-
-//         $loop = $this->loop;
-//         $that = $this;
-//         $this->loop->addTimer(1.0, function() use ($that, $loop) {
-//             $that->fail('timeout timer');
-//             $loop->stop();
-//         });
+        $that = $this;
+        $client->getConnection('www.google.com', 80)->then(
+            function (Stream $stream) {
+                $stream->close();
+            },
+            function ($error) use ($that) {
+                $that->fail('Unable to connect');
+            }
+        );
 
         $this->loop->run();
     }

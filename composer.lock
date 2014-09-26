@@ -4,7 +4,7 @@
         "Read more about it at http://getcomposer.org/doc/01-basic-usage.md#composer-lock-the-lock-file",
         "This file is @generated automatically"
     ],
-    "hash": "2134dc2629b011a30cd1635dc7c1dd4b",
+    "hash": "10f5ad1a61dcc495ce79b8c5895ff236",
     "packages": [
         {
             "name": "evenement/evenement",
@@ -45,45 +45,6 @@
                 "event-dispatcher"
             ],
             "time": "2012-05-30 15:01:08"
-        },
-        {
-            "name": "guzzle/parser",
-            "version": "v2.8.8",
-            "target-dir": "Guzzle/Parser",
-            "source": {
-                "type": "git",
-                "url": "https://github.com/guzzle/parser.git",
-                "reference": "8f5152833af2d9505bcefb0a10c4b6987aa9a6b1"
-            },
-            "dist": {
-                "type": "zip",
-                "url": "https://api.github.com/repos/guzzle/parser/zipball/8f5152833af2d9505bcefb0a10c4b6987aa9a6b1",
-                "reference": "8f5152833af2d9505bcefb0a10c4b6987aa9a6b1",
-                "shasum": ""
-            },
-            "require": {
-                "php": ">=5.3.2"
-            },
-            "type": "library",
-            "autoload": {
-                "psr-0": {
-                    "Guzzle\\Parser": ""
-                }
-            },
-            "notification-url": "https://packagist.org/downloads/",
-            "license": [
-                "MIT"
-            ],
-            "description": "Interchangeable parsers used by Guzzle",
-            "homepage": "http://guzzlephp.org/",
-            "keywords": [
-                "URI Template",
-                "cookie",
-                "http",
-                "message",
-                "url"
-            ],
-            "time": "2012-09-20 20:28:06"
         },
         {
             "name": "react/cache",
@@ -210,48 +171,6 @@
                 "event-loop"
             ],
             "time": "2013-07-08 22:38:22"
-        },
-        {
-            "name": "react/http-client",
-            "version": "v0.3.2",
-            "target-dir": "React/HttpClient",
-            "source": {
-                "type": "git",
-                "url": "https://github.com/reactphp/http-client.git",
-                "reference": "b96aa5dfa23c83e669de8d4acb717b03ae70c088"
-            },
-            "dist": {
-                "type": "zip",
-                "url": "https://api.github.com/repos/reactphp/http-client/zipball/b96aa5dfa23c83e669de8d4acb717b03ae70c088",
-                "reference": "b96aa5dfa23c83e669de8d4acb717b03ae70c088",
-                "shasum": ""
-            },
-            "require": {
-                "guzzle/parser": "2.8.*",
-                "php": ">=5.3.3",
-                "react/dns": "0.3.*",
-                "react/socket-client": "0.3.*"
-            },
-            "type": "library",
-            "extra": {
-                "branch-alias": {
-                    "dev-master": "0.3-dev"
-                }
-            },
-            "autoload": {
-                "psr-0": {
-                    "React\\HttpClient": ""
-                }
-            },
-            "notification-url": "https://packagist.org/downloads/",
-            "license": [
-                "MIT"
-            ],
-            "description": "Asynchronous HTTP client library.",
-            "keywords": [
-                "http"
-            ],
-            "time": "2013-04-21 12:54:33"
         },
         {
             "name": "react/promise",
@@ -436,6 +355,7 @@
     "stability-flags": [
 
     ],
+    "prefer-stable": false,
     "platform": {
         "php": ">=5.3"
     },
