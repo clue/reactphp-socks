@@ -17,13 +17,13 @@ class Factory
     public function createClient($socksHost, $socksPort)
     {
         $connector = $this->createConnector();
-        return new Client($this->loop, $connector, $this->resolver, $socksHost, $socksPort);
+        return new Client($this->loop, $socksHost, $socksPort, $connector, $this->resolver);
     }
 
     public function createServer($socket)
     {
         $connector = $this->createConnector();
-        return new Server($socket, $this->loop, $connector);
+        return new Server($this->loop, $socket, $connector);
     }
 
     protected function createConnector()

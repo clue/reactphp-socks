@@ -45,13 +45,14 @@ class Client
 
     protected $auth = null;
 
-    public function __construct(LoopInterface $loop, ConnectorInterface $connector, Resolver $resolver, $socksHost, $socksPort)
+    public function __construct(LoopInterface $loop, $socksHost, $socksPort, ConnectorInterface $connector, Resolver $resolver)
     {
         $this->loop = $loop;
-        $this->connector = $connector;
         $this->socksHost = $socksHost;
         $this->socksPort = $socksPort;
+        $this->connector = $connector;
         $this->resolver = $resolver;
+
         $this->timeout = ini_get("default_socket_timeout");
     }
 

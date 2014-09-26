@@ -24,7 +24,7 @@ class Server extends EventEmitter
 
     private $protocolVersion = null;
 
-    public function __construct(ServerInterface $serverInterface, LoopInterface $loop, ConnectorInterface $connector)
+    public function __construct(LoopInterface $loop, ServerInterface $serverInterface, ConnectorInterface $connector)
     {
         $this->loop = $loop;
         $this->connector = $connector;
