@@ -4,7 +4,9 @@ namespace Clue\React\Socks;
 
 use React\Promise\When;
 use React\Promise\Deferred;
+use React\Dns\Resolver\Factory as DnsFactory;
 use React\Dns\Resolver\Resolver;
+use React\SocketClient\Connector as TcpConnector;
 use React\Stream\Stream;
 use React\EventLoop\LoopInterface;
 use React\SocketClient\ConnectorInterface;
@@ -45,8 +47,17 @@ class Client
 
     protected $auth = null;
 
-    public function __construct(LoopInterface $loop, $socksHost, $socksPort, ConnectorInterface $connector, Resolver $resolver)
+    public function __construct(LoopInterface $loop, $socksHost, $socksPort, ConnectorInterface $connector = null, Resolver $resolver = null)
     {
+        if ($resolver === null) {
+            // default to using Google's public DNS server
+            $dnsResolverFactory = new DnsFactory();
+            $resolver = $dnsResolverFactory->createCached('8.8.8.8', $loop);
+        }
+        if ($connector === null) {
+            $connector = new TcpConnector($loop, $resolver);
+        }
+
         $this->loop = $loop;
         $this->socksHost = $socksHost;
         $this->socksPort = $socksPort;
