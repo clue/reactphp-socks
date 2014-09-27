@@ -2,7 +2,6 @@
 
 namespace Clue\React\Socks;
 
-use React\Promise\When;
 use React\Promise\Deferred;
 use React\Dns\Resolver\Factory as DnsFactory;
 use React\Dns\Resolver\Resolver;
@@ -133,7 +132,9 @@ class Client
     public function getConnection($host, $port)
     {
         if (strlen($host) > 255 || $port > 65535 || $port < 0) {
-            return When::reject(new InvalidArgumentException('Invalid target specified'));
+            $deferred = new Deferred();
+            $deferred->reject(new InvalidArgumentException('Invalid target specified'));
+            return $deferred->promise();
         }
         $deferred = new Deferred();
 
@@ -155,7 +156,7 @@ class Client
 
         $loop = $this->loop;
         $that = $this;
-        When::all(
+        \react\promise\all(
             array(
                 $this->connector->create($this->socksHost, $this->socksPort)->then(
                     null,
@@ -188,7 +189,9 @@ class Client
     {
         // return if it's already an IP or we want to resolve remotely (socks 4 only supports resolving locally)
         if (false !== filter_var($host, FILTER_VALIDATE_IP) || ($this->protocolVersion !== '4' && !$this->resolveLocal)) {
-            return When::resolve($host);
+            $deferred = new Deferred();
+            $deferred->resolve($host);
+            return $deferred->promise();
         }
 
         return $this->resolver->resolve($host);
