@@ -137,7 +137,10 @@ class Server extends EventEmitter
 
     private function handleSocks(Stream $stream)
     {
-        $reader = new StreamReader($stream);
+        $reader = new StreamReader();
+        $stream->on('data', array($reader, 'write'));
+
+        $that = $this;
         $that = $this;
 
         $auth = $this->auth;
@@ -148,28 +151,27 @@ class Server extends EventEmitter
         	$protocolVersion = '5';
         }
 
-        return $reader->readByte()->then(function ($version) use ($stream, $that, $protocolVersion, $auth){
+        return $reader->readByte()->then(function ($version) use ($stream, $that, $protocolVersion, $auth, $reader){
             if ($version === 0x04) {
                 if ($protocolVersion === '5') {
                     throw new UnexpectedValueException('SOCKS4 not allowed due to configuration');
                 }
-                return $that->handleSocks4($stream, $protocolVersion);
+                return $that->handleSocks4($stream, $protocolVersion, $reader);
             } else if ($version === 0x05) {
                 if ($protocolVersion !== null && $protocolVersion !== '5') {
                     throw new UnexpectedValueException('SOCKS5 not allowed due to configuration');
                 }
-                return $that->handleSocks5($stream, $auth);
+                return $that->handleSocks5($stream, $auth, $reader);
             }
             throw new UnexpectedValueException('Unexpected/unknown version number');
         });
     }
 
-    public function handleSocks4(Stream $stream, $protocolVersion)
+    public function handleSocks4(Stream $stream, $protocolVersion, StreamReader $reader)
     {
         // suppliying hostnames is only allowed for SOCKS4a (or automatically detected version)
         $supportsHostname = ($protocolVersion === null || $protocolVersion === '4a');
 
-        $reader = new StreamReader($stream);
         $that = $this;
         return $reader->readByteAssert(0x01)->then(function () use ($reader) {
             return $reader->readBinary(array(
@@ -211,9 +213,8 @@ class Server extends EventEmitter
         });
     }
 
-    public function handleSocks5(Stream $stream, $auth=null)
+    public function handleSocks5(Stream $stream, $auth=null, StreamReader $reader)
     {
-        $reader = new StreamReader($stream);
         $that = $this;
         return $reader->readByte()->then(function ($num) use ($reader) {
             // $num different authentication mechanisms offered

@@ -203,10 +203,13 @@ class Client
             $resolver->reject(new Exception('Timeout while establishing socks session'));
         });
 
+        $reader = new StreamReader($stream);
+        $stream->on('data', array($reader, 'write'));
+
         if ($protocolVersion === '5' || $auth !== null) {
-            $promise = $this->handleSocks5($stream, $host, $port, $auth);
+            $promise = $this->handleSocks5($stream, $host, $port, $auth, $reader);
         } else {
-            $promise = $this->handleSocks4($stream, $host, $port);
+            $promise = $this->handleSocks4($stream, $host, $port, $reader);
         }
         $promise->then(function () use ($resolver, $stream) {
             $resolver->resolve($stream);
@@ -216,14 +219,20 @@ class Client
 
         $loop = $this->loop;
         $deferred->then(
-            function (Stream $stream) use ($timerTimeout, $loop) {
+            function (Stream $stream) use ($timerTimeout, $loop, $reader) {
                 $loop->cancelTimer($timerTimeout);
                 $stream->removeAllListeners('end');
+
+                $stream->removeListener('data', array($reader, 'write'));
+
                 return $stream;
             },
-            function ($error) use ($stream, $timerTimeout, $loop) {
+            function ($error) use ($stream, $timerTimeout, $loop, $reader) {
                 $loop->cancelTimer($timerTimeout);
                 $stream->close();
+
+                $stream->removeListener('data', array($reader, 'write'));
+
                 return $error;
             }
         );
@@ -235,7 +244,7 @@ class Client
         return $deferred->promise();
     }
 
-    protected function handleSocks4(Stream $stream, $host, $port)
+    protected function handleSocks4(Stream $stream, $host, $port, StreamReader $reader)
     {
         // do not resolve hostname. only try to convert to IP
         $ip = ip2long($host);
@@ -250,7 +259,6 @@ class Client
 
         $stream->write($data);
 
-        $reader = new StreamReader($stream);
         return $reader->readBinary(array(
             'null'   => 'C',
             'status' => 'C',
@@ -263,7 +271,7 @@ class Client
         });
     }
 
-    protected function handleSocks5(Stream $stream, $host, $port, $auth=null)
+    protected function handleSocks5(Stream $stream, $host, $port, $auth=null, StreamReader $reader)
     {
         // protocol version 5
         $data = pack('C', 0x05);
@@ -277,7 +285,7 @@ class Client
         $stream->write($data);
 
         $that = $this;
-        $reader = new StreamReader($stream);
+
         return $reader->readBinary(array(
             'version' => 'C',
             'method'  => 'C'

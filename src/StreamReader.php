@@ -9,11 +9,35 @@ use \UnexpectedValueException;
 
 class StreamReader
 {
-    private $stream;
+    const RET_DONE = true;
+    const RET_INCOMPLETE = null;
 
-    public function __construct(Stream $stream)
+    private $buffer = '';
+    private $queue = array();
+
+    public function write($data)
     {
-        $this->stream = $stream;
+        $this->buffer .= $data;
+
+        do {
+            $current = reset($this->queue);
+
+            if ($current === false) {
+                break;
+            }
+
+            /* @var $current Closure */
+
+            $ret = $current($this->buffer);
+
+            if ($ret === self::RET_INCOMPLETE) {
+                // current is incomplete, so wait for further data to arrive
+                break;
+            } else {
+                // current is done, remove from list and continue with next
+                array_shift($this->queue);
+            }
+        } while (true);
     }
 
     public function readBinary($structure)
@@ -45,27 +69,16 @@ class StreamReader
     public function readLength($bytes)
     {
         $deferred = new Deferred();
-        $oldsize = $this->stream->bufferSize;
-        $this->stream->bufferSize = $bytes;
 
-        $buffer = '';
+        $this->readBufferCallback(function (&$buffer) use ($bytes, $deferred) {
+            if (strlen($buffer) >= $bytes) {
+                $deferred->resolve(substr($buffer, 0, $bytes));
+                $buffer = (string)substr($buffer, $bytes);
 
-        $fn = function ($data, Stream $stream) use (&$buffer, &$bytes, $deferred, $oldsize, &$fn) {
-            $bytes -= strlen($data);
-            $buffer .= $data;
-
-            $deferred->progress($data);
-
-            if ($bytes === 0) {
-                $stream->bufferSize = $oldsize;
-                $stream->removeListener('data', $fn);
-
-                $deferred->resolve($buffer);
-            } else {
-                $stream->bufferSize = $bytes;
+                return StreamReader::RET_DONE;
             }
-        };
-        $this->stream->on('data', $fn);
+        });
+
         return $deferred->promise();
     }
 
@@ -78,10 +91,6 @@ class StreamReader
         });
     }
 
-    public function readNull(){
-        return $this->readByteAssert(0x00);
-    }
-
     public function readByteAssert($expect)
     {
         return $this->readByte()->then(function ($byte) use ($expect) {
@@ -90,11 +99,6 @@ class StreamReader
             }
             return $byte;
         });
-    }
-
-    public function readChar()
-    {
-        return $this->readLength(1);
     }
 
     public function readStringNull()
@@ -118,36 +122,26 @@ class StreamReader
         return $deferred->promise();
     }
 
-    public function readAssert($byteSequence)
+    public function readBufferCallback(/* callable */ $callable)
     {
-        $deferred = new Deferred();
-        $pos = 0;
+        if (!is_callable($callable)) {
+            throw new InvalidArgumentException('Given function must be callable');
+        }
 
-        $that = $this;
-        $this->readLength(strlen($byteSequence))->then(function ($data) use ($deferred) {
-            $deferred->resolve($data);
-        }, null, function ($part) use ($byteSequence, &$pos, $deferred, $that) {
-            $len = strlen($part);
-            $expect = substr($byteSequence, $pos, $len);
+        if ($this->queue) {
+            $this->queue []= $callable;
+        } else {
+            $this->queue = array($callable);
 
-            if ($part === $expect) {
-                $pos += $len;
-            } else {
-                $deferred->reject(new UnexpectedValueException('Expected "'.$that->escape($expect).'", but got "'.$that->escape($part).'"'));
+            if ($this->buffer !== '') {
+                // this is the first element in the queue and the buffer is filled => trigger write procedure
+                $this->write('');
             }
-        });
-        return $deferred->promise();
+        }
     }
 
-    public function escape($bytes)
+    public function getBuffer()
     {
-        $ret = '';
-        for ($i = 0, $l = strlen($bytes); $i < $l; ++$i) {
-            if ($i !== 0) {
-                $ret .= ' ';
-            }
-            $ret .= sprintf('0x%02X', ord($bytes[$i]));
-        }
-        return $ret;
+        return $this->buffer;
     }
 }
