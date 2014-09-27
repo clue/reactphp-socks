@@ -53,12 +53,12 @@
             "source": {
                 "type": "git",
                 "url": "https://github.com/reactphp/cache.git",
-                "reference": "a821f4318e38fc7efd02d81698fcee9d3d34dafe"
+                "reference": "437357102effb562b44dbc0ac4eb2c209c4f572b"
             },
             "dist": {
                 "type": "zip",
-                "url": "https://api.github.com/repos/reactphp/cache/zipball/a821f4318e38fc7efd02d81698fcee9d3d34dafe",
-                "reference": "a821f4318e38fc7efd02d81698fcee9d3d34dafe",
+                "url": "https://api.github.com/repos/reactphp/cache/zipball/437357102effb562b44dbc0ac4eb2c209c4f572b",
+                "reference": "437357102effb562b44dbc0ac4eb2c209c4f572b",
                 "shasum": ""
             },
             "require": {
@@ -93,12 +93,12 @@
             "source": {
                 "type": "git",
                 "url": "https://github.com/reactphp/dns.git",
-                "reference": "c8c9c57750cb24e8f7b87bc62fee10750f1f9fbf"
+                "reference": "518e12e12f0a86e63ba482ebd728408391cc883f"
             },
             "dist": {
                 "type": "zip",
-                "url": "https://api.github.com/repos/reactphp/dns/zipball/c8c9c57750cb24e8f7b87bc62fee10750f1f9fbf",
-                "reference": "c8c9c57750cb24e8f7b87bc62fee10750f1f9fbf",
+                "url": "https://api.github.com/repos/reactphp/dns/zipball/518e12e12f0a86e63ba482ebd728408391cc883f",
+                "reference": "518e12e12f0a86e63ba482ebd728408391cc883f",
                 "shasum": ""
             },
             "require": {
@@ -131,17 +131,17 @@
         },
         {
             "name": "react/event-loop",
-            "version": "v0.3.3",
+            "version": "v0.3.4",
             "target-dir": "React/EventLoop",
             "source": {
                 "type": "git",
                 "url": "https://github.com/reactphp/event-loop.git",
-                "reference": "49208fa3a15c9eae4adf8351ee9caa4064fe550d"
+                "reference": "235cddfa999a392e7d63dc9bef2e042492608d9f"
             },
             "dist": {
                 "type": "zip",
-                "url": "https://api.github.com/repos/reactphp/event-loop/zipball/49208fa3a15c9eae4adf8351ee9caa4064fe550d",
-                "reference": "49208fa3a15c9eae4adf8351ee9caa4064fe550d",
+                "url": "https://api.github.com/repos/reactphp/event-loop/zipball/235cddfa999a392e7d63dc9bef2e042492608d9f",
+                "reference": "235cddfa999a392e7d63dc9bef2e042492608d9f",
                 "shasum": ""
             },
             "require": {
@@ -170,7 +170,7 @@
             "keywords": [
                 "event-loop"
             ],
-            "time": "2013-07-08 22:38:22"
+            "time": "2013-07-21 02:23:09"
         },
         {
             "name": "react/promise",
@@ -217,17 +217,17 @@
         },
         {
             "name": "react/socket",
-            "version": "v0.3.2",
+            "version": "v0.3.4",
             "target-dir": "React/Socket",
             "source": {
                 "type": "git",
                 "url": "https://github.com/reactphp/socket.git",
-                "reference": "9cc32838d25a934ce950d2662cce2ff1b9e9f8aa"
+                "reference": "19bc0c4309243717396022ffb2e59be1cc784327"
             },
             "dist": {
                 "type": "zip",
-                "url": "https://api.github.com/repos/reactphp/socket/zipball/9cc32838d25a934ce950d2662cce2ff1b9e9f8aa",
-                "reference": "9cc32838d25a934ce950d2662cce2ff1b9e9f8aa",
+                "url": "https://api.github.com/repos/reactphp/socket/zipball/19bc0c4309243717396022ffb2e59be1cc784327",
+                "reference": "19bc0c4309243717396022ffb2e59be1cc784327",
                 "shasum": ""
             },
             "require": {
@@ -255,21 +255,21 @@
             "keywords": [
                 "Socket"
             ],
-            "time": "2013-04-26 20:23:10"
+            "time": "2014-02-17 22:32:00"
         },
         {
             "name": "react/socket-client",
-            "version": "v0.3.2",
+            "version": "v0.3.1",
             "target-dir": "React/SocketClient",
             "source": {
                 "type": "git",
                 "url": "https://github.com/reactphp/socket-client.git",
-                "reference": "0696ede9876749dc49670f282aab9f6c8549275b"
+                "reference": "87935a0223362c36cd30cf215cbec33377d31ca4"
             },
             "dist": {
                 "type": "zip",
-                "url": "https://api.github.com/repos/reactphp/socket-client/zipball/0696ede9876749dc49670f282aab9f6c8549275b",
-                "reference": "0696ede9876749dc49670f282aab9f6c8549275b",
+                "url": "https://api.github.com/repos/reactphp/socket-client/zipball/87935a0223362c36cd30cf215cbec33377d31ca4",
+                "reference": "87935a0223362c36cd30cf215cbec33377d31ca4",
                 "shasum": ""
             },
             "require": {
@@ -301,17 +301,17 @@
         },
         {
             "name": "react/stream",
-            "version": "v0.3.3",
+            "version": "v0.3.4",
             "target-dir": "React/Stream",
             "source": {
                 "type": "git",
                 "url": "https://github.com/reactphp/stream.git",
-                "reference": "b72900ab00513b591fb101faecad38f9c8eab8da"
+                "reference": "feef56628afe3fa861f0da5f92c909e029efceac"
             },
             "dist": {
                 "type": "zip",
-                "url": "https://api.github.com/repos/reactphp/stream/zipball/b72900ab00513b591fb101faecad38f9c8eab8da",
-                "reference": "b72900ab00513b591fb101faecad38f9c8eab8da",
+                "url": "https://api.github.com/repos/reactphp/stream/zipball/feef56628afe3fa861f0da5f92c909e029efceac",
+                "reference": "feef56628afe3fa861f0da5f92c909e029efceac",
                 "shasum": ""
             },
             "require": {
@@ -342,7 +342,7 @@
                 "pipe",
                 "stream"
             ],
-            "time": "2013-07-09 00:44:12"
+            "time": "2014-02-16 19:48:52"
         }
     ],
     "packages-dev": [
