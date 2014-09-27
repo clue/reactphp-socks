@@ -28,6 +28,77 @@ class FunctionalTest extends TestCase
         $this->assertResolveStream($this->client->getConnection('www.google.com', 80));
     }
 
+    public function testConnectionSocks4()
+    {
+        $this->server->setProtocolVersion(4);
+        $this->client->setProtocolVersion(4);
+
+        $this->assertResolveStream($this->client->getConnection('www.google.com', 80));
+    }
+
+    public function testConnectionSocks5()
+    {
+        $this->server->setProtocolVersion(5);
+        $this->client->setProtocolVersion(5);
+
+        $this->assertResolveStream($this->client->getConnection('www.google.com', 80));
+    }
+
+    public function testConnectionInvalidSocks4aRemote()
+    {
+        $this->client->setProtocolVersion('4a');
+        $this->client->setResolveLocal(false);
+
+        $this->assertResolveStream($this->client->getConnection('www.google.com', 80));
+    }
+
+    public function testConnectionSocks5Remote()
+    {
+        $this->client->setProtocolVersion(5);
+        $this->client->setResolveLocal(false);
+
+        $this->assertResolveStream($this->client->getConnection('www.google.com', 80));
+    }
+
+    public function testConnectionAuthentication()
+    {
+        $this->server->setAuthArray(array('name' => 'pass'));
+        $this->client->setAuth('name', 'pass');
+
+        $this->assertResolveStream($this->client->getConnection('www.google.com', 80));
+    }
+
+    public function testConnectionAuthenticationUnused()
+    {
+        $this->client->setAuth('name', 'pass');
+
+        $this->assertResolveStream($this->client->getConnection('www.google.com', 80));
+    }
+
+    public function testConnectionInvalidProtocolMismatch()
+    {
+        $this->server->setProtocolVersion(5);
+        $this->client->setProtocolVersion(4);
+
+        $this->assertRejectPromise($this->client->getConnection('www.google.com', 80));
+    }
+
+    public function testConnectionInvalidNoAuthentication()
+    {
+        $this->server->setAuthArray(array('name' => 'pass'));
+        $this->client->setProtocolVersion(5);
+
+        $this->assertRejectPromise($this->client->getConnection('www.google.com', 80));
+    }
+
+    public function testConnectionInvalidAuthenticationMismatch()
+    {
+        $this->server->setAuthArray(array('name' => 'pass'));
+        $this->client->setAuth('user', 'other');
+
+        $this->assertRejectPromise($this->client->getConnection('www.google.com', 80));
+    }
+
     public function testConnectorOkay()
     {
         $tcp = $this->client->createConnector();
