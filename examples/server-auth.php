@@ -14,8 +14,13 @@ $socket = new Socket($loop);
 $socket->listen($port,'localhost');
 
 // start a new server listening for incoming connection on the given socket
+// require authentication and hence make this a SOCKS5-only server
 $server = new Server($loop, $socket);
+$server->setAuthArray(array(
+    'tom' => 'god',
+    'user' => 'p@ssw0rd'
+));
 
-echo 'SOCKS server listening on localhost:' . $port . PHP_EOL;
+echo 'SOCKS5 server requiring authentication listening on localhost:' . $port . PHP_EOL;
 
 $loop->run();
