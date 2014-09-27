@@ -91,10 +91,6 @@ class StreamReader
         });
     }
 
-    public function readNull(){
-        return $this->readByteAssert(0x00);
-    }
-
     public function readByteAssert($expect)
     {
         return $this->readByte()->then(function ($byte) use ($expect) {
@@ -103,11 +99,6 @@ class StreamReader
             }
             return $byte;
         });
-    }
-
-    public function readChar()
-    {
-        return $this->readLength(1);
     }
 
     public function readStringNull()
@@ -129,39 +120,6 @@ class StreamReader
         $readOne();
 
         return $deferred->promise();
-    }
-
-    public function readAssert($byteSequence)
-    {
-        $deferred = new Deferred();
-        $pos = 0;
-
-        $that = $this;
-        $this->readLength(strlen($byteSequence))->then(function ($data) use ($deferred) {
-            $deferred->resolve($data);
-        }, null, function ($part) use ($byteSequence, &$pos, $deferred, $that) {
-            $len = strlen($part);
-            $expect = substr($byteSequence, $pos, $len);
-
-            if ($part === $expect) {
-                $pos += $len;
-            } else {
-                $deferred->reject(new UnexpectedValueException('Expected "'.$that->escape($expect).'", but got "'.$that->escape($part).'"'));
-            }
-        });
-        return $deferred->promise();
-    }
-
-    public function escape($bytes)
-    {
-        $ret = '';
-        for ($i = 0, $l = strlen($bytes); $i < $l; ++$i) {
-            if ($i !== 0) {
-                $ret .= ' ';
-            }
-            $ret .= sprintf('0x%02X', ord($bytes[$i]));
-        }
-        return $ret;
     }
 
     public function readBufferCallback(/* callable */ $callable)

@@ -15,8 +15,8 @@ class StreamReaderTest extends TestCase
     {
         $that = $this;
 
-        $this->reader->readChar()->then($this->expectCallableOnce('h'));
-        $this->reader->readChar()->then($this->expectCallableOnce('e'));
+        $this->reader->readByte()->then($this->expectCallableOnce(ord('h')));
+        $this->reader->readByteAssert(ord('e'))->then($this->expectCallableOnce(ord('e')));
         $this->reader->readLength(4)->then($this->expectCallableOnce('llo '));
         $this->reader->readBinary(array('w'=>'C', 'o' => 'C'))->then($this->expectCallableOnce(array('w' => ord('w'), 'o' => ord('o'))));
 
