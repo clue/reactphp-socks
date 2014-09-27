@@ -269,7 +269,6 @@ Also, Tor provides hidden services through an `.onion` pseudo top-level domain
 which have to be resolved by Tor.
 
 ```PHP
-
 $client = new Client($loop, '127.0.0.1', 9050);
 $client->setResolveLocal(false);
 ```
@@ -281,7 +280,7 @@ The recommended way to install this library is [through composer](http://getcomp
 ```JSON
 {
     "require": {
-        "clue/socks-react": "0.1.*"
+        "clue/socks-react": "~0.2.0"
     }
 }
 ```

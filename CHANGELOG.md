@@ -4,7 +4,7 @@ This file is a manually maintained list of changes for each release. Feel free
 to add your changes here when sending pull requests. Also send corrections if
 you spot any mistakes.
 
-## 0.2.0 (2014-09-xx)
+## 0.2.0 (2014-09-27)
 
 * BC break: Simplify constructors my making parameters optional.
   ([#10](https://github.com/clue/php-socks-react/pull/10))
