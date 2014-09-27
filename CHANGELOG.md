@@ -8,6 +8,7 @@ you spot any mistakes.
 
 * BC break: Simplify constructors my making parameters optional.
   ([#10](https://github.com/clue/php-socks-react/pull/10))
+  
   The `Factory` has been removed, you can now create instances of the `Client`
   and `Server` yourself:
   
@@ -24,6 +25,7 @@ you spot any mistakes.
 
 * BC break: Remove HTTP support and link to [clue/buzz-react](https://github.com/clue/php-buzz-react) instead.
   ([#9](https://github.com/clue/php-socks-react/pull/9))
+  
   HTTP operates on a different layer than this low-level SOCKS library.
   Removing this reduces the footprint of this library.
   
