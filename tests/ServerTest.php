@@ -2,7 +2,7 @@
 
 use Clue\React\Socks\Server;
 
-class ServerApiTest extends TestCase
+class ServerTest extends TestCase
 {
     /** @var Server */
     private $server;

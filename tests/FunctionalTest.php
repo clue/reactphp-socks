@@ -4,7 +4,7 @@ use React\Stream\Stream;
 use Clue\React\Socks\Client;
 use Clue\React\Socks\Server;
 
-class PairTest extends TestCase
+class FunctionalTest extends TestCase
 {
     private $loop;
 
