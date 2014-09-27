@@ -2,7 +2,7 @@
 
 use Clue\React\Socks\Client;
 
-class ClientApiTest extends TestCase
+class ClientTest extends TestCase
 {
     /** @var  Client */
     private $client;
