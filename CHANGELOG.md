@@ -6,7 +6,7 @@ you spot any mistakes.
 
 ## 0.2.0 (2014-09-27)
 
-* BC break: Simplify constructors my making parameters optional.
+* BC break: Simplify constructors by making parameters optional.
   ([#10](https://github.com/clue/php-socks-react/pull/10))
   
   The `Factory` has been removed, you can now create instances of the `Client`
