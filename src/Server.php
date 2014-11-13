@@ -4,7 +4,6 @@ namespace Clue\React\Socks;
 
 use Evenement\EventEmitter;
 use React\Socket\ServerInterface;
-use React\Promise\When;
 use React\Promise\PromiseInterface;
 use React\Stream\Stream;
 use React\Dns\Resolver\Factory as DnsFactory;
@@ -15,6 +14,7 @@ use React\EventLoop\LoopInterface;
 use \UnexpectedValueException;
 use \InvalidArgumentException;
 use \Exception;
+use React\Promise\Deferred;
 
 class Server extends EventEmitter
 {
@@ -73,7 +73,9 @@ class Server extends EventEmitter
             if ($ret instanceof PromiseInterface) {
                 return $ret;
             }
-            return $ret ? When::resolve() : When::reject();
+            $deferred = new Deferred();
+            $ret ? $deferred->resolve() : $deferred->reject();
+            return $deferred->promise();
         };
     }
 
