@@ -156,32 +156,33 @@ class Client
 
         $loop = $this->loop;
         $that = $this;
-        \react\promise\all(
-            array(
-                $this->connector->create($this->socksHost, $this->socksPort)->then(
-                    null,
-                    function ($error) {
-                        throw new Exception('Unable to connect to socks server', 0, $error);
-                    }
-                ),
-                $this->resolve($host)->then(
-                    null,
+
+        // simultaneously start TCP connection and DNS resolution
+        $connecting = $this->connector->create($this->socksHost, $this->socksPort);
+        $resolving = $this->resolve($host);
+
+        $deferred->resolve($connecting->then(
+            function (Stream $stream) use ($that, $resolving, $loop, $timerTimeout, $protocolVersion, $auth, $timestampTimeout, $port) {
+                // connection established, wait for DNS resolver
+                return $resolving->then(
+                    function ($host) use ($stream, $port, $timestampTimeout, $that, $loop, $timerTimeout, $protocolVersion, $auth) {
+                        // DNS resolver completed => cancel timeout
+                        $loop->cancelTimer($timerTimeout);
+
+                        $timeout = max($timestampTimeout - microtime(true), 0.1);
+                        return $that->handleConnectedSocks($stream, $host, $port, $timeout, $protocolVersion, $auth);
+                    },
                     function ($error) {
                         throw new Exception('Unable to resolve remote hostname', 0, $error);
                     }
-                )
-            ),
-            function ($fulfilled) use ($deferred, $port, $timestampTimeout, $that, $loop, $timerTimeout, $protocolVersion, $auth) {
-                $loop->cancelTimer($timerTimeout);
-
-                $timeout = max($timestampTimeout - microtime(true), 0.1);
-                $deferred->resolve($that->handleConnectedSocks($fulfilled[0], $fulfilled[1], $port, $timeout, $protocolVersion, $auth));
+                );
             },
-            function ($error) use ($deferred, $loop, $timerTimeout) {
+            function ($error) use ($loop, $timerTimeout) {
                 $loop->cancelTimer($timerTimeout);
-                $deferred->reject(new Exception('Unable to connect to socks server', 0, $error));
+                throw new Exception('Unable to connect to socks server', 0, $error);
             }
-        );
+        ));
+
         return $deferred->promise();
     }
 
@@ -200,10 +201,9 @@ class Client
     public function handleConnectedSocks(Stream $stream, $host, $port, $timeout, $protocolVersion, $auth=null)
     {
         $deferred = new Deferred();
-        $resolver = $deferred->resolver();
 
-        $timerTimeout = $this->loop->addTimer($timeout, function () use ($resolver) {
-            $resolver->reject(new Exception('Timeout while establishing socks session'));
+        $timerTimeout = $this->loop->addTimer($timeout, function () use ($deferred) {
+            $deferred->reject(new Exception('Timeout while establishing socks session'));
         });
 
         $reader = new StreamReader($stream);
@@ -214,14 +214,14 @@ class Client
         } else {
             $promise = $this->handleSocks4($stream, $host, $port, $reader);
         }
-        $promise->then(function () use ($resolver, $stream) {
-            $resolver->resolve($stream);
-        }, function($error) use ($resolver) {
-            $resolver->reject(new Exception('Unable to communicate...', 0, $error));
+        $promise->then(function () use ($deferred, $stream) {
+            $deferred->resolve($stream);
+        }, function($error) use ($deferred) {
+            $deferred->reject(new Exception('Unable to communicate...', 0, $error));
         });
 
         $loop = $this->loop;
-        $deferred->then(
+        $deferred->promise()->then(
             function (Stream $stream) use ($timerTimeout, $loop, $reader) {
                 $loop->cancelTimer($timerTimeout);
                 $stream->removeAllListeners('end');
@@ -240,8 +240,8 @@ class Client
             }
         );
 
-        $stream->on('end', function (Stream $stream) use ($resolver) {
-            $resolver->reject(new Exception('Premature end while establishing socks session'));
+        $stream->on('end', function (Stream $stream) use ($deferred) {
+            $deferred->reject(new Exception('Premature end while establishing socks session'));
         });
 
         return $deferred->promise();
