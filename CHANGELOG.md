@@ -4,6 +4,14 @@ This file is a manually maintained list of changes for each release. Feel free
 to add your changes here when sending pull requests. Also send corrections if
 you spot any mistakes.
 
+## 0.2.1 (2014-11-13)
+
+* Support React PHP v0.4 (while preserving BC with React PHP v0.3)
+  ([#16](https://github.com/clue/php-socks-react/pull/16))
+
+* Improve examples and add first class support for HHVM
+  ([#15](https://github.com/clue/php-socks-react/pull/15) and [#17](https://github.com/clue/php-socks-react/pull/17))
+
 ## 0.2.0 (2014-09-27)
 
 * BC break: Simplify constructors by making parameters optional.
