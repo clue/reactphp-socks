@@ -18,12 +18,12 @@ $loop = LoopFactory::create();
 // create a connector that rejects the connection
 $reject = new ConnectionManagerReject();
 
-// create an actual connector that establishes an connection (uses Google's public DNS)
+// create an actual connector that establishes real connections (uses Google's public DNS)
 $factory = new Factory();
 $resolver = $factory->createCached('8.8.8.8', $loop);
 $permit = new Connector($loop, $resolver);
 
-// this connector randomly picks one of the the attached connectors from the pool
+// this connector selectively picks one of the the attached connectors depending on the target address
 $connector = new ConnectionManagerSelective();
 
 // default connector => permit everything
