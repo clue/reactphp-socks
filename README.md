@@ -152,7 +152,7 @@ In order to reset the protocol version to its default (i.e. automatic detection)
 use `null` as protocol version.
 
 ```PHP
-$client->setProcolVersion(null);
+$client->setProtocolVersion(null);
 $server->setProtocolVersion(null);
 ```
 
