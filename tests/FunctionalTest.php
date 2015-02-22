@@ -123,6 +123,10 @@ class FunctionalTest extends TestCase
 
     public function testSecureConnectorOkay()
     {
+        if (!function_exists('stream_socket_enable_crypto')) {
+            $this->markTestSkipped('Required function does not exist in your environment (HHVM?)');
+        }
+
         $ssl = $this->client->createSecureConnector();
 
         $this->assertResolveStream($ssl->create('www.google.com', 443));
@@ -130,6 +134,10 @@ class FunctionalTest extends TestCase
 
     public function testSecureConnectorInvalidPlaintextIsNotSsl()
     {
+        if (!function_exists('stream_socket_enable_crypto')) {
+            $this->markTestSkipped('Required function does not exist in your environment (HHVM?)');
+        }
+
         $ssl = $this->client->createSecureConnector();
 
         $this->assertRejectPromise($ssl->create('www.google.com', 80));
