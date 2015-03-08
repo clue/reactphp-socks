@@ -63,7 +63,7 @@ HTTP operates on a higher layer than this low-level SOCKS implementation.
 If you want to issue HTTP requests, you can add a dependency for
 [clue/buzz-react](https://github.com/clue/php-buzz-react).
 It can interact with this library by issuing all
-[http requests through a SOCKS server](https://github.com/clue/php-buzz-react/#via-socks-server).
+[http requests through a SOCKS server](https://github.com/clue/php-buzz-react#socks-proxy).
 This works for both plain HTTP and SSL encrypted HTTPS requests.
 
 ## SOCKS Protocol versions & differences
