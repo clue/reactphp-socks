@@ -9,23 +9,23 @@ connections in a non-blocking fashion.
 The SOCKS protocol family can be used to easily tunnel TCP connections independent
 of the actual application level protocol, such as HTTP, SMTP, IMAP, Telnet, etc.
 
-## Quickstart examples
+## Quickstart example
 
-Once [installed](#install), initialize a connection to a remote SOCKS proxy server:
+Once [installed](#install), you can use the following code to create a connection
+to google.com via a local SOCKS proxy server:
 
-```PHP
-<?php
-include_once __DIR__.'/vendor/autoload.php';
-
+```php
 $loop = React\EventLoop\Factory::create();
+$client = new Client('127.0.0.1:9050', $loop);
 
-// create SOCKS client which communicates with SOCKS server 127.0.0.1:9050
-$client = new Clue\React\Socks\Client('127.0.0.1:9050', $loop);
-
-// now work with your $client, see below
+$client->getConnection('www.google.com:80')->then(function ($stream) {
+    $stream->write("GET / HTTP/1.0\r\n\r\n");
+});
 
 $loop->run();
 ```
+
+See also the [examples](examples).
 
 ### Tunnelled TCP connections
 
