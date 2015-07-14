@@ -4,13 +4,33 @@ use Clue\React\Socks\Client;
 
 class ClientTest extends TestCase
 {
+    private $loop;
+
     /** @var  Client */
     private $client;
 
     public function setUp()
     {
-        $loop = React\EventLoop\Factory::create();
-        $this->client = new Client($loop, '127.0.0.1', 9050);
+        $this->loop = React\EventLoop\Factory::create();
+        $this->client = new Client('127.0.0.1:9050', $this->loop);
+    }
+
+    public function testCtorAcceptsUriWithHostAndPort()
+    {
+        $client = new Client('127.0.0.1:9050', $this->loop);
+    }
+
+    public function testCtorAcceptsUriWithScheme()
+    {
+        $client = new Client('socks://127.0.0.1:9050', $this->loop);
+    }
+
+    /**
+     * @expectedException InvalidArgumentException
+     */
+    public function testCtorThrowsForInvalidUri()
+    {
+        new Client('12345', $this->loop);
     }
 
     /**

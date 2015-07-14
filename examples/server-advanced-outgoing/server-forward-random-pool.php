@@ -16,15 +16,15 @@ $loop = LoopFactory::create();
 $connector = new ConnectionManagerRandom();
 
 // forward to socks server listening on 127.0.0.1:9051
-$client = new Client($loop, '127.0.0.1', 9051);
+$client = new Client('127.0.0.1:9051', $loop);
 $connector->addConnectionManager($client->createConnector());
 
 // forward to socks server listening on 127.0.0.1:9052
-$client = new Client($loop, '127.0.0.1', 9052);
+$client = new Client('127.0.0.1:9052', $loop);
 $connector->addConnectionManager($client->createConnector());
 
 // forward to socks server listening on 127.0.0.1:9053
-$client = new Client($loop, '127.0.0.1', 9053);
+$client = new Client('127.0.0.1:9053', $loop);
 $connector->addConnectionManager($client->createConnector());
 
 // start the server socket listening on localhost:$port for incoming socks connections

@@ -46,8 +46,19 @@ class Client
 
     protected $auth = null;
 
-    public function __construct(LoopInterface $loop, $socksHost, $socksPort, ConnectorInterface $connector = null, Resolver $resolver = null)
+    public function __construct($socksUrl, LoopInterface $loop, ConnectorInterface $connector = null, Resolver $resolver = null)
     {
+        // assume default scheme if none is given
+        if (strpos($socksUrl, '://') === false) {
+            $socksUrl = 'socks://' . $socksUrl;
+        }
+
+        // parse URL into individual parts
+        $parts = parse_url($socksUrl);
+        if (!$parts || !isset($parts['scheme'], $parts['host'], $parts['port'])) {
+            throw new \InvalidArgumentException('Invalid SOCKS URL');
+        }
+
         if ($resolver === null) {
             // default to using Google's public DNS server
             $dnsResolverFactory = new DnsFactory();
@@ -58,8 +69,8 @@ class Client
         }
 
         $this->loop = $loop;
-        $this->socksHost = $socksHost;
-        $this->socksPort = $socksPort;
+        $this->socksHost = $parts['host'];
+        $this->socksPort = $parts['port'];
         $this->connector = $connector;
         $this->resolver = $resolver;
 
