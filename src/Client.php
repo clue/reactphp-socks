@@ -46,17 +46,17 @@ class Client
 
     protected $auth = null;
 
-    public function __construct($socksUrl, LoopInterface $loop, ConnectorInterface $connector = null, Resolver $resolver = null)
+    public function __construct($socksUri, LoopInterface $loop, ConnectorInterface $connector = null, Resolver $resolver = null)
     {
         // assume default scheme if none is given
-        if (strpos($socksUrl, '://') === false) {
-            $socksUrl = 'socks://' . $socksUrl;
+        if (strpos($socksUri, '://') === false) {
+            $socksUri = 'socks://' . $socksUri;
         }
 
-        // parse URL into individual parts
-        $parts = parse_url($socksUrl);
+        // parse URI into individual parts
+        $parts = parse_url($socksUri);
         if (!$parts || !isset($parts['scheme'], $parts['host'], $parts['port'])) {
-            throw new \InvalidArgumentException('Invalid SOCKS URL');
+            throw new \InvalidArgumentException('Invalid SOCKS server URI "' . $socksUri . '"');
         }
 
         if ($resolver === null) {
