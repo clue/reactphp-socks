@@ -20,7 +20,7 @@ class FunctionalTest extends TestCase
         $this->assertNotEquals(0, $port);
 
         $this->server = new Server($this->loop, $socket);
-        $this->client = new Client($this->loop, '127.0.0.1', $port);
+        $this->client = new Client('127.0.0.1:' . $port, $this->loop);
     }
 
     public function testConnection()

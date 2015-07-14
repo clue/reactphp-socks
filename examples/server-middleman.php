@@ -12,8 +12,8 @@ $otherPort = isset($argv[2]) ? $argv[2] : 9050;
 $loop = React\EventLoop\Factory::create();
 
 // set next SOCKS server localhost:$otherPort as target
-$target = new Client($loop, '127.0.0.1', $otherPort);
-$target->setAuth('user','p@ssw0rd');
+$target = new Client('127.0.0.1:' . $otherPort, $loop);
+$target->setAuth('user', 'p@ssw0rd');
 
 // listen on localhost:$myPort
 $socket = new Socket($loop);

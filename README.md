@@ -20,7 +20,7 @@ include_once __DIR__.'/vendor/autoload.php';
 $loop = React\EventLoop\Factory::create();
 
 // create SOCKS client which communicates with SOCKS server 127.0.0.1:9050
-$client = new Clue\React\Socks\Client($loop, '127.0.0.1', 9050);
+$client = new Clue\React\Socks\Client('127.0.0.1:9050', $loop);
 
 // now work with your $client, see below
 

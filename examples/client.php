@@ -9,7 +9,7 @@ $port = isset($argv[1]) ? $argv[1] : 9050;
 
 $loop = React\EventLoop\Factory::create();
 
-$client = new Client($loop, '127.0.0.1', $port);
+$client = new Client('127.0.0.1:' . $port, $loop);
 $client->setTimeout(3.0);
 $client->setResolveLocal(false);
 // $client->setProtocolVersion(5);
