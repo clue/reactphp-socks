@@ -4,11 +4,6 @@ Async SOCKS client library to connect to SOCKS4, SOCKS4a and SOCKS5 proxy server
 as well as a SOCKS server implementation, capable of handling multiple concurrent
 connections in a non-blocking fashion.
 
-## Description
-
-The SOCKS protocol family can be used to easily tunnel TCP connections independent
-of the actual application level protocol, such as HTTP, SMTP, IMAP, Telnet, etc.
-
 ## Quickstart example
 
 Once [installed](#install), you can use the following code to create a connection
@@ -27,46 +22,12 @@ $loop->run();
 
 See also the [examples](examples).
 
-### Tunnelled TCP connections
+## Description
 
-The `Client` uses a [Promise](https://github.com/reactphp/promise)-based interface which makes working with asynchronous functions a breeze.
-Let's open up a TCP [Stream](https://github.com/reactphp/stream) connection and write some data:
-```PHP
-$tcp = $client->createConnector();
+The SOCKS protocol family can be used to easily tunnel TCP connections independent
+of the actual application level protocol, such as HTTP, SMTP, IMAP, Telnet etc.
 
-$tcp->create('www.google.com',80)->then(function (React\Stream\Stream $stream) {
-    echo 'connected to www.google.com:80';
-    $stream->write("GET / HTTP/1.0\r\n\r\n");
-    // ...
-});
-```
-
-### SSL/TLS encrypted
-
-If you want to connect to arbitrary SSL/TLS servers, there sure too is an easy to use API available:
-```PHP
-$ssl = $client->createSecureConnector();
-
-// now create an SSL encrypted connection (notice the $ssl instead of $tcp)
-$ssl->create('www.google.com',443)->then(function (React\Stream\Stream $stream) {
-    // proceed with just the plain text data
-    // everything is encrypted/decrypted automatically
-    echo 'connected to SSL encrypted www.google.com';
-    $stream->write("GET / HTTP/1.0\r\n\r\n");
-    // ...
-});
-```
-
-### HTTP requests
-
-HTTP operates on a higher layer than this low-level SOCKS implementation.
-If you want to issue HTTP requests, you can add a dependency for
-[clue/buzz-react](https://github.com/clue/php-buzz-react).
-It can interact with this library by issuing all
-[http requests through a SOCKS server](https://github.com/clue/php-buzz-react#socks-proxy).
-This works for both plain HTTP and SSL encrypted HTTPS requests.
-
-## SOCKS Protocol versions & differences
+### SOCKS Protocol versions & differences
 
 While SOCKS4 already had (a somewhat limited) support for `SOCKS BIND` requests
 and SOCKS5 added generic UDP support (`SOCKS UDPASSOCIATE`), this library
@@ -128,7 +89,95 @@ application protocols to work through it.
 Note, this is __not__ a full SOCKS5 implementation due to missing GSSAPI
 authentication (but it's unlikely you're going to miss it anyway).
 
-### Explicitly setting protocol version
+### Using SSH as a SOCKS server
+
+If you already have an SSH server set up, you can easily use it as a SOCKS
+tunnel end point. On your client, simply start your SSH client and use
+the `-D [port]` option to start a local SOCKS server (quoting the man page:
+a `local "dynamic" application-level port forwarding`) by issuing:
+
+`$ ssh -D 9050 ssh-server`
+
+```PHP
+$client = new Client('127.0.0.1:9050', $loop);
+```
+
+### Using the Tor (anonymity network) to tunnel SOCKS connections
+
+The [Tor anonymity network](http://www.torproject.org) client software is designed
+to encrypt your traffic and route it over a network of several nodes to conceal its origin.
+It presents a SOCKS4 and SOCKS5 interface on TCP port 9050 by default
+which allows you to tunnel any traffic through the anonymity network.
+In most scenarios you probably don't want your client to resolve the target hostnames,
+because you would leak DNS information to anybody observing your local traffic.
+Also, Tor provides hidden services through an `.onion` pseudo top-level domain
+which have to be resolved by Tor.
+
+```PHP
+$client = new Client('127.0.0.1:9050', $loop);
+$client->setResolveLocal(false);
+```
+
+## Usage
+
+### Client
+
+The `Client` is responsible for communication with your SOCKS server instance.
+It also registers everything with the main [`EventLoop`](https://github.com/reactphp/event-loop#usage).
+It accepts a SOCKS server URI like this:
+
+```php
+$loop = \React\EventLoop\Factory::create();
+$client = new Client('127.0.0.1:1080', $loop);
+```
+
+If you need custom connector settings (DNS resolution, timeouts etc.), you can explicitly pass a
+custom instance of the [`ConnectorInterface`](https://github.com/reactphp/socket-client#connectorinterface):
+
+```php
+$client = new Client('127.0.0.1:1080', $loop, $connector);
+```
+
+#### Tunnelled TCP connections
+
+The `Client` uses a [Promise](https://github.com/reactphp/promise)-based interface which makes working with asynchronous functions a breeze.
+Let's open up a TCP [Stream](https://github.com/reactphp/stream) connection and write some data:
+```PHP
+$tcp = $client->createConnector();
+
+$tcp->create('www.google.com',80)->then(function (React\Stream\Stream $stream) {
+    echo 'connected to www.google.com:80';
+    $stream->write("GET / HTTP/1.0\r\n\r\n");
+    // ...
+});
+```
+
+#### SSL/TLS encrypted
+
+If you want to connect to arbitrary SSL/TLS servers, there sure too is an easy to use API available:
+```PHP
+$ssl = $client->createSecureConnector();
+
+// now create an SSL encrypted connection (notice the $ssl instead of $tcp)
+$ssl->create('www.google.com',443)->then(function (React\Stream\Stream $stream) {
+    // proceed with just the plain text data
+    // everything is encrypted/decrypted automatically
+    echo 'connected to SSL encrypted www.google.com';
+    $stream->write("GET / HTTP/1.0\r\n\r\n");
+    // ...
+});
+```
+
+#### HTTP requests
+
+HTTP operates on a higher layer than this low-level SOCKS implementation.
+If you want to issue HTTP requests, you can add a dependency for
+[clue/buzz-react](https://github.com/clue/php-buzz-react).
+It can interact with this library by issuing all
+[http requests through a SOCKS server](https://github.com/clue/php-buzz-react#socks-proxy).
+This works for both plain HTTP and SSL encrypted HTTPS requests.
+
+#### Explicitly setting protocol version
 
 This library supports the SOCKS4, SOCKS4a and SOCKS5 protocol versions.
 Usually, there's no need to worry about which protocol version is being used.
@@ -138,14 +187,11 @@ the `Client` automatically uses the _best_ protocol available.
 In general this library automatically switches to higher protocol versions
 when needed, but tries to keep things simple otherwise and sticks to lower
 protocol versions when possible.
-The `Server` supports all protocol versions by default.
 
 If want to explicitly set the protocol version, use the supported values `4`, `4a` or `5`:
 
 ```PHP
-// valid protocol versions:
 $client->setProtocolVersion('4a');
-$server->setProtocolVersion(5);
 ```
 
 In order to reset the protocol version to its default (i.e. automatic detection),
@@ -153,7 +199,6 @@ use `null` as protocol version.
 
 ```PHP
 $client->setProtocolVersion(null);
-$server->setProtocolVersion(null);
 ```
 
 ### Remote vs. local DNS resolving
@@ -206,6 +251,33 @@ version 5 and complains if you have explicitly set anything else.
 $client->setAuth('username', 'password');
 ```
 
+If you do not want to use authentication anymore:
+
+```PHP
+$client->unsetAuth();
+```
+
+### Server
+
+#### Server protocol
+
+The `Server` supports all protocol versions by default.
+
+If want to explicitly set the protocol version, use the supported values `4`, `4a` or `5`:
+
+```PHP
+$server->setProtocolVersion(5);
+```
+
+In order to reset the protocol version to its default (i.e. automatic detection),
+use `null` as protocol version.
+
+```PHP
+$server->setProtocolVersion(null);
+```
+
+#### Server authentication
+
 Setting authentication on the `Server` enforces each further connected client
 to use protocol version 5.
 If a client tries to use any other protocol version, does not send along
@@ -238,39 +310,7 @@ $server->setAuthArray(array(
 If you do not want to use authentication anymore:
 
 ```PHP
-$client->unsetAuth();
 $server->unsetAuth();
-```
-
-## Usage
-
-### Using SSH as a SOCKS server
-
-If you already have an SSH server set up, you can easily use it as a SOCKS
-tunnel end point. On your client, simply start your SSH client and use
-the `-D [port]` option to start a local SOCKS server (quoting the man page:
-a `local "dynamic" application-level port forwarding`) by issuing:
-
-`$ ssh -D 9050 ssh-server`
-
-```PHP
-$client = new Client($loop, '127.0.0.1', 9050);
-```
-
-### Using the Tor (anonymity network) to tunnel SOCKS connections
-
-The [Tor anonymity network](http://www.torproject.org) client software is designed
-to encrypt your traffic and route it over a network of several nodes to conceal its origin.
-It presents a SOCKS4 and SOCKS5 interface on TCP port 9050 by default
-which allows you to tunnel any traffic through the anonymity network.
-In most scenarios you probably don't want your client to resolve the target hostnames,
-because you would leak DNS information to anybody observing your local traffic.
-Also, Tor provides hidden services through an `.onion` pseudo top-level domain
-which have to be resolved by Tor.
-
-```PHP
-$client = new Client($loop, '127.0.0.1', 9050);
-$client->setResolveLocal(false);
 ```
 
 ## Install
