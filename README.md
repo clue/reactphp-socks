@@ -131,6 +131,12 @@ $loop = \React\EventLoop\Factory::create();
 $client = new Client('127.0.0.1:1080', $loop);
 ```
 
+You can omit the port if you're using the default SOCKS port 1080:
+
+```php
+$client = new Client('127.0.0.1', $loop);
+```
+
 If you need custom connector settings (DNS resolution, timeouts etc.), you can explicitly pass a
 custom instance of the [`ConnectorInterface`](https://github.com/reactphp/socket-client#connectorinterface):
 

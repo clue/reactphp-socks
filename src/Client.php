@@ -55,8 +55,13 @@ class Client
 
         // parse URI into individual parts
         $parts = parse_url($socksUri);
-        if (!$parts || !isset($parts['scheme'], $parts['host'], $parts['port'])) {
+        if (!$parts || !isset($parts['scheme'], $parts['host'])) {
             throw new \InvalidArgumentException('Invalid SOCKS server URI "' . $socksUri . '"');
+        }
+
+        // assume default port
+        if (!isset($parts['port'])) {
+            $parts['port'] = 1080;
         }
 
         if ($resolver === null) {
