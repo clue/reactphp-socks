@@ -25,12 +25,17 @@ class ClientTest extends TestCase
         $client = new Client('socks://127.0.0.1:9050', $this->loop);
     }
 
+    public function testCtorAcceptsUriWithHostOnlyAssumesDefaultPort()
+    {
+        $client = new Client('127.0.0.1', $this->loop);
+    }
+
     /**
      * @expectedException InvalidArgumentException
      */
     public function testCtorThrowsForInvalidUri()
     {
-        new Client('12345', $this->loop);
+        new Client('////', $this->loop);
     }
 
     /**
