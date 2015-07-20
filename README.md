@@ -345,7 +345,7 @@ The recommended way to install this library is [through composer](http://getcomp
 ```JSON
 {
     "require": {
-        "clue/socks-react": "~0.2.0"
+        "clue/socks-react": "~0.3.0"
     }
 }
 ```

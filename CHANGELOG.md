@@ -1,8 +1,22 @@
-# CHANGELOG
+# Changelog
 
-This file is a manually maintained list of changes for each release. Feel free
-to add your changes here when sending pull requests. Also send corrections if
-you spot any mistakes.
+## 0.3.0 (2015-06-20)
+
+* BC break / Feature: Client ctor now accepts a SOCKS server URI
+  ([#24](https://github.com/clue/php-socks-react/pull/24))
+  
+    ```php
+// old
+$client = new Client($loop, 'localhost', 9050);
+
+// new
+$client = new Client('localhost:9050', $loop);
+```
+
+* Feature: Automatically assume default SOCKS port (1080) if not given explicitly
+  ([#26](https://github.com/clue/php-socks-react/pull/26))
+
+* Improve documentation and test suite
 
 ## 0.2.1 (2014-11-13)
 
@@ -14,7 +28,7 @@ you spot any mistakes.
 
 ## 0.2.0 (2014-09-27)
 
-* BC break: Simplify constructors by making parameters optional.
+* BC break / Feature: Simplify constructors by making parameters optional.
   ([#10](https://github.com/clue/php-socks-react/pull/10))
   
   The `Factory` has been removed, you can now create instances of the `Client`
