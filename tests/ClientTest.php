@@ -151,9 +151,9 @@ class ClientTest extends TestCase
     /**
      * @dataProvider providerAddress
      */
-    public function testGetConnection($host, $port)
+    public function testCreateConnection($host, $port)
     {
-        $this->assertInstanceOf('\React\Promise\PromiseInterface', $this->client->getConnection($host, $port));
+        $this->assertInstanceOf('\React\Promise\PromiseInterface', $this->client->createConnection($host, $port));
     }
 
     public function providerAddress()

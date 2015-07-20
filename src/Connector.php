@@ -34,6 +34,6 @@ class Connector implements ConnectorInterface
 
     public function create($host, $port)
     {
-        return $this->client->getConnection($host, $port);
+        return $this->client->createConnection($host, $port);
     }
 }

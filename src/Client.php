@@ -174,8 +174,9 @@ class Client
      * @param int    $port
      * @return Promise Promise<Stream,Exception>
      * @internal use self::createConnector() instead
+     * @see self::createConnector()
      */
-    public function getConnection($host, $port)
+    public function createConnection($host, $port)
     {
         if (strlen($host) > 255 || $port > 65535 || $port < 0) {
             $deferred = new Deferred();

@@ -25,7 +25,7 @@ class FunctionalTest extends TestCase
 
     public function testConnection()
     {
-        $this->assertResolveStream($this->client->getConnection('www.google.com', 80));
+        $this->assertResolveStream($this->client->createConnection('www.google.com', 80));
     }
 
     public function testConnectionSocks4()
@@ -33,7 +33,7 @@ class FunctionalTest extends TestCase
         $this->server->setProtocolVersion(4);
         $this->client->setProtocolVersion(4);
 
-        $this->assertResolveStream($this->client->getConnection('www.google.com', 80));
+        $this->assertResolveStream($this->client->createConnection('www.google.com', 80));
     }
 
     public function testConnectionSocks5()
@@ -41,7 +41,7 @@ class FunctionalTest extends TestCase
         $this->server->setProtocolVersion(5);
         $this->client->setProtocolVersion(5);
 
-        $this->assertResolveStream($this->client->getConnection('www.google.com', 80));
+        $this->assertResolveStream($this->client->createConnection('www.google.com', 80));
     }
 
     public function testConnectionInvalidSocks4aRemote()
@@ -49,7 +49,7 @@ class FunctionalTest extends TestCase
         $this->client->setProtocolVersion('4a');
         $this->client->setResolveLocal(false);
 
-        $this->assertResolveStream($this->client->getConnection('www.google.com', 80));
+        $this->assertResolveStream($this->client->createConnection('www.google.com', 80));
     }
 
     public function testConnectionSocks5Remote()
@@ -57,7 +57,7 @@ class FunctionalTest extends TestCase
         $this->client->setProtocolVersion(5);
         $this->client->setResolveLocal(false);
 
-        $this->assertResolveStream($this->client->getConnection('www.google.com', 80));
+        $this->assertResolveStream($this->client->createConnection('www.google.com', 80));
     }
 
     public function testConnectionAuthentication()
@@ -65,14 +65,14 @@ class FunctionalTest extends TestCase
         $this->server->setAuthArray(array('name' => 'pass'));
         $this->client->setAuth('name', 'pass');
 
-        $this->assertResolveStream($this->client->getConnection('www.google.com', 80));
+        $this->assertResolveStream($this->client->createConnection('www.google.com', 80));
     }
 
     public function testConnectionAuthenticationUnused()
     {
         $this->client->setAuth('name', 'pass');
 
-        $this->assertResolveStream($this->client->getConnection('www.google.com', 80));
+        $this->assertResolveStream($this->client->createConnection('www.google.com', 80));
     }
 
     public function testConnectionInvalidProtocolMismatch()
@@ -80,7 +80,7 @@ class FunctionalTest extends TestCase
         $this->server->setProtocolVersion(5);
         $this->client->setProtocolVersion(4);
 
-        $this->assertRejectPromise($this->client->getConnection('www.google.com', 80));
+        $this->assertRejectPromise($this->client->createConnection('www.google.com', 80));
     }
 
     public function testConnectionInvalidNoAuthentication()
@@ -88,7 +88,7 @@ class FunctionalTest extends TestCase
         $this->server->setAuthArray(array('name' => 'pass'));
         $this->client->setProtocolVersion(5);
 
-        $this->assertRejectPromise($this->client->getConnection('www.google.com', 80));
+        $this->assertRejectPromise($this->client->createConnection('www.google.com', 80));
     }
 
     public function testConnectionInvalidAuthenticationMismatch()
@@ -96,7 +96,7 @@ class FunctionalTest extends TestCase
         $this->server->setAuthArray(array('name' => 'pass'));
         $this->client->setAuth('user', 'other');
 
-        $this->assertRejectPromise($this->client->getConnection('www.google.com', 80));
+        $this->assertRejectPromise($this->client->createConnection('www.google.com', 80));
     }
 
     public function testConnectorOkay()
