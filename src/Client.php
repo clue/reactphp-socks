@@ -135,16 +135,46 @@ class Client
         $this->auth = null;
     }
 
+    /**
+     * Creates a SecureConnector instance that can be used to establish encrypted TLS connections to remote hosts.
+     *
+     * This is actually a convenience helper method that uses React's normal
+     * `SecureConnector` wrapper and this libraries' `Connector` for the
+     * underlying TCP connection.
+     *
+     * @return SecureConnector
+     * @uses self::createConnector()
+     */
     public function createSecureConnector()
     {
         return new SecureConnector($this->createConnector(), $this->loop);
     }
 
+    /**
+     * Creates a Connector instance that can be used to establish TCP connections to remote hosts.
+     *
+     * This return a new `Connector` instance which can then be used to establish
+     * any number of TCP connections.
+     *
+     * @return Connector
+     * @see Connector
+     */
     public function createConnector()
     {
         return new Connector($this);
     }
 
+    /**
+     * Should not be called directly, use createConnector() instead.
+     *
+     * This method contains the internal implementation for estasblishing a
+     * connection to the SOCKS server.
+     *
+     * @param string $host
+     * @param int    $port
+     * @return Promise Promise<Stream,Exception>
+     * @internal use self::createConnector() instead
+     */
     public function getConnection($host, $port)
     {
         if (strlen($host) > 255 || $port > 65535 || $port < 0) {
@@ -214,6 +244,17 @@ class Client
         return $this->resolver->resolve($host);
     }
 
+    /**
+     * Internal helper used to handle the communication with the SOCKS server
+     *
+     * @param Stream      $stream
+     * @param string      $host
+     * @param int         $port
+     * @param float       $timeout
+     * @param string      $protocolVersion
+     * @param string|null $auth
+     * @return Promise Promise<stream, Exception>
+     */
     public function handleConnectedSocks(Stream $stream, $host, $port, $timeout, $protocolVersion, $auth=null)
     {
         $deferred = new Deferred();

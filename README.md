@@ -12,8 +12,9 @@ to google.com via a local SOCKS proxy server:
 ```php
 $loop = React\EventLoop\Factory::create();
 $client = new Client('127.0.0.1:9050', $loop);
+$connector = $client->createConnector();
 
-$client->getConnection('www.google.com:80')->then(function ($stream) {
+$connector->create('www.google.com:80')->then(function ($stream) {
     $stream->write("GET / HTTP/1.0\r\n\r\n");
 });
 
@@ -262,6 +263,24 @@ If you do not want to use authentication anymore:
 ```PHP
 $client->unsetAuth();
 ```
+
+### Connector
+
+The `Connector` instance can be used to establish TCP connections to remote hosts.
+Each instance can be used to establish any number of TCP connections.
+
+It implements React's `ConnectorInterface` which only provides a single
+`create()` method.
+
+The `create($host, $port)` method can be used to establish a TCP
+connection to the given target host and port.
+
+It functions as an [adapter](https://en.wikipedia.org/wiki/Adapter_pattern):
+Many higher-level networking protocols build on top of TCP. It you're dealing
+with one such client implementation,  it probably uses/accepts an instance
+implementing React's `ConnectorInterface` (and usually its default `Connector`
+instance). In this case you can also pass this `Connector` instance instead
+to make this client implementation SOCKS-aware. That's it.
 
 ### Server
 
