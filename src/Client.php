@@ -136,6 +136,20 @@ class Client
     }
 
     /**
+     * Creates a Connector instance that can be used to establish TCP connections to remote hosts.
+     *
+     * This return a new `Connector` instance which can then be used to establish
+     * any number of TCP connections.
+     *
+     * @return Connector
+     * @see Connector
+     */
+    public function createConnector()
+    {
+        return new Connector($this);
+    }
+
+    /**
      * Creates a SecureConnector instance that can be used to establish encrypted TLS connections to remote hosts.
      *
      * This is actually a convenience helper method that uses React's normal
@@ -148,20 +162,6 @@ class Client
     public function createSecureConnector()
     {
         return new SecureConnector($this->createConnector(), $this->loop);
-    }
-
-    /**
-     * Creates a Connector instance that can be used to establish TCP connections to remote hosts.
-     *
-     * This return a new `Connector` instance which can then be used to establish
-     * any number of TCP connections.
-     *
-     * @return Connector
-     * @see Connector
-     */
-    public function createConnector()
-    {
-        return new Connector($this);
     }
 
     /**
