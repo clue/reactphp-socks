@@ -185,6 +185,17 @@ $ssl->create('www.google.com',443)->then(function (React\Stream\Stream $stream) 
 });
 ```
 
+You can optionally pass additional
+[SSL context options](http://php.net/manual/en/context.ssl.php)
+to the constructor like this:
+
+```php
+$ssl = $client->createSecureConnector(array(
+    'verify_peer' => false,
+    'verify_peer_name' => false
+));
+```
+
 #### HTTP requests
 
 HTTP operates on a higher layer than this low-level SOCKS implementation.
