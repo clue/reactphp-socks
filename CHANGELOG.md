@@ -1,5 +1,13 @@
 # Changelog
 
+## 0.4.0 (2016-03-19)
+
+* Feature: Support proper SSL/TLS connections with additional SSL context options
+  (#31, #33 by @clue)
+
+* Documentation for advanced Connector setups (bindto, multihop)
+  (#32 by @clue)
+
 ## 0.3.0 (2015-06-20)
 
 * BC break / Feature: Client ctor now accepts a SOCKS server URI
