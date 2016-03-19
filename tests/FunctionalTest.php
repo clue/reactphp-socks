@@ -132,6 +132,28 @@ class FunctionalTest extends TestCase
         $this->assertResolveStream($ssl->create('www.google.com', 443));
     }
 
+    public function testSecureConnectorToBadSslWithVerifyFails()
+    {
+        if (!function_exists('stream_socket_enable_crypto')) {
+            $this->markTestSkipped('Required function does not exist in your environment (HHVM?)');
+        }
+
+        $ssl = $this->client->createSecureConnector(array('verify_peer' => true));
+
+        $this->assertRejectPromise($ssl->create('self-signed.badssl.com', 443));
+    }
+
+    public function testSecureConnectorToBadSslWithoutVerifyWorks()
+    {
+        if (!function_exists('stream_socket_enable_crypto')) {
+            $this->markTestSkipped('Required function does not exist in your environment (HHVM?)');
+        }
+
+        $ssl = $this->client->createSecureConnector(array('verify_peer' => false));
+
+        $this->assertResolveStream($ssl->create('self-signed.badssl.com', 443));
+    }
+
     public function testSecureConnectorInvalidPlaintextIsNotSsl()
     {
         if (!function_exists('stream_socket_enable_crypto')) {

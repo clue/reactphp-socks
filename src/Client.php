@@ -157,12 +157,13 @@ class Client
      * `SecureConnector` wrapper and this libraries' `Connector` for the
      * underlying TCP connection.
      *
+     * @param array $sslContext optional SSL context options
      * @return SecureConnector
      * @uses self::createConnector()
      */
-    public function createSecureConnector()
+    public function createSecureConnector(array $sslContext = array())
     {
-        return new SecureConnector($this->createConnector(), $this->loop);
+        return new SecureConnector($this->createConnector(), $this->loop, $sslContext);
     }
 
     /**
