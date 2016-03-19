@@ -142,7 +142,17 @@ If you need custom connector settings (DNS resolution, timeouts etc.), you can e
 custom instance of the [`ConnectorInterface`](https://github.com/reactphp/socket-client#connectorinterface):
 
 ```php
-$client = new Client('127.0.0.1:1080', $loop, $connector);
+// use local DNS server
+$dnsResolverFactory = new DnsFactory();
+$resolver = $dnsResolverFactory->createCached('127.0.0.1', $loop);
+
+// outgoing connections to SOCKS server via interface 192.168.10.1
+$connector = new DnsConnector(
+    new TcpConnector($loop, array('bindto' => '192.168.10.1:0')),
+    $resolver
+);
+
+$client = new Client('my-socks-server.local:1080', $loop, $connector);
 ```
 
 #### Tunnelled TCP connections
@@ -283,6 +293,38 @@ instance). In this case you can also pass this `Connector` instance instead
 to make this client implementation SOCKS-aware. That's it.
 
 ### Server
+
+The `Server` is responsible for accepting incoming communication from SOCKS clients
+and forwarding the requested connection to the target host.
+It also registers everything with the main [`EventLoop`](https://github.com/reactphp/event-loop#usage)
+and an underlying TCP/IP socket server like this:
+
+```php
+$loop = \React\EventLoop\Factory::create();
+
+// listen on localhost:$port
+$socket = new Socket($loop);
+$socket->listen($port,'localhost');
+
+$server = new Server($loop, $socket);
+```
+
+If you need custom connector settings (DNS resolution, timeouts etc.), you can explicitly pass a
+custom instance of the [`ConnectorInterface`](https://github.com/reactphp/socket-client#connectorinterface):
+
+```php
+// use local DNS server
+$dnsResolverFactory = new DnsFactory();
+$resolver = $dnsResolverFactory->createCached('127.0.0.1', $loop);
+
+// outgoing connections to target host via interface 192.168.10.1
+$connector = new DnsConnector(
+    new TcpConnector($loop, array('bindto' => '192.168.10.1:0')),
+    $resolver
+);
+
+$server = new Server($loop, $socket, $connector);
+```
 
 #### Server protocol
 
