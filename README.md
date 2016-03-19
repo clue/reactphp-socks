@@ -380,6 +380,42 @@ If you do not want to use authentication anymore:
 $server->unsetAuth();
 ```
 
+#### Multihop server
+
+The `Server` is responsible for creating connections to the target host.
+
+```
+Client -> SocksServer -> TargetHost
+```
+
+Sometimes it may be required to establish outgoing connections via another SOCKS
+server.
+For example, this can be useful if your target SOCKS server requires
+authentication, but your client does not support sending authentication
+information (e.g. like most webbrowser).
+
+```
+Client -> MiddlemanSocksServer -> TargetSocksServer -> TargetHost
+```
+
+The `Server` uses any instance of the `ConnectorInterface` to establish outgoing
+connections.
+In order to connect through another server, you can simply pass a
+[`Connector`](#connector) of an existing SOCKS `Client` instance like this: 
+
+```php
+// set next SOCKS server localhost:$targetPort as target
+$target = new Client('127.0.0.1:' . $targetPort, $loop);
+$target->setAuth('user', 'p@ssw0rd');
+
+// listen on localhost:$middlemanPort
+$socket = new Socket($loop);
+$socket->listen($middlemanPort, 'localhost');
+
+// start a new server which forwards all connections to the other SOCKS server
+$server = new Server($loop, $socket, $target->createConnector());
+```
+
 ## Install
 
 The recommended way to install this library is [through composer](http://getcomposer.org). [New to composer?](http://getcomposer.org/doc/00-intro.md)
