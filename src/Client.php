@@ -5,10 +5,11 @@ namespace Clue\React\Socks;
 use React\Promise\Deferred;
 use React\Dns\Resolver\Factory as DnsFactory;
 use React\Dns\Resolver\Resolver;
-use React\SocketClient\Connector as TcpConnector;
 use React\Stream\Stream;
 use React\EventLoop\LoopInterface;
 use React\SocketClient\ConnectorInterface;
+use React\SocketClient\DnsConnector;
+use React\SocketClient\TcpConnector;
 use React\SocketClient\SecureConnector;
 use Clue\React\Socks\Connector;
 use \Exception;
@@ -70,7 +71,7 @@ class Client
             $resolver = $dnsResolverFactory->createCached('8.8.8.8', $loop);
         }
         if ($connector === null) {
-            $connector = new TcpConnector($loop, $resolver);
+            $connector = new DnsConnector(new TcpConnector($loop), $resolver);
         }
 
         $this->loop = $loop;
