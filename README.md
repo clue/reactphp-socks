@@ -103,7 +103,7 @@ application protocols to work through it.
     <td>✓</td>
   </tr>
   <tr>
-    <th><a href="#remote-vs-local-dns-resolving">Remote DNS resolving</a></th>
+    <th>Remote DNS resolving</th>
     <td>✗</td>
     <td>✓</td>
     <td>✓</td>
@@ -115,7 +115,7 @@ application protocols to work through it.
     <td>✓</td>
   </tr>
   <tr>
-    <th><a href="#username--password-authentication">Username/Password authentication</a></th>
+    <th><a href="#authentication">Username/Password authentication</a></th>
     <td>✗</td>
     <td>✗</td>
     <td>✓ (as per <a href="http://tools.ietf.org/html/rfc1929">RFC 1929</a>)</td>
