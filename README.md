@@ -18,10 +18,12 @@ of the actual application level protocol, such as HTTP, SMTP, IMAP, Telnet etc.
     * [Authentication](#authentication)
   * [Connector](#connector)
 * [Servers](#servers)
+  * [Using a PHP SOCKS server](#using-a-php-socks-server)
   * [Using SSH as a SOCKS server](#using-ssh-as-a-socks-server)
   * [Using the Tor (anonymity network) to tunnel SOCKS connections](#using-the-tor-anonymity-network-to-tunnel-socks-connections)
 * [Install](#install)
 * [License](#license)
+* [More](#more)
 
 ## Quickstart example
 
@@ -289,6 +291,13 @@ to make this client implementation SOCKS-aware. That's it.
 
 ## Servers
 
+### Using a PHP SOCKS server
+
+* If you're looking for an end-user SOCKS server daemon, you may want to
+  use [clue/psocksd](https://github.com/clue/psocksd).
+* If you're looking for a SOCKS server implementation, consider using
+  [clue/socks-server](https://github.com/clue/php-socks-server).
+
 ### Using SSH as a SOCKS server
 
 If you already have an SSH server set up, you can easily use it as a SOCKS
@@ -334,3 +343,10 @@ See also the [CHANGELOG](CHANGELOG.md) for details about version upgrades.
 ## License
 
 MIT, see LICENSE
+
+## More
+
+* If you're looking for an end-user SOCKS server daemon, you may want to
+  use [clue/psocksd](https://github.com/clue/psocksd).
+* If you're looking for a SOCKS server implementation, consider using
+  [clue/socks-server](https://github.com/clue/php-socks-server).
