@@ -1,6 +1,6 @@
 <?php
 
-namespace Clue\React\Socks;
+namespace Clue\React\Socks\Server;
 
 use Evenement\EventEmitter;
 use React\Socket\ServerInterface;

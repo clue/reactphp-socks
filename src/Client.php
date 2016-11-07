@@ -1,6 +1,6 @@
 <?php
 
-namespace Clue\React\Socks;
+namespace Clue\React\Socks\Server;
 
 use React\Promise\Deferred;
 use React\Dns\Resolver\Factory as DnsFactory;
@@ -11,7 +11,7 @@ use React\SocketClient\ConnectorInterface;
 use React\SocketClient\DnsConnector;
 use React\SocketClient\TcpConnector;
 use React\SocketClient\SecureConnector;
-use Clue\React\Socks\Connector;
+use Clue\React\Socks\Server\Connector;
 use \Exception;
 use \InvalidArgumentException;
 use \UnexpectedValueException;

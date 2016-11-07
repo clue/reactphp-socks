@@ -1,7 +1,7 @@
 <?php
 
 use React\Stream\Stream;
-use Clue\React\Socks\Client;
+use Clue\React\Socks\Server\Client;
 
 include_once __DIR__.'/../vendor/autoload.php';
 

@@ -1,4 +1,4 @@
-# clue/socks-react - SOCKS client and server [![Build Status](https://travis-ci.org/clue/php-socks-react.svg?branch=master)](https://travis-ci.org/clue/php-socks-react)
+# clue/socks-server [![Build Status](https://travis-ci.org/clue/php-socks-server.svg?branch=master)](https://travis-ci.org/clue/php-socks-server)
 
 Async SOCKS client library to connect to SOCKS4, SOCKS4a and SOCKS5 proxy servers,
 as well as a SOCKS server implementation, capable of handling multiple concurrent
@@ -435,7 +435,7 @@ The recommended way to install this library is [through Composer](http://getcomp
 This will install the latest supported version:
 
 ```bash
-$ composer require clue/socks-react:^0.4
+$ composer require clue/socks-server:^0.4
 ```
 
 See also the [CHANGELOG](CHANGELOG.md) for details about version upgrades.

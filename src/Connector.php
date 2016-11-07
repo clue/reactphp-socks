@@ -1,9 +1,9 @@
 <?php
 
-namespace Clue\React\Socks;
+namespace Clue\React\Socks\Server;
 
 use React\SocketClient\ConnectorInterface;
-use Clue\React\Socks\Client;
+use Clue\React\Socks\Server\Client;
 
 /**
  * The Connector instance can be used to establish TCP connections to remote hosts.
