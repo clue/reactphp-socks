@@ -19,8 +19,8 @@ of the actual application level protocol, such as HTTP, SMTP, IMAP, Telnet etc.
 
 ## Quickstart example
 
-Once [installed](#install), you can use the following code to create a connection
-to google.com via a local SOCKS proxy server:
+Once [installed](#install), you can use the following code to create a SOCKS
+proxy server listening for connections on `localhost:1080`:
 
 ```php
 $loop = React\EventLoop\Factory::create();
