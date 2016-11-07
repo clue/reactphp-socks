@@ -1,7 +1,7 @@
 <?php
 
 use React\Stream\Stream;
-use Clue\React\Socks\Server\Client;
+use Clue\React\Socks\Client;
 use Clue\React\Socks\Server\Server;
 use React\Promise\PromiseInterface;
 
