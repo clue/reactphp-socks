@@ -1,6 +1,6 @@
 # Changelog
 
-## 0.5.0 (2014-11-07)
+## 0.5.0 (2016-11-07)
 
 * First tagged release
 * Async SOCKS `Server` implementation
