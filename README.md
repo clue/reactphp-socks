@@ -346,6 +346,24 @@ MIT, see LICENSE
 
 ## More
 
+* If you want to learn more about processing streams of data, refer to the
+  documentation of the underlying
+  [react/stream](https://github.com/reactphp/stream) component.
+* If you want to learn more about how the
+  [`ConnectorInterface`](#connectorinterface) and its usual implementations look
+  like, refer to the documentation of the underlying
+  [react/socket-client](https://github.com/reactphp/socket-client) component.
+* As an alternative to a SOCKS (SOCKS4/SOCKS5) proxy, you may also want to look into
+  using an HTTP CONNECT proxy instead.
+  You may want to use [clue/http-proxy-react](https://github.com/clue/php-http-proxy-react)
+  which also provides an implementation of the
+  [`ConnectorInterface`](#connectorinterface) so that supporting either proxy
+  protocol should be fairly trivial.
+* If you're dealing with public proxies, you'll likely have to work with mixed
+  quality and unreliable proxies. You may want to look into using
+  [clue/connection-manager-extra](https://github.com/clue/php-connection-manager-extra)
+  which allows retrying unreliable ones, implying connection timeouts,
+  concurrently working with multiple connectors and more.
 * If you're looking for an end-user SOCKS server daemon, you may want to
   use [clue/psocksd](https://github.com/clue/psocksd).
 * If you're looking for a SOCKS server implementation, consider using
