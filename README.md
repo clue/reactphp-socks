@@ -1,14 +1,16 @@
 # clue/socks-server [![Build Status](https://travis-ci.org/clue/php-socks-server.svg?branch=master)](https://travis-ci.org/clue/php-socks-server)
 
-Async SOCKS proxy server (SOCKS4, SOCKS4a and SOCKS5), built on top of React PHP
+Async SOCKS proxy server (SOCKS4, SOCKS4a and SOCKS5), built on top of React PHP.
+
+The SOCKS protocol family can be used to easily tunnel TCP connections independent
+of the actual application level protocol, such as HTTP, SMTP, IMAP, Telnet etc.
 
 **Table of contents**
 
 * [Quickstart example](#quickstart-example)
-* [Description](#description)
 * [Usage](#usage)
   * [Server](#server)
-    * [Server protocol](#server-protocol)
+    * [Protocol version](#protocol-version)
     * [Server authentication](#server-authentication)
     * [Proxy chaining](#proxy-chaining)
 * [Install](#install)
@@ -34,10 +36,45 @@ $loop->run();
 
 See also the [examples](examples).
 
-## Description
+## Usage
 
-The SOCKS protocol family can be used to easily tunnel TCP connections independent
-of the actual application level protocol, such as HTTP, SMTP, IMAP, Telnet etc.
+### Server
+
+The `Server` is responsible for accepting incoming communication from SOCKS clients
+and forwarding the requested connection to the target host.
+It also registers everything with the main [`EventLoop`](https://github.com/reactphp/event-loop#usage)
+and an underlying TCP/IP socket server like this:
+
+```php
+$loop = \React\EventLoop\Factory::create();
+
+// listen on localhost:$port
+$socket = new Socket($loop);
+$socket->listen($port,'localhost');
+
+$server = new Server($loop, $socket);
+```
+
+If you need custom connector settings (DNS resolution, timeouts etc.), you can explicitly pass a
+custom instance of the [`ConnectorInterface`](https://github.com/reactphp/socket-client#connectorinterface):
+
+```php
+// use local DNS server
+$dnsResolverFactory = new DnsFactory();
+$resolver = $dnsResolverFactory->createCached('127.0.0.1', $loop);
+
+// outgoing connections to target host via interface 192.168.10.1
+$connector = new DnsConnector(
+    new TcpConnector($loop, array('bindto' => '192.168.10.1:0')),
+    $resolver
+);
+
+$server = new Server($loop, $socket, $connector);
+```
+
+#### Protocol version
+
+The `Server` supports all protocol versions (SOCKS4, SOCKS4a and SOCKS5) by default.
 
 While SOCKS4 already had (a somewhat limited) support for `SOCKS BIND` requests
 and SOCKS5 added generic UDP support (`SOCKS UDPASSOCIATE`), this library
@@ -98,46 +135,6 @@ application protocols to work through it.
 
 Note, this is __not__ a full SOCKS5 implementation due to missing GSSAPI
 authentication (but it's unlikely you're going to miss it anyway).
-
-## Usage
-
-### Server
-
-The `Server` is responsible for accepting incoming communication from SOCKS clients
-and forwarding the requested connection to the target host.
-It also registers everything with the main [`EventLoop`](https://github.com/reactphp/event-loop#usage)
-and an underlying TCP/IP socket server like this:
-
-```php
-$loop = \React\EventLoop\Factory::create();
-
-// listen on localhost:$port
-$socket = new Socket($loop);
-$socket->listen($port,'localhost');
-
-$server = new Server($loop, $socket);
-```
-
-If you need custom connector settings (DNS resolution, timeouts etc.), you can explicitly pass a
-custom instance of the [`ConnectorInterface`](https://github.com/reactphp/socket-client#connectorinterface):
-
-```php
-// use local DNS server
-$dnsResolverFactory = new DnsFactory();
-$resolver = $dnsResolverFactory->createCached('127.0.0.1', $loop);
-
-// outgoing connections to target host via interface 192.168.10.1
-$connector = new DnsConnector(
-    new TcpConnector($loop, array('bindto' => '192.168.10.1:0')),
-    $resolver
-);
-
-$server = new Server($loop, $socket, $connector);
-```
-
-#### Server protocol
-
-The `Server` supports all protocol versions by default.
 
 If want to explicitly set the protocol version, use the supported values `4`, `4a` or `5`:
 
