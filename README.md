@@ -2,6 +2,18 @@
 
 Async SOCKS proxy server (SOCKS4, SOCKS4a and SOCKS5), built on top of React PHP
 
+**Table of contents**
+
+* [Quickstart example](#quickstart-example)
+* [Description](#description)
+* [Usage](#usage)
+  * [Server](#server)
+    * [Server protocol](#server-protocol)
+    * [Server authentication](#server-authentication)
+    * [Proxy chaining](#proxy-chaining)
+* [Install](#install)
+* [License](#license)
+
 ## Quickstart example
 
 Once [installed](#install), you can use the following code to create a connection
