@@ -1,5 +1,14 @@
 # Changelog
 
+## 0.5.0 (2016-11-07)
+
+* Remove / BC break: Split off Server to clue/socks-server
+  (#35 by @clue)
+
+  > Upgrading? Check [clue/socks-server](https://github.com/clue/php-socks-server) for details.
+
+* Improve documentation and project structure
+
 ## 0.4.0 (2016-03-19)
 
 * Feature: Support proper SSL/TLS connections with additional SSL context options
