@@ -3,10 +3,12 @@
 namespace Clue\React\Socks;
 
 use React\Promise\Deferred;
-use React\Stream\Stream;
 use \InvalidArgumentException;
 use \UnexpectedValueException;
 
+/**
+ * @internal
+ */
 class StreamReader
 {
     const RET_DONE = true;
