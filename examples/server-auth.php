@@ -1,6 +1,6 @@
 <?php
 
-use Clue\React\Socks\Server;
+use Clue\React\Socks\Server\Server;
 use React\Socket\Server as Socket;
 
 include_once __DIR__.'/../vendor/autoload.php';

@@ -1,6 +1,6 @@
 <?php
 
-use Clue\React\Socks\Server;
+use Clue\React\Socks\Server\Server;
 
 class ServerTest extends TestCase
 {

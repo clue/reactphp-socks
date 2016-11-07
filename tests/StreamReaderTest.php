@@ -1,6 +1,6 @@
 <?php
 
-use Clue\React\Socks\StreamReader;
+use Clue\React\Socks\Server\StreamReader;
 
 class StreamReaderTest extends TestCase
 {

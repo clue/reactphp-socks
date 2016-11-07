@@ -4,7 +4,7 @@ use Clue\React\Socks\Client;
 use Clue\React\Socks\Server;
 use React\Socket\Server as Socket;
 
-include_once __DIR__.'/../vendor/autoload.php';
+include_once __DIR__.'/vendor/autoload.php';
 
 $myPort = isset($argv[1]) ? $argv[1] : 9051;
 $otherPort = isset($argv[2]) ? $argv[2] : 9050;
