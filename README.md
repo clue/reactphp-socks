@@ -8,9 +8,6 @@ of the actual application level protocol, such as HTTP, SMTP, IMAP, Telnet etc.
 **Table of contents**
 
 * [Quickstart example](#quickstart-example)
-* [Description](#description)
-  * [Using SSH as a SOCKS server](#using-ssh-as-a-socks-server)
-  * [Using the Tor (anonymity network) to tunnel SOCKS connections](#using-the-tor-anonymity-network-to-tunnel-socks-connections)
 * [Usage](#usage)
   * [Client](#client)
     * [Tunnelled TCP connections](#tunnelled-tcp-connections)
@@ -20,6 +17,9 @@ of the actual application level protocol, such as HTTP, SMTP, IMAP, Telnet etc.
     * [DNS resolution](#dns-resolution)
     * [Authentication](#authentication)
   * [Connector](#connector)
+* [Servers](#servers)
+  * [Using SSH as a SOCKS server](#using-ssh-as-a-socks-server)
+  * [Using the Tor (anonymity network) to tunnel SOCKS connections](#using-the-tor-anonymity-network-to-tunnel-socks-connections)
 * [Install](#install)
 * [License](#license)
 
@@ -41,37 +41,6 @@ $loop->run();
 ```
 
 See also the [examples](examples).
-
-## Description
-
-### Using SSH as a SOCKS server
-
-If you already have an SSH server set up, you can easily use it as a SOCKS
-tunnel end point. On your client, simply start your SSH client and use
-the `-D [port]` option to start a local SOCKS server (quoting the man page:
-a `local "dynamic" application-level port forwarding`) by issuing:
-
-`$ ssh -D 9050 ssh-server`
-
-```PHP
-$client = new Client('127.0.0.1:9050', $loop);
-```
-
-### Using the Tor (anonymity network) to tunnel SOCKS connections
-
-The [Tor anonymity network](http://www.torproject.org) client software is designed
-to encrypt your traffic and route it over a network of several nodes to conceal its origin.
-It presents a SOCKS4 and SOCKS5 interface on TCP port 9050 by default
-which allows you to tunnel any traffic through the anonymity network.
-In most scenarios you probably don't want your client to resolve the target hostnames,
-because you would leak DNS information to anybody observing your local traffic.
-Also, Tor provides hidden services through an `.onion` pseudo top-level domain
-which have to be resolved by Tor.
-
-```PHP
-$client = new Client('127.0.0.1:9050', $loop);
-$client->setResolveLocal(false);
-```
 
 ## Usage
 
@@ -317,6 +286,37 @@ with one such client implementation,  it probably uses/accepts an instance
 implementing React's `ConnectorInterface` (and usually its default `Connector`
 instance). In this case you can also pass this `Connector` instance instead
 to make this client implementation SOCKS-aware. That's it.
+
+## Servers
+
+### Using SSH as a SOCKS server
+
+If you already have an SSH server set up, you can easily use it as a SOCKS
+tunnel end point. On your client, simply start your SSH client and use
+the `-D [port]` option to start a local SOCKS server (quoting the man page:
+a `local "dynamic" application-level port forwarding`) by issuing:
+
+`$ ssh -D 9050 ssh-server`
+
+```PHP
+$client = new Client('127.0.0.1:9050', $loop);
+```
+
+### Using the Tor (anonymity network) to tunnel SOCKS connections
+
+The [Tor anonymity network](http://www.torproject.org) client software is designed
+to encrypt your traffic and route it over a network of several nodes to conceal its origin.
+It presents a SOCKS4 and SOCKS5 interface on TCP port 9050 by default
+which allows you to tunnel any traffic through the anonymity network.
+In most scenarios you probably don't want your client to resolve the target hostnames,
+because you would leak DNS information to anybody observing your local traffic.
+Also, Tor provides hidden services through an `.onion` pseudo top-level domain
+which have to be resolved by Tor.
+
+```PHP
+$client = new Client('127.0.0.1:9050', $loop);
+$client->setResolveLocal(false);
+```
 
 ## Install
 
