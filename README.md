@@ -11,7 +11,7 @@ of the actual application level protocol, such as HTTP, SMTP, IMAP, Telnet etc.
 * [Usage](#usage)
   * [Server](#server)
     * [Protocol version](#protocol-version)
-    * [Server authentication](#server-authentication)
+    * [Authentication](#authentication)
     * [Proxy chaining](#proxy-chaining)
 * [Install](#install)
 * [License](#license)
@@ -149,10 +149,14 @@ use `null` as protocol version.
 $server->setProtocolVersion(null);
 ```
 
-#### Server authentication
+#### Authentication
+
+By default, the `Server` does not require any authentication from the clients.
+You can enable authentication support so that clients need to pass a valid
+username and password before forwarding any connections.
 
 Setting authentication on the `Server` enforces each further connected client
-to use protocol version 5.
+to use protocol version 5 (SOCKS5).
 If a client tries to use any other protocol version, does not send along
 authentication details or if authentication details can not be verified,
 the connection will be rejected.
