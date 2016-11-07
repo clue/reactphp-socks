@@ -2,11 +2,13 @@
 
 Async SOCKS client library to connect to SOCKS4, SOCKS4a and SOCKS5 proxy servers, built on top of React PHP.
 
+The SOCKS protocol family can be used to easily tunnel TCP connections independent
+of the actual application level protocol, such as HTTP, SMTP, IMAP, Telnet etc.
+
 **Table of contents**
 
 * [Quickstart example](#quickstart-example)
 * [Description](#description)
-  * [SOCKS Protocol versions & differences](#socks-protocol-versions--differences)
   * [Using SSH as a SOCKS server](#using-ssh-as-a-socks-server)
   * [Using the Tor (anonymity network) to tunnel SOCKS connections](#using-the-tor-anonymity-network-to-tunnel-socks-connections)
 * [Usage](#usage)
@@ -14,9 +16,9 @@ Async SOCKS client library to connect to SOCKS4, SOCKS4a and SOCKS5 proxy server
     * [Tunnelled TCP connections](#tunnelled-tcp-connections)
     * [SSL/TLS encrypted](#ssltls-encrypted)
     * [HTTP requests](#http-requests)
-    * [Explicitly setting protocol version](#explicitly-setting-protocol-version)
-    * [Remote vs. local DNS resolving](#remote-vs-local-dns-resolving)
-    * [Username / Password authentication](#username--password-authentication)
+    * [Protocol version](#protocol-version)
+    * [DNS resolution](#dns-resolution)
+    * [Authentication](#authentication)
   * [Connector](#connector)
 * [Install](#install)
 * [License](#license)
@@ -41,71 +43,6 @@ $loop->run();
 See also the [examples](examples).
 
 ## Description
-
-The SOCKS protocol family can be used to easily tunnel TCP connections independent
-of the actual application level protocol, such as HTTP, SMTP, IMAP, Telnet etc.
-
-### SOCKS Protocol versions & differences
-
-While SOCKS4 already had (a somewhat limited) support for `SOCKS BIND` requests
-and SOCKS5 added generic UDP support (`SOCKS UDPASSOCIATE`), this library
-focuses on the most commonly used core feature of `SOCKS CONNECT`.
-In this mode, a SOCKS server acts as a generic proxy allowing higher level
-application protocols to work through it.
-
-<table>
-  <tr>
-    <th></th>
-    <th>SOCKS4</th>
-    <th>SOCKS4a</th>
-    <th>SOCKS5</th>
-  </tr>
-  <tr>
-    <th>Protocol specification</th>
-    <td><a href="http://ftp.icm.edu.pl/packages/socks/socks4/SOCKS4.protocol">SOCKS4.protocol</a></td>
-    <td><a href="http://ftp.icm.edu.pl/packages/socks/socks4/SOCKS4A.protocol">SOCKS4A.protocol</a></td>
-    <td><a href="http://tools.ietf.org/html/rfc1928">RFC 1928</a></td>
-  </tr>
-  <tr>
-    <th>Tunnel outgoing TCP connections</th>
-    <td>✓</td>
-    <td>✓</td>
-    <td>✓</td>
-  </tr>
-  <tr>
-    <th><a href="#remote-vs-local-dns-resolving">Remote DNS resolving</a></th>
-    <td>✗</td>
-    <td>✓</td>
-    <td>✓</td>
-  </tr>
-  <tr>
-    <th>IPv6 addresses</th>
-    <td>✗</td>
-    <td>✗</td>
-    <td>✓</td>
-  </tr>
-  <tr>
-    <th><a href="#username--password-authentication">Username/Password authentication</a></th>
-    <td>✗</td>
-    <td>✗</td>
-    <td>✓ (as per <a href="http://tools.ietf.org/html/rfc1929">RFC 1929</a>)</td>
-  </tr>
-  <tr>
-    <th>Handshake # roundtrips</th>
-    <td>1</td>
-    <td>1</td>
-    <td>2 (3 with authentication)</td>
-  </tr>
-  <tr>
-    <th>Handshake traffic<br />+ remote DNS</th>
-    <td>17 bytes<br />✗</td>
-    <td>17 bytes<br />+ hostname + 1</td>
-    <td><em>variable</em> (+ auth + IPv6)<br />+ hostname - 3</td>
-  </tr>
-</table>
-
-Note, this is __not__ a full SOCKS5 implementation due to missing GSSAPI
-authentication (but it's unlikely you're going to miss it anyway).
 
 ### Using SSH as a SOCKS server
 
@@ -222,12 +159,73 @@ It can interact with this library by issuing all
 [http requests through a SOCKS server](https://github.com/clue/php-buzz-react#socks-proxy).
 This works for both plain HTTP and SSL encrypted HTTPS requests.
 
-#### Explicitly setting protocol version
+#### Protocol version
 
 This library supports the SOCKS4, SOCKS4a and SOCKS5 protocol versions.
+
+While SOCKS4 already had (a somewhat limited) support for `SOCKS BIND` requests
+and SOCKS5 added generic UDP support (`SOCKS UDPASSOCIATE`), this library
+focuses on the most commonly used core feature of `SOCKS CONNECT`.
+In this mode, a SOCKS server acts as a generic proxy allowing higher level
+application protocols to work through it.
+
+<table>
+  <tr>
+    <th></th>
+    <th>SOCKS4</th>
+    <th>SOCKS4a</th>
+    <th>SOCKS5</th>
+  </tr>
+  <tr>
+    <th>Protocol specification</th>
+    <td><a href="http://ftp.icm.edu.pl/packages/socks/socks4/SOCKS4.protocol">SOCKS4.protocol</a></td>
+    <td><a href="http://ftp.icm.edu.pl/packages/socks/socks4/SOCKS4A.protocol">SOCKS4A.protocol</a></td>
+    <td><a href="http://tools.ietf.org/html/rfc1928">RFC 1928</a></td>
+  </tr>
+  <tr>
+    <th>Tunnel outgoing TCP connections</th>
+    <td>✓</td>
+    <td>✓</td>
+    <td>✓</td>
+  </tr>
+  <tr>
+    <th><a href="#dns-resolution">Remote DNS resolving</a></th>
+    <td>✗</td>
+    <td>✓</td>
+    <td>✓</td>
+  </tr>
+  <tr>
+    <th>IPv6 addresses</th>
+    <td>✗</td>
+    <td>✗</td>
+    <td>✓</td>
+  </tr>
+  <tr>
+    <th><a href="#authentication">Username/Password authentication</a></th>
+    <td>✗</td>
+    <td>✗</td>
+    <td>✓ (as per <a href="http://tools.ietf.org/html/rfc1929">RFC 1929</a>)</td>
+  </tr>
+  <tr>
+    <th>Handshake # roundtrips</th>
+    <td>1</td>
+    <td>1</td>
+    <td>2 (3 with authentication)</td>
+  </tr>
+  <tr>
+    <th>Handshake traffic<br />+ remote DNS</th>
+    <td>17 bytes<br />✗</td>
+    <td>17 bytes<br />+ hostname + 1</td>
+    <td><em>variable</em> (+ auth + IPv6)<br />+ hostname - 3</td>
+  </tr>
+</table>
+
+Note, this is __not__ a full SOCKS5 implementation due to missing GSSAPI
+authentication (but it's unlikely you're going to miss it anyway).
+
 Usually, there's no need to worry about which protocol version is being used.
-Depending on which features you use (e.g. [remote DNS resolving](#remote-vs-local-dns-resolving)
-and [authentication](#username--password-authentication)),
+Depending on which features you use (e.g. [remote DNS resolving](#dns-resolution)
+and [authentication](#authentication)),
 the `Client` automatically uses the _best_ protocol available.
 In general this library automatically switches to higher protocol versions
 when needed, but tries to keep things simple otherwise and sticks to lower
@@ -246,7 +244,7 @@ use `null` as protocol version.
 $client->setProtocolVersion(null);
 ```
 
-### Remote vs. local DNS resolving
+#### DNS resolution
 
 By default, the `Client` uses local DNS resolving to resolve target hostnames
 into IP addresses and only transmits the resulting target IP to the socks server.
@@ -274,7 +272,7 @@ Valid values are boolean `true`(default) or `false`.
 $client->setResolveLocal(false);
 ```
 
-### Username / Password authentication
+#### Authentication
 
 This library supports username/password authentication for SOCKS5 servers as
 defined in [RFC 1929](http://tools.ietf.org/html/rfc1929).
