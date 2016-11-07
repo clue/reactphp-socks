@@ -2,6 +2,25 @@
 
 Async SOCKS client library to connect to SOCKS4, SOCKS4a and SOCKS5 proxy servers, built on top of React PHP.
 
+**Table of contents**
+
+* [Quickstart example](#quickstart-example)
+* [Description](#description)
+  * [SOCKS Protocol versions & differences](#socks-protocol-versions--differences)
+  * [Using SSH as a SOCKS server](#using-ssh-as-a-socks-server)
+  * [Using the Tor (anonymity network) to tunnel SOCKS connections](#using-the-tor-anonymity-network-to-tunnel-socks-connections)
+* [Usage](#usage)
+  * [Client](#client)
+    * [Tunnelled TCP connections](#tunnelled-tcp-connections)
+    * [SSL/TLS encrypted](#ssltls-encrypted)
+    * [HTTP requests](#http-requests)
+    * [Explicitly setting protocol version](#explicitly-setting-protocol-version)
+    * [Remote vs. local DNS resolving](#remote-vs-local-dns-resolving)
+    * [Username / Password authentication](#username--password-authentication)
+  * [Connector](#connector)
+* [Install](#install)
+* [License](#license)
+
 ## Quickstart example
 
 Once [installed](#install), you can use the following code to create a connection
