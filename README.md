@@ -15,6 +15,7 @@ of the actual application level protocol, such as HTTP, SMTP, IMAP, Telnet etc.
     * [Proxy chaining](#proxy-chaining)
 * [Install](#install)
 * [License](#license)
+* [More](#more)
 
 ## Quickstart example
 
@@ -248,3 +249,10 @@ See also the [CHANGELOG](CHANGELOG.md) for details about version upgrades.
 ## License
 
 MIT, see LICENSE
+
+## More
+
+* If you're looking for an end-user SOCKS server daemon, you may want to
+  use [clue/psocksd](https://github.com/clue/psocksd).
+* If you're looking for a SOCKS client implementation, consider using
+  [clue/socks-react](https://github.com/clue/php-socks-react).
