@@ -33,14 +33,14 @@ class FunctionalTest extends TestCase
     public function testConnectionWithIpViaSocks4()
     {
         $this->server->setProtocolVersion(4);
-        $this->client->setProtocolVersion(4);
+        $this->client = new Client('socks4://127.0.0.1:' . $this->port, $this->loop);
 
         $this->assertResolveStream($this->client->createConnection('127.0.0.1', $this->port));
     }
 
     public function testConnectionWithHostnameViaSocks4Fails()
     {
-        $this->client->setProtocolVersion(4);
+        $this->client = new Client('socks4://127.0.0.1:' . $this->port, $this->loop);
 
         $this->assertRejectPromise($this->client->createConnection('www.google.com', 80));
     }
@@ -52,7 +52,7 @@ class FunctionalTest extends TestCase
 
     public function testConnectionWithIpv6ViaSocks4Fails()
     {
-        $this->client->setProtocolVersion(4);
+        $this->client = new Client('socks4://127.0.0.1:' . $this->port, $this->loop);
 
         $this->assertRejectPromise($this->client->createConnection('::1', 80));
     }
@@ -60,15 +60,7 @@ class FunctionalTest extends TestCase
     public function testConnectionSocks5()
     {
         $this->server->setProtocolVersion(5);
-        $this->client->setProtocolVersion(5);
-
-        $this->assertResolveStream($this->client->createConnection('www.google.com', 80));
-    }
-
-    public function testConnectionAuthentication()
-    {
-        $this->server->setAuthArray(array('name' => 'pass'));
-        $this->client->setAuth('name', 'pass');
+        $this->client = new Client('socks5://127.0.0.1:' . $this->port, $this->loop);
 
         $this->assertResolveStream($this->client->createConnection('www.google.com', 80));
     }
@@ -102,31 +94,34 @@ class FunctionalTest extends TestCase
 
     public function testConnectionAuthenticationUnused()
     {
-        $this->client->setAuth('name', 'pass');
+        $this->client = new Client('name:pass@127.0.0.1:' . $this->port, $this->loop);
 
         $this->assertResolveStream($this->client->createConnection('www.google.com', 80));
     }
 
     public function testConnectionInvalidProtocolMismatch()
     {
-        $this->server->setProtocolVersion(4);
-        $this->client->setProtocolVersion(5);
+        $this->client = new Client('socks4://127.0.0.1:' . $this->port, $this->loop);
 
-        $this->assertRejectPromise($this->client->createConnection('www.google.com', 80));
+        $this->server->setProtocolVersion(5);
+
+        $this->assertRejectPromise($this->client->createConnection('127.0.0.1', 80));
     }
 
     public function testConnectionInvalidNoAuthentication()
     {
+        $this->client = new Client('socks5://127.0.0.1:' . $this->port, $this->loop);
+
         $this->server->setAuthArray(array('name' => 'pass'));
-        $this->client->setProtocolVersion(5);
 
         $this->assertRejectPromise($this->client->createConnection('www.google.com', 80));
     }
 
     public function testConnectionInvalidAuthenticationMismatch()
     {
+        $this->client = new Client('user:other@127.0.0.1:' . $this->port, $this->loop);
+
         $this->server->setAuthArray(array('name' => 'pass'));
-        $this->client->setAuth('user', 'other');
 
         $this->assertRejectPromise($this->client->createConnection('www.google.com', 80));
     }

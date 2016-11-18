@@ -216,37 +216,22 @@ application protocols to work through it.
 Note, this is __not__ a full SOCKS5 implementation due to missing GSSAPI
 authentication (but it's unlikely you're going to miss it anyway).
 
-Usually, there's no need to worry about which protocol version is being used.
-Depending on which features you use (e.g. [remote DNS resolving](#dns-resolution)
-and [authentication](#authentication)),
-the `Client` automatically uses the _best_ protocol available.
-In general this library automatically switches to higher protocol versions
-when needed, but tries to keep things simple otherwise and sticks to lower
-protocol versions when possible.
+By default, the `Client` communicates via SOCKS4a with the SOCKS server
+– unless you enable [authentication](#authentication), in which case it will
+default to SOCKS5.
+This is done because SOCKS4a incurs less overhead than SOCKS5 (see above) and
+is equivalent with SOCKS4 if you use [local DNS resolution](#dns-resolution).
 
-If want to explicitly set the protocol version, use the supported values `4`, `4a` or `5`
-as part of the SOCKS URI:
+If want to explicitly set the protocol version, use the supported values URI
+schemes `socks4`, `socks4a` or `socks5` as part of the SOCKS URI:
 
 ```php
-$client = new Client('socks4a://127.0.0.1', $loop);
-```
-
-You can also explicitly set the protocol version later:
-
-```PHP
-$client->setProtocolVersion('4a');
+$client = new Client('socks5://127.0.0.1', $loop);
 ```
 
 As seen above, both SOCKS5 and SOCKS4a support remote and local DNS resolution.
 If you've explicitly set this to SOCKS4, then you may want to check the following
 chapter about local DNS resolution or you may only connect to IPv4 addresses.
-
-In order to reset the protocol version to its default (i.e. automatic detection),
-use `null` as protocol version.
-
-```PHP
-$client->setProtocolVersion(null);
-```
 
 #### DNS resolution
 
@@ -310,7 +295,7 @@ rejected right away.
 This library supports username/password authentication for SOCKS5 servers as
 defined in [RFC 1929](http://tools.ietf.org/html/rfc1929).
 
-On the client side, simply set your username and password to use for
+On the client side, simply pass your username and password to use for
 authentication (see below).
 For each further connection the client will merely send a flag to the server
 indicating authentication information is available.
@@ -319,9 +304,6 @@ the actual authentication credentials will be transmitted to the server.
 
 Note that the password is transmitted in cleartext to the SOCKS proxy server,
 so this methods should not be used on a network where you have to worry about eavesdropping.
-Authentication is only supported by protocol version 5 (SOCKS5),
-so setting authentication on the `Client` enforces communication with protocol
-version 5 and complains if you have explicitly set anything else. 
 
 You can simply pass the authentication information as part of the SOCKS URI:
 
@@ -342,16 +324,13 @@ $client = new Client(
 );
 ```
 
-You can also explicitly set the authentication information later:
+Authentication is only supported by protocol version 5 (SOCKS5),
+so passing authentication to the `Client` enforces communication with protocol
+version 5 and complains if you have explicitly set anything else:
 
 ```php
-$client->setAuth('username', 'password');
-```
-
-If you do not want to use authentication anymore:
-
-```PHP
-$client->unsetAuth();
+// throws InvalidArgumentException
+new Client('socks4://user:pass@127.0.0.1', $loop);
 ```
 
 #### Proxy chaining

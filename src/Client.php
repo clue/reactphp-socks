@@ -38,7 +38,7 @@ class Client
 
     private $protocolVersion = null;
 
-    protected $auth = null;
+    private $auth = null;
 
     public function __construct($socksUri, LoopInterface $loop, ConnectorInterface $connector = null, Resolver $resolver = null)
     {
@@ -67,14 +67,21 @@ class Client
             $connector = new DnsConnector(new TcpConnector($loop), $resolver);
         }
 
-        if ($parts['scheme'] !== 'socks') {
-            $this->setProtocolVersion(substr($parts['scheme'], 5));
-        }
-
+        // user or password in URI => SOCKS5 authentication
         if (isset($parts['user']) || isset($parts['pass'])) {
+            if ($parts['scheme'] === 'socks') {
+                // default to using SOCKS5 if not given explicitly
+                $parts['scheme'] = 'socks5';
+            } elseif ($parts['scheme'] !== 'socks5') {
+                // fail if any other protocol version given explicitly
+                throw new InvalidArgumentException('Authentication requires SOCKS5. Consider using protocol version 5 or waive authentication');
+            }
             $parts += array('user' => '', 'pass' => '');
             $this->setAuth(rawurldecode($parts['user']), rawurldecode($parts['pass']));
         }
+
+        // check for valid protocol version from URI scheme
+        $this->setProtocolVersionFromScheme($parts['scheme']);
 
         $this->loop = $loop;
         $this->socksHost = $parts['host'];
@@ -82,18 +89,17 @@ class Client
         $this->connector = $connector;
     }
 
-    public function setProtocolVersion($version)
+    private function setProtocolVersionFromScheme($scheme)
     {
-        if ($version !== null) {
-            $version = (string)$version;
-            if (!in_array($version, array('4', '4a', '5'), true)) {
-                throw new InvalidArgumentException('Invalid protocol version given');
-            }
-            if ($version !== '5' && $this->auth){
-                throw new UnexpectedValueException('Unable to change protocol version to anything but SOCKS5 while authentication is used. Consider removing authentication info or sticking to SOCKS5');
-            }
+        if ($scheme === 'socks' || $scheme === 'socks4a') {
+            $this->protocolVersion = '4a';
+        } elseif ($scheme === 'socks5') {
+            $this->protocolVersion = '5';
+        } elseif ($scheme === 'socks4') {
+            $this->protocolVersion = '4';
+        } else {
+            throw new InvalidArgumentException('Invalid protocol version given');
         }
-        $this->protocolVersion = $version;
     }
 
     /**
@@ -103,20 +109,12 @@ class Client
      * @param string $password
      * @link http://tools.ietf.org/html/rfc1929
      */
-    public function setAuth($username, $password)
+    private function setAuth($username, $password)
     {
         if (strlen($username) > 255 || strlen($password) > 255) {
             throw new InvalidArgumentException('Both username and password MUST NOT exceed a length of 255 bytes each');
         }
-        if ($this->protocolVersion !== null && $this->protocolVersion !== '5') {
-            throw new UnexpectedValueException('Authentication requires SOCKS5. Consider using protocol version 5 or waive authentication');
-        }
         $this->auth = pack('C2', 0x01, strlen($username)) . $username . pack('C', strlen($password)) . $password;
-    }
-
-    public function unsetAuth()
-    {
-        $this->auth = null;
     }
 
     /**

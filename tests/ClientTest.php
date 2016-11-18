@@ -39,33 +39,17 @@ class ClientTest extends TestCase
         new Client('////', $this->loop);
     }
 
+    public function testValidAuthFromUri()
+    {
+        $this->client = new Client('username:password@127.0.0.1', $this->loop);
+    }
+
     /**
      * @expectedException InvalidArgumentException
      */
     public function testInvalidAuthInformation()
     {
-        $this->client->setAuth(str_repeat('a', 256), 'test');
-    }
-
-    /**
-     * @expectedException UnexpectedValueException
-     * @dataProvider providerInvalidAuthVersion
-     */
-    public function testInvalidAuthVersion($version)
-    {
-        $this->client->setAuth('username', 'password');
-        $this->client->setProtocolVersion($version);
-    }
-
-    public function providerInvalidAuthVersion()
-    {
-        return array(array('4'), array('4a'));
-    }
-
-    public function testValidAuthVersion()
-    {
-        $this->client->setAuth('username', 'password');
-        $this->assertNull($this->client->setProtocolVersion(5));
+        new Client(str_repeat('a', 256) . ':test@127.0.0.1', $this->loop);
     }
 
     public function testValidAuthAndVersionFromUri()
@@ -74,42 +58,11 @@ class ClientTest extends TestCase
     }
 
     /**
-     * @expectedException UnexpectedValueException
-     */
-    public function testInvalidCanNotSetAuthenticationForSocks4()
-    {
-        $this->client->setProtocolVersion(4);
-        $this->client->setAuth('username', 'password');
-    }
-
-    /**
-     * @expectedException UnexpectedValueException
+     * @expectedException InvalidArgumentException
      */
     public function testInvalidCanNotSetAuthenticationForSocks4Uri()
     {
         $this->client = new Client('socks4://username:password@127.0.0.1:9050', $this->loop);
-    }
-
-    public function testUnsetAuth()
-    {
-        // unset auth even if it's not set is valid
-        $this->client->unsetAuth();
-
-        $this->client->setAuth('username', 'password');
-        $this->client->unsetAuth();
-    }
-
-    /**
-     * @dataProvider providerValidProtocolVersion
-     */
-    public function testValidProtocolVersion($version)
-    {
-        $this->assertNull($this->client->setProtocolVersion($version));
-    }
-
-    public function providerValidProtocolVersion()
-    {
-        return array(array('4'), array('4a'), array('5'));
     }
 
     /**
@@ -117,7 +70,7 @@ class ClientTest extends TestCase
      */
     public function testInvalidProtocolVersion()
     {
-        $this->client->setProtocolVersion(3);
+        $this->client = new Client('socks3://127.0.0.1:9050', $this->loop);
     }
 
     public function testCreateConnector()
