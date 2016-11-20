@@ -2,6 +2,7 @@
 
 namespace Clue\React\Socks;
 
+use React\Promise;
 use React\Promise\Deferred;
 use React\Dns\Resolver\Factory as DnsFactory;
 use React\Dns\Resolver\Resolver;
@@ -15,6 +16,8 @@ use Clue\React\Socks\Connector;
 use \Exception;
 use \InvalidArgumentException;
 use \UnexpectedValueException;
+use RuntimeException;
+use React\Promise\CancellablePromiseInterface;
 
 class Client
 {
@@ -185,7 +188,18 @@ class Client
             $deferred->reject(new InvalidArgumentException('Invalid target specified'));
             return $deferred->promise();
         }
-        $deferred = new Deferred();
+
+        $loop = $this->loop;
+
+        $deferred = new Deferred(function ($_, $reject) use ($loop, &$connecting, &$resolving, &$handling, &$timerTimeout) {
+            $reject(new RuntimeException('Connection attempt cancelled while connecting to socks server'));
+
+            // cancel pending connection, DNS lookup, SOCKS handling and timeout timer
+            $connecting->cancel();
+            $resolving->cancel();
+            $handling->cancel();
+            $loop->cancelTimer($timerTimeout);
+        });
 
         $timestampTimeout = microtime(true) + $this->timeout;
         $timerTimeout = $this->loop->addTimer($this->timeout, function () use ($deferred) {
@@ -203,14 +217,13 @@ class Client
             $protocolVersion = ($auth === null) ? '4a' : '5';
         }
 
-        $loop = $this->loop;
         $that = $this;
 
         // simultaneously start TCP connection and DNS resolution
-        $connecting = $this->connector->create($this->socksHost, $this->socksPort);
+        $connecting = $this->connect($this->socksHost, $this->socksPort);
         $resolving = $this->resolve($host);
 
-        $deferred->resolve($connecting->then(
+        $handling = $connecting->then(
             function (Stream $stream) use ($that, $resolving, $loop, $timerTimeout, $protocolVersion, $auth, $timestampTimeout, $port) {
                 // connection established, wait for DNS resolver
                 return $resolving->then(
@@ -230,9 +243,37 @@ class Client
                 $loop->cancelTimer($timerTimeout);
                 throw new Exception('Unable to connect to socks server', 0, $error);
             }
-        ));
+        );
+
+        $handling->then(array($deferred, 'resolve'), array($deferred, 'reject'));
 
         return $deferred->promise();
+    }
+
+    private function connect($host, $port)
+    {
+        $promise = $this->connector->create($host, $port);
+
+        return new Promise\Promise(
+            function ($resolve, $reject) use ($promise) {
+                // resolve/reject with result of TCP/IP connection
+                $promise->then($resolve, $reject);
+            },
+            function ($_, $reject) use ($promise) {
+                // cancellation should reject connection attempt
+                $reject(new RuntimeException('Connection attempt cancelled during TCP/IP connection'));
+
+                // forefully close TCP/IP connection if it completes despite cancellation
+                $promise->then(function (Stream $stream) {
+                    $stream->close();
+                });
+
+                // (try to) cancel pending TCP/IP connection
+                if ($promise instanceof CancellablePromiseInterface) {
+                    $promise->cancel();
+                }
+            }
+        );
     }
 
     private function resolve($host)
@@ -244,7 +285,23 @@ class Client
             return $deferred->promise();
         }
 
-        return $this->resolver->resolve($host);
+        $promise = $this->resolver->resolve($host);
+
+        return new Promise\Promise(
+            function ($resolve, $reject) use ($promise) {
+                // resolve/reject with result of DNS lookup
+                $promise->then($resolve, $reject);
+            },
+            function ($_, $reject) use ($promise) {
+                // cancellation should reject DNS resolution
+                $reject(new RuntimeException('Connection attempt cancelled during DNS lookup'));
+
+                // (try to) cancel pending DNS connection
+                if ($promise instanceof CancellablePromiseInterface) {
+                    $promise->cancel();
+                }
+            }
+        );
     }
 
     /**
@@ -260,7 +317,9 @@ class Client
      */
     public function handleConnectedSocks(Stream $stream, $host, $port, $timeout, $protocolVersion, $auth=null)
     {
-        $deferred = new Deferred();
+        $deferred = new Deferred(function ($_, $reject) {
+            $reject(new RuntimeException('Connection attempt cancelled while establishing socks session'));
+        });
 
         $timerTimeout = $this->loop->addTimer($timeout, function () use ($deferred) {
             $deferred->reject(new Exception('Timeout while establishing socks session'));

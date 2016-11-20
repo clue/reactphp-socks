@@ -113,6 +113,16 @@ class FunctionalTest extends TestCase
         $this->assertRejectPromise($tcp->create('www.google.commm', 80));
     }
 
+    public function testConnectorCancelConnection()
+    {
+        $tcp = $this->client->createConnector();
+
+        $promise = $tcp->create('www.google.com', 80);
+        $promise->cancel();
+
+        $this->assertRejectPromise($promise);
+    }
+
     public function testConnectorInvalidUnboundPortTimeout()
     {
         $this->client->setTimeout(0.1);
