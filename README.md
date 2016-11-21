@@ -233,6 +233,18 @@ $socket->listen($middlemanPort, 'localhost');
 $server = new Server($loop, $socket, $target->createConnector());
 ```
 
+Proxy chaining can happen on the server side and/or the client side:
+
+* If you ask your client to chain through multiple proxies, then each proxy
+  server does not really know anything about chaining at all.
+  This means that this is a client-only property and not part of this project.
+  For example, you can find this in the companion SOCKS client side project
+  [clue/socks-react](https://github.com/clue/php-socks-react#proxy-chaining).
+
+* If you ask your server to chain through another proxy, then your client does
+  not really know anything about chaining at all.
+  This means that this is a server-only property and can be implemented as above.
+
 ## Install
 
 The recommended way to install this library is [through Composer](http://getcomposer.org).
