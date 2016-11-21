@@ -16,6 +16,7 @@ of the actual application level protocol, such as HTTP, SMTP, IMAP, Telnet etc.
     * [Protocol version](#protocol-version)
     * [DNS resolution](#dns-resolution)
     * [Authentication](#authentication)
+    * [Proxy chaining](#proxy-chaining)
   * [Connector](#connector)
 * [Servers](#servers)
   * [Using a PHP SOCKS server](#using-a-php-socks-server)
@@ -274,6 +275,44 @@ If you do not want to use authentication anymore:
 ```PHP
 $client->unsetAuth();
 ```
+
+#### Proxy chaining
+
+The `Client` is responsible for creating connections to the SOCKS server which
+then connects to the target host.
+
+```
+Client -> SocksServer -> TargetHost
+```
+
+Sometimes it may be required to establish outgoing connections via another SOCKS
+server.
+For example, this can be useful if you want to conceal your origin address.
+
+Client -> MiddlemanSocksServer -> TargetSocksServer -> TargetHost
+
+The `Client` uses any instance of the `ConnectorInterface` to establish
+outgoing connections.
+In order to connect through another SOCKS server, you can simply use another
+SOCKS connector from another SOCKS client like this:
+
+```php
+// https via the proxy chain  "MiddlemanSocksServer -> TargetSocksServer -> TargetHost"
+// please note how the client uses TargetSocksServer (not MiddlemanSocksServer!),
+// which in turn then uses MiddlemanSocksServer.
+// this creates a TCP/IP connection to MiddlemanSocksServer, which then connects
+// to TargetSocksServer, which then connects to the TargetHost
+$middle = new Client($addressMiddle, $loop, new TcpConnector($loop));
+$target = new Client($addressTarget, $loop, $middle->createConnector());
+
+$ssl = $target->createSecureConnector();
+
+$ssl->create('www.google.com', 443)->then(function ($stream) {
+    // …
+});
+```
+
+See also the [third example](examples).
 
 ### Connector
 
