@@ -16,6 +16,7 @@ of the actual application level protocol, such as HTTP, SMTP, IMAP, Telnet etc.
     * [Protocol version](#protocol-version)
     * [DNS resolution](#dns-resolution)
     * [Authentication](#authentication)
+    * [Proxy chaining](#proxy-chaining)
   * [Connector](#connector)
 * [Servers](#servers)
   * [Using a PHP SOCKS server](#using-a-php-socks-server)
@@ -35,7 +36,7 @@ $loop = React\EventLoop\Factory::create();
 $client = new Client('127.0.0.1:9050', $loop);
 $connector = $client->createConnector();
 
-$connector->create('www.google.com:80')->then(function ($stream) {
+$connector->create('www.google.com', 80)->then(function (Stream $stream) {
     $stream->write("GET / HTTP/1.0\r\n\r\n");
 });
 
@@ -87,12 +88,14 @@ Let's open up a TCP [Stream](https://github.com/reactphp/stream) connection and 
 ```PHP
 $tcp = $client->createConnector();
 
-$tcp->create('www.google.com',80)->then(function (React\Stream\Stream $stream) {
+$tcp->create('www.google.com', 80)->then(function (React\Stream\Stream $stream) {
     echo 'connected to www.google.com:80';
     $stream->write("GET / HTTP/1.0\r\n\r\n");
     // ...
 });
 ```
+
+See also the [first example](examples).
 
 #### SSL/TLS encrypted
 
@@ -109,6 +112,8 @@ $ssl->create('www.google.com',443)->then(function (React\Stream\Stream $stream) 
     // ...
 });
 ```
+
+See also the [second example](examples).
 
 You can optionally pass additional
 [SSL context options](http://php.net/manual/en/context.ssl.php)
@@ -270,6 +275,58 @@ If you do not want to use authentication anymore:
 ```PHP
 $client->unsetAuth();
 ```
+
+#### Proxy chaining
+
+The `Client` is responsible for creating connections to the SOCKS server which
+then connects to the target host.
+
+```
+Client -> SocksServer -> TargetHost
+```
+
+Sometimes it may be required to establish outgoing connections via another SOCKS
+server.
+For example, this can be useful if you want to conceal your origin address.
+
+Client -> MiddlemanSocksServer -> TargetSocksServer -> TargetHost
+
+The `Client` uses any instance of the `ConnectorInterface` to establish
+outgoing connections.
+In order to connect through another SOCKS server, you can simply use another
+SOCKS connector from another SOCKS client like this:
+
+```php
+// https via the proxy chain  "MiddlemanSocksServer -> TargetSocksServer -> TargetHost"
+// please note how the client uses TargetSocksServer (not MiddlemanSocksServer!),
+// which in turn then uses MiddlemanSocksServer.
+// this creates a TCP/IP connection to MiddlemanSocksServer, which then connects
+// to TargetSocksServer, which then connects to the TargetHost
+$middle = new Client($addressMiddle, $loop, new TcpConnector($loop));
+$target = new Client($addressTarget, $loop, $middle->createConnector());
+
+$ssl = $target->createSecureConnector();
+
+$ssl->create('www.google.com', 443)->then(function ($stream) {
+    // …
+});
+```
+
+See also the [third example](examples).
+
+Proxy chaining can happen on the server side and/or the client side:
+
+* If you ask your client to chain through multiple proxies, then each proxy
+  server does not really know anything about chaining at all.
+  This means that this is a client-only property.
+
+* If you ask your server to chain through another proxy, then your client does
+  not really know anything about chaining at all.
+  This means that this is a server-only property and not part of this project.
+  For example, you can find this in the companion SOCKS server side project
+  [clue/socks-server](https://github.com/clue/php-socks-server#proxy-chaining)
+  or somewhat similar when you're using the
+  [Tor network](#using-the-tor-anonymity-network-to-tunnel-socks-connections).
 
 ### Connector
 
