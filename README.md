@@ -314,6 +314,20 @@ $ssl->create('www.google.com', 443)->then(function ($stream) {
 
 See also the [third example](examples).
 
+Proxy chaining can happen on the server side and/or the client side:
+
+* If you ask your client to chain through multiple proxies, then each proxy
+  server does not really know anything about chaining at all.
+  This means that this is a client-only property.
+
+* If you ask your server to chain through another proxy, then your client does
+  not really know anything about chaining at all.
+  This means that this is a server-only property and not part of this project.
+  For example, you can find this in the companion SOCKS server side project
+  [clue/socks-server](https://github.com/clue/php-socks-server#proxy-chaining)
+  or somewhat similar when you're using the
+  [Tor network](#using-the-tor-anonymity-network-to-tunnel-socks-connections).
+
 ### Connector
 
 The `Connector` instance can be used to establish TCP connections to remote hosts.
