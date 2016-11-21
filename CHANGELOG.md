@@ -1,5 +1,19 @@
 # Changelog
 
+## 0.5.1 (2016-11-21)
+
+* Feature: Support Promise cancellation
+  (#39 by @clue)
+
+  ```php
+  $promise = $connector->create($host, $port);
+
+  $promise->cancel();
+  ```
+
+* Feature: Timeout now cancels pending connection attempt
+  (#39, #22 by @clue)
+
 ## 0.5.0 (2016-11-07)
 
 * Remove / BC break: Split off Server to clue/socks-server
