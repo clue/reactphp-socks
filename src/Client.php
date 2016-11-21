@@ -191,20 +191,13 @@ class Client
 
         $loop = $this->loop;
 
-        $deferred = new Deferred(function ($_, $reject) use ($loop, &$connecting, &$resolving, &$handling, &$timerTimeout) {
+        $deferred = new Deferred(function ($_, $reject) {
             $reject(new RuntimeException('Connection attempt cancelled while connecting to socks server'));
-
-            // cancel pending connection, DNS lookup, SOCKS handling and timeout timer
-            $connecting->cancel();
-            $resolving->cancel();
-            $handling->cancel();
-            $loop->cancelTimer($timerTimeout);
         });
 
         $timestampTimeout = microtime(true) + $this->timeout;
         $timerTimeout = $this->loop->addTimer($this->timeout, function () use ($deferred) {
             $deferred->reject(new Exception('Timeout while connecting to socks server'));
-            // TODO: stop initiating connection and DNS query
         });
 
         // create local references as these settings may change later due to its async nature
@@ -234,20 +227,32 @@ class Client
                         $timeout = max($timestampTimeout - microtime(true), 0.1);
                         return $that->handleConnectedSocks($stream, $host, $port, $timeout, $protocolVersion, $auth);
                     },
-                    function ($error) {
+                    function (Exception $error) {
                         throw new Exception('Unable to resolve remote hostname', 0, $error);
                     }
                 );
             },
-            function ($error) use ($loop, $timerTimeout) {
-                $loop->cancelTimer($timerTimeout);
+            function (Exception $error) {
                 throw new Exception('Unable to connect to socks server', 0, $error);
             }
         );
 
         $handling->then(array($deferred, 'resolve'), array($deferred, 'reject'));
 
-        return $deferred->promise();
+        return $deferred->promise()->then(null, function (Exception $error) use ($connecting, $resolving, $handling, $loop, $timerTimeout) {
+            // cancel pending connection, DNS lookup, SOCKS handling and timeout timer
+            $connecting->cancel();
+            $resolving->cancel();
+            $handling->cancel();
+            $loop->cancelTimer($timerTimeout);
+
+            // forefully close TCP/IP connection if it completes despite cancellation
+            $connecting->then(function (Stream $stream) {
+                $stream->close();
+            });
+
+            throw $error;
+        });
     }
 
     private function connect($host, $port)
@@ -351,7 +356,6 @@ class Client
             },
             function ($error) use ($stream, $timerTimeout, $loop, $reader) {
                 $loop->cancelTimer($timerTimeout);
-                $stream->close();
 
                 $stream->removeListener('data', array($reader, 'write'));
 

@@ -183,6 +183,8 @@ class ClientTest extends TestCase
     public function testCancelConnectionDuringDnsWillCancelDns()
     {
         $stream = $this->getMockBuilder('React\Stream\Stream')->disableOriginalConstructor()->getMock();
+        $stream->expects($this->once())->method('close');
+
         $promise = new Promise(function ($resolve) use ($stream) { $resolve($stream); });
 
         $connector = $this->getMock('React\SocketClient\ConnectorInterface');
@@ -215,6 +217,28 @@ class ClientTest extends TestCase
 
         $promise = $this->client->createConnection('google.com', 80);
         $promise->cancel();
+
+        $this->expectPromiseReject($promise);
+    }
+
+    public function testCloseConnectionIfDnsLookupFails()
+    {
+        $stream = $this->getMockBuilder('React\Stream\Stream')->disableOriginalConstructor()->getMock();
+        $stream->expects($this->once())->method('close');
+
+        $promise = new Promise(function ($resolve) use ($stream) { $resolve($stream); });
+
+        $connector = $this->getMock('React\SocketClient\ConnectorInterface');
+        $connector->expects($this->once())->method('create')->with('127.0.0.1', 1080)->willReturn($promise);
+
+        $promise = new Promise(function ($_, $reject) { $reject(new RuntimeException()); });
+
+        $resolver = $this->getMockBuilder('React\Dns\Resolver\Resolver')->disableOriginalConstructor()->getMock();
+        $resolver->expects($this->once())->method('resolve')->with('google.com')->willReturn($promise);
+
+        $this->client = new Client('127.0.0.1', $this->loop, $connector, $resolver);
+
+        $promise = $this->client->createConnection('google.com', 80);
 
         $this->expectPromiseReject($promise);
     }
