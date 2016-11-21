@@ -3,7 +3,7 @@
 use React\Stream\Stream;
 use Clue\React\Socks\Client;
 use Clue\React\Socks\Server\Server;
-use React\Promise\PromiseInterface;
+use Clue\React\Block;
 
 class FunctionalTest extends TestCase
 {
@@ -113,6 +113,16 @@ class FunctionalTest extends TestCase
         $this->assertRejectPromise($tcp->create('www.google.commm', 80));
     }
 
+    public function testConnectorCancelConnection()
+    {
+        $tcp = $this->client->createConnector();
+
+        $promise = $tcp->create('www.google.com', 80);
+        $promise->cancel();
+
+        $this->assertRejectPromise($promise);
+    }
+
     public function testConnectorInvalidUnboundPortTimeout()
     {
         $this->client->setTimeout(0.1);
@@ -189,7 +199,7 @@ class FunctionalTest extends TestCase
             $stream->close();
         });
 
-        $this->waitFor($promise);
+        Block\await($promise, $this->loop, 2.0);
     }
 
     private function assertRejectPromise($promise)
@@ -197,28 +207,7 @@ class FunctionalTest extends TestCase
         $this->expectPromiseReject($promise);
 
         $this->setExpectedException('Exception');
-        $this->waitFor($promise);
-    }
 
-    private function waitFor(PromiseInterface $promise)
-    {
-        $resolved = null;
-        $exception = null;
-
-        $promise->then(function ($c) use (&$resolved) {
-            $resolved = $c;
-        }, function($error) use (&$exception) {
-            $exception = $error;
-        });
-
-        while ($resolved === null && $exception === null) {
-            $this->loop->tick();
-        }
-
-        if ($exception !== null) {
-            throw $exception;
-        }
-
-        return $resolved;
+        Block\await($promise, $this->loop, 2.0);
     }
 }

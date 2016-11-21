@@ -19,9 +19,10 @@
         "react/socket-client": "^0.5",
         "react/dns": "0.3.*|0.4.*",
         "react/stream": "0.3.*|0.4.*",
-        "react/promise": "~1.0|~2.0"
+        "react/promise": "^2.1 || ^1.2"
     },
     "require-dev": {
-        "clue/socks-server": "^0.5"
+        "clue/socks-server": "^0.5",
+        "clue/block-react": "^1.1"
     }
 }
