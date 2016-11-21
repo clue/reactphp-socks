@@ -35,7 +35,7 @@ $loop = React\EventLoop\Factory::create();
 $client = new Client('127.0.0.1:9050', $loop);
 $connector = $client->createConnector();
 
-$connector->create('www.google.com:80')->then(function ($stream) {
+$connector->create('www.google.com', 80)->then(function (Stream $stream) {
     $stream->write("GET / HTTP/1.0\r\n\r\n");
 });
 
@@ -87,12 +87,14 @@ Let's open up a TCP [Stream](https://github.com/reactphp/stream) connection and 
 ```PHP
 $tcp = $client->createConnector();
 
-$tcp->create('www.google.com',80)->then(function (React\Stream\Stream $stream) {
+$tcp->create('www.google.com', 80)->then(function (React\Stream\Stream $stream) {
     echo 'connected to www.google.com:80';
     $stream->write("GET / HTTP/1.0\r\n\r\n");
     // ...
 });
 ```
+
+See also the [first example](examples).
 
 #### SSL/TLS encrypted
 
@@ -109,6 +111,8 @@ $ssl->create('www.google.com',443)->then(function (React\Stream\Stream $stream) 
     // ...
 });
 ```
+
+See also the [second example](examples).
 
 You can optionally pass additional
 [SSL context options](http://php.net/manual/en/context.ssl.php)

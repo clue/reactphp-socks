@@ -18,14 +18,14 @@ $client->setResolveLocal(false);
 echo 'Demo SOCKS client connecting to SOCKS server 127.0.0.1:' . $port . PHP_EOL;
 echo 'Not already running a SOCKS server? Try this: ssh -D ' . $port . ' localhost' . PHP_EOL;
 
-$tcp = $client->createConnector();
+$ssl = $client->createSecureConnector();
 
-$tcp->create('www.google.com', 80)->then(function (Stream $stream) {
+$ssl->create('www.google.com', 443)->then(function (Stream $stream) {
     echo 'connected' . PHP_EOL;
     $stream->write("GET / HTTP/1.0\r\n\r\n");
     $stream->on('data', function ($data) {
         echo $data;
     });
-}, 'var_dump');
+}, 'printf');
 
 $loop->run();
