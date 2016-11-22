@@ -77,6 +77,15 @@ class Client
             $connector = new DnsConnector(new TcpConnector($loop), $resolver);
         }
 
+        if ($parts['scheme'] !== 'socks') {
+            $this->setProtocolVersion(substr($parts['scheme'], 5));
+        }
+
+        if (isset($parts['user']) || isset($parts['pass'])) {
+            $parts += array('user' => '', 'pass' => '');
+            $this->setAuth(rawurldecode($parts['user']), rawurldecode($parts['pass']));
+        }
+
         $this->loop = $loop;
         $this->socksHost = $parts['host'];
         $this->socksPort = $parts['port'];

@@ -68,6 +68,11 @@ class ClientTest extends TestCase
         $this->assertNull($this->client->setProtocolVersion(5));
     }
 
+    public function testValidAuthAndVersionFromUri()
+    {
+        $this->client = new Client('socks5://username:password@127.0.0.1:9050', $this->loop);
+    }
+
     /**
      * @expectedException UnexpectedValueException
      */
@@ -75,6 +80,14 @@ class ClientTest extends TestCase
     {
         $this->client->setProtocolVersion(4);
         $this->client->setAuth('username', 'password');
+    }
+
+    /**
+     * @expectedException UnexpectedValueException
+     */
+    public function testInvalidCanNotSetAuthenticationForSocks4Uri()
+    {
+        $this->client = new Client('socks4://username:password@127.0.0.1:9050', $this->loop);
     }
 
     public function testUnsetAuth()

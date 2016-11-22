@@ -207,7 +207,14 @@ In general this library automatically switches to higher protocol versions
 when needed, but tries to keep things simple otherwise and sticks to lower
 protocol versions when possible.
 
-If want to explicitly set the protocol version, use the supported values `4`, `4a` or `5`:
+If want to explicitly set the protocol version, use the supported values `4`, `4a` or `5`
+as part of the SOCKS URI:
+
+```php
+$client = new Client('socks4a://127.0.0.1', $loop);
+```
+
+You can also explicitly set the protocol version later:
 
 ```PHP
 $client->setProtocolVersion('4a');
@@ -266,7 +273,28 @@ Authentication is only supported by protocol version 5 (SOCKS5),
 so setting authentication on the `Client` enforces communication with protocol
 version 5 and complains if you have explicitly set anything else. 
 
-```PHP
+You can simply pass the authentication information as part of the SOCKS URI:
+
+```php
+$client = new Client('username:password@127.0.0.1', $loop);
+```
+
+Note that both the username and password must be percent-encoded if they contain
+special characters:
+
+```php
+$user = 'he:llo';
+$pass = 'p@ss';
+
+$client = new Client(
+    rawurlencode($user) . ':' . rawurlencode($pass) . '@127.0.0.1',
+    $loop
+);
+```
+
+You can also explicitly set the authentication information later:
+
+```php
 $client->setAuth('username', 'password');
 ```
 
