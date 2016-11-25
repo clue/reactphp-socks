@@ -4,7 +4,10 @@ namespace Clue\React\Socks\Server;
 
 use Evenement\EventEmitter;
 use React\Socket\ServerInterface;
+use React\Promise;
+use React\Promise\Deferred;
 use React\Promise\PromiseInterface;
+use React\Promise\CancellablePromiseInterface;
 use React\Stream\Stream;
 use React\Dns\Resolver\Factory as DnsFactory;
 use React\SocketClient\ConnectorInterface;
@@ -14,8 +17,8 @@ use React\Socket\Connection;
 use React\EventLoop\LoopInterface;
 use \UnexpectedValueException;
 use \InvalidArgumentException;
+use \RuntimeException;
 use \Exception;
-use React\Promise\Deferred;
 
 class Server extends EventEmitter
 {
@@ -95,7 +98,7 @@ class Server extends EventEmitter
     public function onConnection(Connection $connection)
     {
         $that = $this;
-        $this->handleSocks($connection)->then(function($remote) use ($connection){
+        $handling = $this->handleSocks($connection)->then(function($remote) use ($connection){
             $connection->emit('ready',array($remote));
         }, function ($error) use ($connection, $that) {
             if (!($error instanceof \Exception)) {
@@ -103,6 +106,10 @@ class Server extends EventEmitter
             }
             $connection->emit('error', array($error));
             $that->endConnection($connection);
+        });
+
+        $connection->on('close', function () use ($handling) {
+            $handling->cancel();
         });
     }
 
@@ -315,12 +322,13 @@ class Server extends EventEmitter
     {
         $stream->emit('target', $target);
         $that = $this;
-        return $this->connector->create($target[0], $target[1])->then(function (Stream $remote) use ($stream, $that) {
-            if (!$stream->isWritable()) {
-                $remote->close();
-                throw new UnexpectedValueException('Remote connection successfully established after client connection closed');
-            }
+        $connecting = $this->connect($target[0], $target[1]);
 
+        $stream->on('close', function () use ($connecting) {
+            $connecting->cancel();
+        });
+
+        return $connecting->then(function (Stream $remote) use ($stream, $that) {
             $stream->pipe($remote, array('end'=>false));
             $remote->pipe($stream, array('end'=>false));
 
@@ -342,5 +350,31 @@ class Server extends EventEmitter
         }, function(Exception $error) {
             throw new UnexpectedValueException('Unable to connect to remote target', 0, $error);
         });
+    }
+
+    private function connect($host, $port)
+    {
+        $promise = $this->connector->create($host, $port);
+
+        return new Promise\Promise(
+            function ($resolve, $reject) use ($promise) {
+                // resolve/reject with result of TCP/IP connection
+                $promise->then($resolve, $reject);
+            },
+            function ($_, $reject) use ($promise) {
+                // cancellation should reject connection attempt
+                $reject(new RuntimeException('Connection attempt cancelled'));
+
+                // forefully close TCP/IP connection if it completes despite cancellation
+                $promise->then(function (Stream $stream) {
+                    $stream->close();
+                });
+
+                // (try to) cancel pending TCP/IP connection
+                if ($promise instanceof CancellablePromiseInterface) {
+                    $promise->cancel();
+                }
+            }
+        );
     }
 }
