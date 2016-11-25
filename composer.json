@@ -16,11 +16,11 @@
     "require": {
         "php": ">=5.3",
         "react/event-loop": "0.3.*|0.4.*",
-        "react/socket-client": "^0.5",
+        "react/socket-client": "^0.5.1",
         "react/socket": "0.3.*|0.4.*",
         "react/dns": "0.3.*|0.4.*",
         "react/stream": "0.3.*|0.4.*",
-        "react/promise": "~1.0|~2.0",
+        "react/promise": "^2.1 || ^1.2",
         "evenement/evenement": "~1.0|~2.0"
     },
     "require-dev": {

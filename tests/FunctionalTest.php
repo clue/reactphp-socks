@@ -83,10 +83,18 @@ class FunctionalTest extends TestCase
         $this->assertResolveStream($this->client->createConnection('www.google.com', 80));
     }
 
-    public function testConnectionInvalidProtocolMismatch()
+    public function testConnectionInvalidProtocolDoesNotMatchSocks5()
     {
         $this->server->setProtocolVersion(5);
         $this->client->setProtocolVersion(4);
+
+        $this->assertRejectPromise($this->client->createConnection('www.google.com', 80));
+    }
+
+    public function testConnectionInvalidProtocolDoesNotMatchSocks4()
+    {
+        $this->server->setProtocolVersion(4);
+        $this->client->setProtocolVersion(5);
 
         $this->assertRejectPromise($this->client->createConnection('www.google.com', 80));
     }
