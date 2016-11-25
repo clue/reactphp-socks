@@ -10,17 +10,18 @@ class FunctionalTest extends TestCase
     private $loop;
     private $client;
     private $server;
+    private $port;
 
     public function setUp()
     {
         $this->loop = React\EventLoop\Factory::create();
 
         $socket = $this->createSocketServer();
-        $port = $socket->getPort();
-        $this->assertNotEquals(0, $port);
+        $this->port = $socket->getPort();
+        $this->assertNotEquals(0, $this->port);
 
         $this->server = new Server($this->loop, $socket);
-        $this->client = new Client('127.0.0.1:' . $port, $this->loop);
+        $this->client = new Client('127.0.0.1:' . $this->port, $this->loop);
     }
 
     public function testConnection()
@@ -64,6 +65,33 @@ class FunctionalTest extends TestCase
     {
         $this->server->setAuthArray(array('name' => 'pass'));
         $this->client->setAuth('name', 'pass');
+
+        $this->assertResolveStream($this->client->createConnection('www.google.com', 80));
+    }
+
+    public function testConnectionAuthenticationFromUri()
+    {
+        $this->server->setAuthArray(array('name' => 'pass'));
+
+        $this->client = new Client('name:pass@127.0.0.1:' . $this->port, $this->loop);
+
+        $this->assertResolveStream($this->client->createConnection('www.google.com', 80));
+    }
+
+    public function testConnectionAuthenticationFromUriEncoded()
+    {
+        $this->server->setAuthArray(array('name' => 'p@ss:w0rd'));
+
+        $this->client = new Client(rawurlencode('name') . ':' . rawurlencode('p@ss:w0rd') . '@127.0.0.1:' . $this->port, $this->loop);
+
+        $this->assertResolveStream($this->client->createConnection('www.google.com', 80));
+    }
+
+    public function testConnectionAuthenticationFromUriWithOnlyUserAndNoPassword()
+    {
+        $this->server->setAuthArray(array('empty' => ''));
+
+        $this->client = new Client('empty@127.0.0.1:' . $this->port, $this->loop);
 
         $this->assertResolveStream($this->client->createConnection('www.google.com', 80));
     }
