@@ -68,6 +68,14 @@ class FunctionalTest extends TestCase
         $this->assertResolveStream($this->client->createConnection('www.google.com', 80));
     }
 
+    public function testConnectionAuthenticationEmptyStrings()
+    {
+        $this->server->setAuthArray(array('' => ''));
+        $this->client->setAuth('', '');
+
+        $this->assertResolveStream($this->client->createConnection('www.google.com', 80));
+    }
+
     public function testConnectionAuthenticationUnused()
     {
         $this->client->setAuth('name', 'pass');
