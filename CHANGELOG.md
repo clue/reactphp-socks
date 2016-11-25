@@ -1,5 +1,13 @@
 # Changelog
 
+## 0.5.1 (2016-11-25)
+
+* Feature: Cancel pending outgoing connection if incoming connection closes
+  (#7 by @clue)
+
+* Fix: Support empty strings for auth info (username or password)
+  (#6 by @clue)
+
 ## 0.5.0 (2016-11-07)
 
 * First tagged release
