@@ -169,24 +169,14 @@ class Client
             return Promise\reject(new InvalidArgumentException('Invalid target specified'));
         }
 
-        // create local references as these settings may change later due to its async nature
-        $auth = $this->auth;
-        $protocolVersion = $this->protocolVersion;
-
-        // protocol version not explicitly set?
-        if ($protocolVersion === null) {
-            // authentication requires SOCKS5, otherwise use SOCKS4a
-            $protocolVersion = ($auth === null) ? '4a' : '5';
-        }
-
         $that = $this;
 
         // start TCP/IP connection to SOCKS server and then
         // handle SOCKS protocol once connection is ready
         // resolve plain connection once SOCKS protocol is completed
         return $this->connect($this->socksHost, $this->socksPort)->then(
-            function (Stream $stream) use ($that, $protocolVersion, $auth, $host, $port) {
-                return $that->handleConnectedSocks($stream, $host, $port, $protocolVersion, $auth);
+            function (Stream $stream) use ($that, $host, $port) {
+                return $that->handleConnectedSocks($stream, $host, $port);
             }
         );
     }
@@ -225,11 +215,9 @@ class Client
      * @param Stream      $stream
      * @param string      $host
      * @param int         $port
-     * @param string      $protocolVersion
-     * @param string|null $auth
      * @return Promise Promise<stream, Exception>
      */
-    public function handleConnectedSocks(Stream $stream, $host, $port, $protocolVersion, $auth = null)
+    public function handleConnectedSocks(Stream $stream, $host, $port)
     {
         $deferred = new Deferred(function ($_, $reject) {
             $reject(new RuntimeException('Connection attempt cancelled while establishing socks session'));
@@ -238,8 +226,8 @@ class Client
         $reader = new StreamReader($stream);
         $stream->on('data', array($reader, 'write'));
 
-        if ($protocolVersion === '5' || $auth !== null) {
-            $promise = $this->handleSocks5($stream, $host, $port, $auth, $reader);
+        if ($this->protocolVersion === '5') {
+            $promise = $this->handleSocks5($stream, $host, $port, $reader);
         } else {
             $promise = $this->handleSocks4($stream, $host, $port, $reader);
         }
@@ -298,10 +286,12 @@ class Client
         });
     }
 
-    protected function handleSocks5(Stream $stream, $host, $port, $auth=null, StreamReader $reader)
+    protected function handleSocks5(Stream $stream, $host, $port, StreamReader $reader)
     {
         // protocol version 5
         $data = pack('C', 0x05);
+
+        $auth = $this->auth;
         if ($auth === null) {
             // one method, no authentication
             $data .= pack('C2', 0x01, 0x00);
