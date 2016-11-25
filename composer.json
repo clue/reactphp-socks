@@ -22,7 +22,7 @@
         "react/promise": "^2.1 || ^1.2"
     },
     "require-dev": {
-        "clue/socks-server": "^0.5",
+        "clue/socks-server": "^0.5.1",
         "clue/block-react": "^1.1"
     }
 }
