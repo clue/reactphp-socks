@@ -45,6 +45,11 @@ class FunctionalTest extends TestCase
         $this->assertRejectPromise($this->client->createConnection('www.google.com', 80));
     }
 
+    public function testConnectionWithInvalidPortFails()
+    {
+        $this->assertRejectPromise($this->client->createConnection('www.google.com', 100000));
+    }
+
     public function testConnectionWithIpv6ViaSocks4Fails()
     {
         $this->client->setProtocolVersion(4);

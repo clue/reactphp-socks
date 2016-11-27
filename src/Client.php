@@ -168,14 +168,8 @@ class Client
         }
 
         if (strlen($host) > 255 || $port > 65535 || $port < 0) {
-            $deferred = new Deferred();
-            $deferred->reject(new InvalidArgumentException('Invalid target specified'));
-            return $deferred->promise();
+            return Promise\reject(new InvalidArgumentException('Invalid target specified'));
         }
-
-        $deferred = new Deferred(function ($_, $reject) {
-            $reject(new RuntimeException('Connection attempt cancelled while connecting to socks server'));
-        });
 
         // create local references as these settings may change later due to its async nature
         $auth = $this->auth;
@@ -189,34 +183,14 @@ class Client
 
         $that = $this;
 
-        // start TCP/IP connection to SOCKS server
-        $connecting = $this->connect($this->socksHost, $this->socksPort);
-
+        // start TCP/IP connection to SOCKS server and then
         // handle SOCKS protocol once connection is ready
-        $handling = $connecting->then(
+        // resolve plain connection once SOCKS protocol is completed
+        return $this->connect($this->socksHost, $this->socksPort)->then(
             function (Stream $stream) use ($that, $protocolVersion, $auth, $host, $port) {
                 return $that->handleConnectedSocks($stream, $host, $port, $protocolVersion, $auth);
-            },
-            function (Exception $error) {
-                throw new Exception('Unable to connect to socks server', 0, $error);
             }
         );
-
-        // resolve plain connection once SOCKS protocol is completed
-        $handling->then(array($deferred, 'resolve'), array($deferred, 'reject'));
-
-        return $deferred->promise()->then(null, function (Exception $error) use ($connecting, $handling) {
-            // cancel pending connection and SOCKS handling
-            $connecting->cancel();
-            $handling->cancel();
-
-            // forefully close TCP/IP connection if it completes despite cancellation
-            $connecting->then(function (Stream $stream) {
-                $stream->close();
-            });
-
-            throw $error;
-        });
     }
 
     private function connect($host, $port)
@@ -226,11 +200,13 @@ class Client
         return new Promise\Promise(
             function ($resolve, $reject) use ($promise) {
                 // resolve/reject with result of TCP/IP connection
-                $promise->then($resolve, $reject);
+                return $promise->then($resolve, function (Exception $reason) use ($reject) {
+                    $reject(new \RuntimeException('Unable to connect to SOCKS server', 0, $reason));
+                });
             },
             function ($_, $reject) use ($promise) {
                 // cancellation should reject connection attempt
-                $reject(new RuntimeException('Connection attempt cancelled during TCP/IP connection'));
+                $reject(new RuntimeException('Connection attempt cancelled while connecting to SOCKS server'));
 
                 // forefully close TCP/IP connection if it completes despite cancellation
                 $promise->then(function (Stream $stream) {
@@ -283,8 +259,8 @@ class Client
 
                 return $stream;
             },
-            function ($error) use ($stream, $reader) {
-                $stream->removeListener('data', array($reader, 'write'));
+            function ($error) use ($stream) {
+                $stream->close();
 
                 return $error;
             }
