@@ -132,13 +132,6 @@ class ClientTest extends TestCase
         $this->client->setProtocolVersion('4');
     }
 
-    public function testSetTimeout()
-    {
-        $this->client->setTimeout(1);
-        $this->client->setTimeout(2.0);
-        $this->client->setTimeout(3);
-    }
-
     public function testCreateConnector()
     {
         $this->assertInstanceOf('\React\SocketClient\ConnectorInterface', $this->client->createConnector());

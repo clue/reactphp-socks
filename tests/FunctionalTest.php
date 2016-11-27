@@ -4,6 +4,7 @@ use React\Stream\Stream;
 use Clue\React\Socks\Client;
 use Clue\React\Socks\Server\Server;
 use Clue\React\Block;
+use React\SocketClient\TimeoutConnector;
 
 class FunctionalTest extends TestCase
 {
@@ -125,8 +126,10 @@ class FunctionalTest extends TestCase
 
     public function testConnectorInvalidUnboundPortTimeout()
     {
-        $this->client->setTimeout(0.1);
         $tcp = $this->client->createConnector();
+
+        // time out the connection attempt in 0.1s (as expected)
+        $tcp = new TimeoutConnector($tcp, 0.1, $this->loop);
 
         $this->assertRejectPromise($tcp->create('www.google.com', 8080));
     }
@@ -177,8 +180,10 @@ class FunctionalTest extends TestCase
 
     public function testSecureConnectorInvalidUnboundPortTimeout()
     {
-        $this->client->setTimeout(0.1);
         $ssl = $this->client->createSecureConnector();
+
+        // time out the connection attempt in 0.1s (as expected)
+        $ssl = new TimeoutConnector($ssl, 0.1, $this->loop);
 
         $this->assertRejectPromise($ssl->create('www.google.com', 8080));
     }
