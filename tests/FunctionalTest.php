@@ -29,34 +29,32 @@ class FunctionalTest extends TestCase
         $this->assertResolveStream($this->client->createConnection('www.google.com', 80));
     }
 
-    public function testConnectionSocks4()
+    public function testConnectionWithIpViaSocks4()
     {
         $this->server->setProtocolVersion(4);
         $this->client->setProtocolVersion(4);
 
-        $this->assertResolveStream($this->client->createConnection('www.google.com', 80));
+        $this->assertResolveStream($this->client->createConnection('127.0.0.1', $this->port));
+    }
+
+    public function testConnectionWithHostnameViaSocks4Fails()
+    {
+        $this->client->setProtocolVersion(4);
+
+        $this->assertRejectPromise($this->client->createConnection('www.google.com', 80));
+    }
+
+    public function testConnectionWithIpv6ViaSocks4Fails()
+    {
+        $this->client->setProtocolVersion(4);
+
+        $this->assertRejectPromise($this->client->createConnection('::1', 80));
     }
 
     public function testConnectionSocks5()
     {
         $this->server->setProtocolVersion(5);
         $this->client->setProtocolVersion(5);
-
-        $this->assertResolveStream($this->client->createConnection('www.google.com', 80));
-    }
-
-    public function testConnectionInvalidSocks4aRemote()
-    {
-        $this->client->setProtocolVersion('4a');
-        $this->client->setResolveLocal(false);
-
-        $this->assertResolveStream($this->client->createConnection('www.google.com', 80));
-    }
-
-    public function testConnectionSocks5Remote()
-    {
-        $this->client->setProtocolVersion(5);
-        $this->client->setResolveLocal(false);
 
         $this->assertResolveStream($this->client->createConnection('www.google.com', 80));
     }
@@ -105,8 +103,8 @@ class FunctionalTest extends TestCase
 
     public function testConnectionInvalidProtocolMismatch()
     {
-        $this->server->setProtocolVersion(5);
-        $this->client->setProtocolVersion(4);
+        $this->server->setProtocolVersion(4);
+        $this->client->setProtocolVersion(5);
 
         $this->assertRejectPromise($this->client->createConnection('www.google.com', 80));
     }
