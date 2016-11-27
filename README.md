@@ -280,6 +280,12 @@ See also the [fourth example](examples).
 > Also note how local DNS resolution is in fact entirely handled outside of this
 SOCKS client implementation.
 
+If you've explicitly set the client to SOCKS4 and stick to the default
+*remote DNS resolution*, then you may only connect to IPv4 addresses because
+the protocol lacks a way to communicate hostnames.
+If you try to connect to a hostname despite, the resulting promise will be
+rejected right away.
+
 #### Authentication
 
 This library supports username/password authentication for SOCKS5 servers as
