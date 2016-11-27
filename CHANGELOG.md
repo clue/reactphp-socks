@@ -1,5 +1,21 @@
 # Changelog
 
+## 0.5.2 (2016-11-25)
+
+* Feature: Apply protocol version and username/password auth from SOCKS URI
+  (#43 by @clue)
+
+  ```php
+  // explicitly use SOCKS5
+  $client = new Client('socks5://127.0.0.1', $loop);
+
+  // use authentication (automatically SOCKS5)
+  $client = new Client('user:pass@127.0.0.1', $loop);
+  ```
+
+* More explicit client examples, including proxy chaining
+  (#42 by @clue)
+
 ## 0.5.1 (2016-11-21)
 
 * Feature: Support Promise cancellation

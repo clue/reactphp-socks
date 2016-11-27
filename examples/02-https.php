@@ -11,9 +11,6 @@ $port = isset($argv[1]) ? $argv[1] : 9050;
 $loop = React\EventLoop\Factory::create();
 
 $client = new Client('127.0.0.1:' . $port, $loop);
-$client->setResolveLocal(false);
-// $client->setProtocolVersion(5);
-// $client->setAuth('test','test');
 
 echo 'Demo SOCKS client connecting to SOCKS server 127.0.0.1:' . $port . PHP_EOL;
 echo 'Not already running a SOCKS server? Try this: ssh -D ' . $port . ' localhost' . PHP_EOL;

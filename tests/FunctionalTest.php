@@ -11,17 +11,18 @@ class FunctionalTest extends TestCase
     private $loop;
     private $client;
     private $server;
+    private $port;
 
     public function setUp()
     {
         $this->loop = React\EventLoop\Factory::create();
 
         $socket = $this->createSocketServer();
-        $port = $socket->getPort();
-        $this->assertNotEquals(0, $port);
+        $this->port = $socket->getPort();
+        $this->assertNotEquals(0, $this->port);
 
         $this->server = new Server($this->loop, $socket);
-        $this->client = new Client('127.0.0.1:' . $port, $this->loop);
+        $this->client = new Client('127.0.0.1:' . $this->port, $this->loop);
     }
 
     public function testConnection()
@@ -29,12 +30,26 @@ class FunctionalTest extends TestCase
         $this->assertResolveStream($this->client->createConnection('www.google.com', 80));
     }
 
-    public function testConnectionSocks4()
+    public function testConnectionWithIpViaSocks4()
     {
         $this->server->setProtocolVersion(4);
         $this->client->setProtocolVersion(4);
 
-        $this->assertResolveStream($this->client->createConnection('www.google.com', 80));
+        $this->assertResolveStream($this->client->createConnection('127.0.0.1', $this->port));
+    }
+
+    public function testConnectionWithHostnameViaSocks4Fails()
+    {
+        $this->client->setProtocolVersion(4);
+
+        $this->assertRejectPromise($this->client->createConnection('www.google.com', 80));
+    }
+
+    public function testConnectionWithIpv6ViaSocks4Fails()
+    {
+        $this->client->setProtocolVersion(4);
+
+        $this->assertRejectPromise($this->client->createConnection('::1', 80));
     }
 
     public function testConnectionSocks5()
@@ -45,26 +60,37 @@ class FunctionalTest extends TestCase
         $this->assertResolveStream($this->client->createConnection('www.google.com', 80));
     }
 
-    public function testConnectionInvalidSocks4aRemote()
-    {
-        $this->client->setProtocolVersion('4a');
-        $this->client->setResolveLocal(false);
-
-        $this->assertResolveStream($this->client->createConnection('www.google.com', 80));
-    }
-
-    public function testConnectionSocks5Remote()
-    {
-        $this->client->setProtocolVersion(5);
-        $this->client->setResolveLocal(false);
-
-        $this->assertResolveStream($this->client->createConnection('www.google.com', 80));
-    }
-
     public function testConnectionAuthentication()
     {
         $this->server->setAuthArray(array('name' => 'pass'));
         $this->client->setAuth('name', 'pass');
+
+        $this->assertResolveStream($this->client->createConnection('www.google.com', 80));
+    }
+
+    public function testConnectionAuthenticationFromUri()
+    {
+        $this->server->setAuthArray(array('name' => 'pass'));
+
+        $this->client = new Client('name:pass@127.0.0.1:' . $this->port, $this->loop);
+
+        $this->assertResolveStream($this->client->createConnection('www.google.com', 80));
+    }
+
+    public function testConnectionAuthenticationFromUriEncoded()
+    {
+        $this->server->setAuthArray(array('name' => 'p@ss:w0rd'));
+
+        $this->client = new Client(rawurlencode('name') . ':' . rawurlencode('p@ss:w0rd') . '@127.0.0.1:' . $this->port, $this->loop);
+
+        $this->assertResolveStream($this->client->createConnection('www.google.com', 80));
+    }
+
+    public function testConnectionAuthenticationFromUriWithOnlyUserAndNoPassword()
+    {
+        $this->server->setAuthArray(array('empty' => ''));
+
+        $this->client = new Client('empty@127.0.0.1:' . $this->port, $this->loop);
 
         $this->assertResolveStream($this->client->createConnection('www.google.com', 80));
     }
@@ -78,8 +104,8 @@ class FunctionalTest extends TestCase
 
     public function testConnectionInvalidProtocolMismatch()
     {
-        $this->server->setProtocolVersion(5);
-        $this->client->setProtocolVersion(4);
+        $this->server->setProtocolVersion(4);
+        $this->client->setProtocolVersion(5);
 
         $this->assertRejectPromise($this->client->createConnection('www.google.com', 80));
     }

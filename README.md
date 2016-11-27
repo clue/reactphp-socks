@@ -73,6 +73,7 @@ $dnsResolverFactory = new DnsFactory();
 $resolver = $dnsResolverFactory->createCached('127.0.0.1', $loop);
 
 // outgoing connections to SOCKS server via interface 192.168.10.1
+// this is not to be confused with local DNS resolution (see further below)
 $connector = new DnsConnector(
     new TcpConnector($loop, array('bindto' => '192.168.10.1:0')),
     $resolver
@@ -207,11 +208,22 @@ In general this library automatically switches to higher protocol versions
 when needed, but tries to keep things simple otherwise and sticks to lower
 protocol versions when possible.
 
-If want to explicitly set the protocol version, use the supported values `4`, `4a` or `5`:
+If want to explicitly set the protocol version, use the supported values `4`, `4a` or `5`
+as part of the SOCKS URI:
+
+```php
+$client = new Client('socks4a://127.0.0.1', $loop);
+```
+
+You can also explicitly set the protocol version later:
 
 ```PHP
 $client->setProtocolVersion('4a');
 ```
+
+As seen above, both SOCKS5 and SOCKS4a support remote and local DNS resolution.
+If you've explicitly set this to SOCKS4, then you may want to check the following
+chapter about local DNS resolution or you may only connect to IPv4 addresses.
 
 In order to reset the protocol version to its default (i.e. automatic detection),
 use `null` as protocol version.
@@ -222,31 +234,57 @@ $client->setProtocolVersion(null);
 
 #### DNS resolution
 
-By default, the `Client` uses local DNS resolving to resolve target hostnames
-into IP addresses and only transmits the resulting target IP to the socks server.
+By default, the `Client` does not perform any DNS resolution at all and simply
+forwards any hostname you're trying to connect to to the SOCKS server.
+The remote SOCKS server is thus responsible for looking up any hostnames via DNS
+(this default mode is thus called *remote DNS resolution*).
+As seen above, this mode is supported by the SOCKS5 and SOCKS4a protocols, but
+not the SOCKS4 protocol, as the protocol lacks a way to communicate hostnames.
 
-Resolving locally usually results in better performance as for each outgoing
-request both resolving the hostname and initializing the connection to the
-SOCKS server can be done simultanously. So by the time the SOCKS connection is
-established (requires a TCP handshake for each connection), the target hostname
-will likely already be resolved ( _usually_ either already cached or requires a
-simple DNS query via UDP).
+On the other hand, all SOCKS protocol versions support sending destination IP
+addresses to the SOCKS server.
+In this mode you either have to stick to using IPs only (which is ofen unfeasable)
+or perform any DNS lookups locally and only transmit the resolved destination IPs
+(this mode is thus called *local DNS resolution*).
 
-You may want to switch to remote DNS resolving if your local `Client` either can not
-resolve target hostnames because it has no direct access to the internet or if
-it should not resolve target hostnames because its outgoing DNS traffic might
+The default *remote DNS resolution* is useful if your local `Client` either can
+not resolve target hostnames because it has no direct access to the internet or
+if it should not resolve target hostnames because its outgoing DNS traffic might
 be intercepted (in particular when using the
-[Tor network](#using-the-tor-anonymity-network-to-tunnel-socks-connections)). 
+[Tor network](#using-the-tor-anonymity-network-to-tunnel-socks-connections)).
 
-Local DNS resolving is available in all SOCKS protocol versions.
-Remote DNS resolving is only available for SOCKS4a and SOCKS5
-(i.e. it is NOT available for SOCKS4).
+If you want to explicitly use *local DNS resolution* (such as when explicitly
+using SOCKS4), you can use the following code:
 
-Valid values are boolean `true`(default) or `false`.
+```php
+// usual client setup
+$client = new Client($uri, $loop);
 
-```PHP
-$client->setResolveLocal(false);
+// set up DNS server to use (Google's public DNS here)
+$factory = new React\Dns\Resolver\Factory();
+$resolver = $factory->createCached('8.8.8.8', $loop);
+
+// resolve hostnames via DNS before forwarding resulting IP trough SOCKS server
+$dns = new React\SocketClient\DnsConnector($client->createConnector(), $resolver);
+
+// secure TLS via the DNS connector
+$ssl = new React\SocketClient\SecureConnector($dns, $loop);
+
+$ssl->create('www.google.com', 443)->then(function ($stream) {
+    // …
+});
 ```
+
+See also the [fourth example](examples).
+
+> Also note how local DNS resolution is in fact entirely handled outside of this
+SOCKS client implementation.
+
+If you've explicitly set the client to SOCKS4 and stick to the default
+*remote DNS resolution*, then you may only connect to IPv4 addresses because
+the protocol lacks a way to communicate hostnames.
+If you try to connect to a hostname despite, the resulting promise will be
+rejected right away.
 
 #### Authentication
 
@@ -266,7 +304,28 @@ Authentication is only supported by protocol version 5 (SOCKS5),
 so setting authentication on the `Client` enforces communication with protocol
 version 5 and complains if you have explicitly set anything else. 
 
-```PHP
+You can simply pass the authentication information as part of the SOCKS URI:
+
+```php
+$client = new Client('username:password@127.0.0.1', $loop);
+```
+
+Note that both the username and password must be percent-encoded if they contain
+special characters:
+
+```php
+$user = 'he:llo';
+$pass = 'p@ss';
+
+$client = new Client(
+    rawurlencode($user) . ':' . rawurlencode($pass) . '@127.0.0.1',
+    $loop
+);
+```
+
+You can also explicitly set the authentication information later:
+
+```php
 $client->setAuth('username', 'password');
 ```
 
@@ -392,7 +451,7 @@ The recommended way to install this library is [through Composer](http://getcomp
 This will install the latest supported version:
 
 ```bash
-$ composer require clue/socks-react:^0.5.1
+$ composer require clue/socks-react:^0.5.2
 ```
 
 See also the [CHANGELOG](CHANGELOG.md) for details about version upgrades.

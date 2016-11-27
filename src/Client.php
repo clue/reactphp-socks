@@ -27,12 +27,6 @@ class Client
      */
     private $connector;
 
-    /**
-     *
-     * @var Resolver
-     */
-    private $resolver;
-
     private $socksHost;
 
     private $socksPort;
@@ -41,8 +35,6 @@ class Client
      * @var LoopInterface
      */
     protected $loop;
-
-    private $resolveLocal = true;
 
     private $protocolVersion = null;
 
@@ -75,19 +67,19 @@ class Client
             $connector = new DnsConnector(new TcpConnector($loop), $resolver);
         }
 
+        if ($parts['scheme'] !== 'socks') {
+            $this->setProtocolVersion(substr($parts['scheme'], 5));
+        }
+
+        if (isset($parts['user']) || isset($parts['pass'])) {
+            $parts += array('user' => '', 'pass' => '');
+            $this->setAuth(rawurldecode($parts['user']), rawurldecode($parts['pass']));
+        }
+
         $this->loop = $loop;
         $this->socksHost = $parts['host'];
         $this->socksPort = $parts['port'];
         $this->connector = $connector;
-        $this->resolver = $resolver;
-    }
-
-    public function setResolveLocal($resolveLocal)
-    {
-        if ($this->protocolVersion === '4' && !$resolveLocal) {
-            throw new UnexpectedValueException('SOCKS4 requires resolving locally. Consider using another protocol version or resolving locally');
-        }
-        $this->resolveLocal = $resolveLocal;
     }
 
     public function setProtocolVersion($version)
@@ -99,9 +91,6 @@ class Client
             }
             if ($version !== '5' && $this->auth){
                 throw new UnexpectedValueException('Unable to change protocol version to anything but SOCKS5 while authentication is used. Consider removing authentication info or sticking to SOCKS5');
-            }
-            if ($version === '4' && !$this->resolveLocal) {
-                throw new UnexpectedValueException('Unable to change to SOCKS4 while resolving locally is turned off. Consider using another protocol version or resolving locally');
             }
         }
         $this->protocolVersion = $version;
@@ -174,6 +163,10 @@ class Client
      */
     public function createConnection($host, $port)
     {
+        if ($this->protocolVersion === '4' && false === filter_var($host, FILTER_VALIDATE_IP, FILTER_FLAG_IPV4)) {
+            return Promise\reject(new InvalidArgumentException('Requires an IPv4 address for SOCKS4'));
+        }
+
         if (strlen($host) > 255 || $port > 65535 || $port < 0) {
             $deferred = new Deferred();
             $deferred->reject(new InvalidArgumentException('Invalid target specified'));
@@ -196,34 +189,25 @@ class Client
 
         $that = $this;
 
-        // simultaneously start TCP connection and DNS resolution
+        // start TCP/IP connection to SOCKS server
         $connecting = $this->connect($this->socksHost, $this->socksPort);
-        $resolving = $this->resolve($host);
 
+        // handle SOCKS protocol once connection is ready
         $handling = $connecting->then(
-            function (Stream $stream) use ($that, $resolving, $protocolVersion, $auth, $port) {
-                // connection established, wait for DNS resolver
-                return $resolving->then(
-                    function ($host) use ($stream, $port, $that, $protocolVersion, $auth) {
-                        // DNS resolver completed => continue SOCKS session
-                        return $that->handleConnectedSocks($stream, $host, $port, $protocolVersion, $auth);
-                    },
-                    function (Exception $error) {
-                        throw new Exception('Unable to resolve remote hostname', 0, $error);
-                    }
-                );
+            function (Stream $stream) use ($that, $protocolVersion, $auth, $host, $port) {
+                return $that->handleConnectedSocks($stream, $host, $port, $protocolVersion, $auth);
             },
             function (Exception $error) {
                 throw new Exception('Unable to connect to socks server', 0, $error);
             }
         );
 
+        // resolve plain connection once SOCKS protocol is completed
         $handling->then(array($deferred, 'resolve'), array($deferred, 'reject'));
 
-        return $deferred->promise()->then(null, function (Exception $error) use ($connecting, $resolving, $handling) {
-            // cancel pending connection, DNS lookup, SOCKS handling and timeout timer
+        return $deferred->promise()->then(null, function (Exception $error) use ($connecting, $handling) {
+            // cancel pending connection and SOCKS handling
             $connecting->cancel();
-            $resolving->cancel();
             $handling->cancel();
 
             // forefully close TCP/IP connection if it completes despite cancellation
@@ -254,34 +238,6 @@ class Client
                 });
 
                 // (try to) cancel pending TCP/IP connection
-                if ($promise instanceof CancellablePromiseInterface) {
-                    $promise->cancel();
-                }
-            }
-        );
-    }
-
-    private function resolve($host)
-    {
-        // return if it's already an IP or we want to resolve remotely (socks 4 only supports resolving locally)
-        if (false !== filter_var($host, FILTER_VALIDATE_IP) || ($this->protocolVersion !== '4' && !$this->resolveLocal)) {
-            $deferred = new Deferred();
-            $deferred->resolve($host);
-            return $deferred->promise();
-        }
-
-        $promise = $this->resolver->resolve($host);
-
-        return new Promise\Promise(
-            function ($resolve, $reject) use ($promise) {
-                // resolve/reject with result of DNS lookup
-                $promise->then($resolve, $reject);
-            },
-            function ($_, $reject) use ($promise) {
-                // cancellation should reject DNS resolution
-                $reject(new RuntimeException('Connection attempt cancelled during DNS lookup'));
-
-                // (try to) cancel pending DNS connection
                 if ($promise instanceof CancellablePromiseInterface) {
                     $promise->cancel();
                 }
