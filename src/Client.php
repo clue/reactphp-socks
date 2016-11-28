@@ -38,7 +38,7 @@ class Client
 
     private $protocolVersion = null;
 
-    protected $auth = null;
+    private $auth = null;
 
     public function __construct($socksUri, LoopInterface $loop, ConnectorInterface $connector = null, Resolver $resolver = null)
     {
@@ -67,14 +67,21 @@ class Client
             $connector = new DnsConnector(new TcpConnector($loop), $resolver);
         }
 
-        if ($parts['scheme'] !== 'socks') {
-            $this->setProtocolVersion(substr($parts['scheme'], 5));
-        }
-
+        // user or password in URI => SOCKS5 authentication
         if (isset($parts['user']) || isset($parts['pass'])) {
+            if ($parts['scheme'] === 'socks') {
+                // default to using SOCKS5 if not given explicitly
+                $parts['scheme'] = 'socks5';
+            } elseif ($parts['scheme'] !== 'socks5') {
+                // fail if any other protocol version given explicitly
+                throw new InvalidArgumentException('Authentication requires SOCKS5. Consider using protocol version 5 or waive authentication');
+            }
             $parts += array('user' => '', 'pass' => '');
             $this->setAuth(rawurldecode($parts['user']), rawurldecode($parts['pass']));
         }
+
+        // check for valid protocol version from URI scheme
+        $this->setProtocolVersionFromScheme($parts['scheme']);
 
         $this->loop = $loop;
         $this->socksHost = $parts['host'];
@@ -82,18 +89,17 @@ class Client
         $this->connector = $connector;
     }
 
-    public function setProtocolVersion($version)
+    private function setProtocolVersionFromScheme($scheme)
     {
-        if ($version !== null) {
-            $version = (string)$version;
-            if (!in_array($version, array('4', '4a', '5'), true)) {
-                throw new InvalidArgumentException('Invalid protocol version given');
-            }
-            if ($version !== '5' && $this->auth){
-                throw new UnexpectedValueException('Unable to change protocol version to anything but SOCKS5 while authentication is used. Consider removing authentication info or sticking to SOCKS5');
-            }
+        if ($scheme === 'socks' || $scheme === 'socks4a') {
+            $this->protocolVersion = '4a';
+        } elseif ($scheme === 'socks5') {
+            $this->protocolVersion = '5';
+        } elseif ($scheme === 'socks4') {
+            $this->protocolVersion = '4';
+        } else {
+            throw new InvalidArgumentException('Invalid protocol version given');
         }
-        $this->protocolVersion = $version;
     }
 
     /**
@@ -103,20 +109,12 @@ class Client
      * @param string $password
      * @link http://tools.ietf.org/html/rfc1929
      */
-    public function setAuth($username, $password)
+    private function setAuth($username, $password)
     {
         if (strlen($username) > 255 || strlen($password) > 255) {
             throw new InvalidArgumentException('Both username and password MUST NOT exceed a length of 255 bytes each');
         }
-        if ($this->protocolVersion !== null && $this->protocolVersion !== '5') {
-            throw new UnexpectedValueException('Authentication requires SOCKS5. Consider using protocol version 5 or waive authentication');
-        }
         $this->auth = pack('C2', 0x01, strlen($username)) . $username . pack('C', strlen($password)) . $password;
-    }
-
-    public function unsetAuth()
-    {
-        $this->auth = null;
     }
 
     /**
@@ -171,24 +169,14 @@ class Client
             return Promise\reject(new InvalidArgumentException('Invalid target specified'));
         }
 
-        // create local references as these settings may change later due to its async nature
-        $auth = $this->auth;
-        $protocolVersion = $this->protocolVersion;
-
-        // protocol version not explicitly set?
-        if ($protocolVersion === null) {
-            // authentication requires SOCKS5, otherwise use SOCKS4a
-            $protocolVersion = ($auth === null) ? '4a' : '5';
-        }
-
         $that = $this;
 
         // start TCP/IP connection to SOCKS server and then
         // handle SOCKS protocol once connection is ready
         // resolve plain connection once SOCKS protocol is completed
         return $this->connect($this->socksHost, $this->socksPort)->then(
-            function (Stream $stream) use ($that, $protocolVersion, $auth, $host, $port) {
-                return $that->handleConnectedSocks($stream, $host, $port, $protocolVersion, $auth);
+            function (Stream $stream) use ($that, $host, $port) {
+                return $that->handleConnectedSocks($stream, $host, $port);
             }
         );
     }
@@ -227,11 +215,9 @@ class Client
      * @param Stream      $stream
      * @param string      $host
      * @param int         $port
-     * @param string      $protocolVersion
-     * @param string|null $auth
      * @return Promise Promise<stream, Exception>
      */
-    public function handleConnectedSocks(Stream $stream, $host, $port, $protocolVersion, $auth = null)
+    public function handleConnectedSocks(Stream $stream, $host, $port)
     {
         $deferred = new Deferred(function ($_, $reject) {
             $reject(new RuntimeException('Connection attempt cancelled while establishing socks session'));
@@ -240,8 +226,8 @@ class Client
         $reader = new StreamReader($stream);
         $stream->on('data', array($reader, 'write'));
 
-        if ($protocolVersion === '5' || $auth !== null) {
-            $promise = $this->handleSocks5($stream, $host, $port, $auth, $reader);
+        if ($this->protocolVersion === '5') {
+            $promise = $this->handleSocks5($stream, $host, $port, $reader);
         } else {
             $promise = $this->handleSocks4($stream, $host, $port, $reader);
         }
@@ -300,10 +286,12 @@ class Client
         });
     }
 
-    protected function handleSocks5(Stream $stream, $host, $port, $auth=null, StreamReader $reader)
+    protected function handleSocks5(Stream $stream, $host, $port, StreamReader $reader)
     {
         // protocol version 5
         $data = pack('C', 0x05);
+
+        $auth = $this->auth;
         if ($auth === null) {
             // one method, no authentication
             $data .= pack('C2', 0x01, 0x00);
