@@ -3,6 +3,7 @@
 use React\Stream\Stream;
 use Clue\React\Socks\Client;
 use React\SocketClient\TcpConnector;
+use React\SocketClient\SecureConnector;
 
 include_once __DIR__.'/../vendor/autoload.php';
 
@@ -16,7 +17,8 @@ $loop = React\EventLoop\Factory::create();
 // this creates a TCP/IP connection to foo, which then connects to bar, which then connects to the target
 $foo = new Client('127.0.0.1:' . $first, $loop, new TcpConnector($loop));
 $bar = new Client('127.0.0.1:' . $second, $loop, $foo->createConnector());
-$ssl = $bar->createSecureConnector();
+
+$ssl = new SecureConnector($bar->createConnector(), $loop);
 
 echo 'Demo SOCKS client connecting to SOCKS proxy server chain 127.0.0.1:' . $first . ' and 127.0.0.1:' . $second . PHP_EOL;
 echo 'Not already running a SOCKS server? Try this: ssh -D ' . $first . ' localhost' . PHP_EOL;
