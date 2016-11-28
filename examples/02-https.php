@@ -16,7 +16,7 @@ $client = new Client('127.0.0.1:' . $port, $loop);
 echo 'Demo SOCKS client connecting to SOCKS server 127.0.0.1:' . $port . PHP_EOL;
 echo 'Not already running a SOCKS server? Try this: ssh -D ' . $port . ' localhost' . PHP_EOL;
 
-$ssl = new SecureConnector($client->createConnector(), $loop);
+$ssl = new SecureConnector($client, $loop);
 
 // time out connection attempt in 3.0s
 $ssl = new TimeoutConnector($ssl, 3.0, $loop);
