@@ -165,6 +165,7 @@ class Client implements ConnectorInterface
      * @param string      $host
      * @param int         $port
      * @return Promise Promise<stream, Exception>
+     * @internal
      */
     public function handleConnectedSocks(Stream $stream, $host, $port)
     {
@@ -208,7 +209,7 @@ class Client implements ConnectorInterface
         return $deferred->promise();
     }
 
-    protected function handleSocks4(Stream $stream, $host, $port, StreamReader $reader)
+    private function handleSocks4(Stream $stream, $host, $port, StreamReader $reader)
     {
         // do not resolve hostname. only try to convert to IP
         $ip = ip2long($host);
@@ -235,7 +236,7 @@ class Client implements ConnectorInterface
         });
     }
 
-    protected function handleSocks5(Stream $stream, $host, $port, StreamReader $reader)
+    private function handleSocks5(Stream $stream, $host, $port, StreamReader $reader)
     {
         // protocol version 5
         $data = pack('C', 0x05);
