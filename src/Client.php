@@ -114,7 +114,7 @@ class Client implements ConnectorInterface
             return Promise\reject(new InvalidArgumentException('Requires an IPv4 address for SOCKS4'));
         }
 
-        if (strlen($host) > 255 || $port > 65535 || $port < 0) {
+        if (strlen($host) > 255 || $port > 65535 || $port < 0 || (string)$port !== (string)(int)$port) {
             return Promise\reject(new InvalidArgumentException('Invalid target specified'));
         }
 

@@ -76,6 +76,28 @@ class ClientTest extends TestCase
         $this->client = new Client('socks3://127.0.0.1:9050', $this->connector);
     }
 
+    public function testCreateWillConnectToProxy()
+    {
+        $promise = new Promise(function () { });
+
+        $this->connector->expects($this->once())->method('create')->with('127.0.0.1', 1080)->willReturn($promise);
+
+        $promise = $this->client->create('localhost', 80);
+
+        $this->assertInstanceOf('\React\Promise\PromiseInterface', $promise);
+    }
+
+    public function testCreateWithInvalidPortDoesNotConnect()
+    {
+        $promise = new Promise(function () { });
+
+        $this->connector->expects($this->never())->method('create');
+
+        $promise = $this->client->create('some-random-site', 'some-random-port');
+
+        $this->assertInstanceOf('\React\Promise\PromiseInterface', $promise);
+    }
+
     public function testCancelConnectionDuringConnectionWillCancelConnection()
     {
         $promise = new Promise(function () { }, $this->expectCallableOnce());
@@ -116,21 +138,5 @@ class ClientTest extends TestCase
         $promise->cancel();
 
         $this->expectPromiseReject($promise);
-    }
-
-    /**
-     * @dataProvider providerAddress
-     */
-    public function testCreateConnection($host, $port)
-    {
-        $this->assertInstanceOf('\React\Promise\PromiseInterface', $this->client->create($host, $port));
-    }
-
-    public function providerAddress()
-    {
-        return array(
-            array('localhost','80'),
-            array('invalid domain','non-numeric')
-        );
     }
 }
