@@ -31,8 +31,6 @@ class Client
 
     private $socksPort;
 
-    private $timeout;
-
     /**
      * @var LoopInterface
      */
@@ -82,13 +80,6 @@ class Client
         $this->socksHost = $parts['host'];
         $this->socksPort = $parts['port'];
         $this->connector = $connector;
-
-        $this->timeout = ini_get("default_socket_timeout");
-    }
-
-    public function setTimeout($timeout)
-    {
-        $this->timeout = $timeout;
     }
 
     public function setProtocolVersion($version)
@@ -177,21 +168,8 @@ class Client
         }
 
         if (strlen($host) > 255 || $port > 65535 || $port < 0) {
-            $deferred = new Deferred();
-            $deferred->reject(new InvalidArgumentException('Invalid target specified'));
-            return $deferred->promise();
+            return Promise\reject(new InvalidArgumentException('Invalid target specified'));
         }
-
-        $loop = $this->loop;
-
-        $deferred = new Deferred(function ($_, $reject) {
-            $reject(new RuntimeException('Connection attempt cancelled while connecting to socks server'));
-        });
-
-        $timestampTimeout = microtime(true) + $this->timeout;
-        $timerTimeout = $this->loop->addTimer($this->timeout, function () use ($deferred) {
-            $deferred->reject(new Exception('Timeout while connecting to socks server'));
-        });
 
         // create local references as these settings may change later due to its async nature
         $auth = $this->auth;
@@ -205,39 +183,14 @@ class Client
 
         $that = $this;
 
-        // start TCP/IP connection to SOCKS server
-        $connecting = $this->connect($this->socksHost, $this->socksPort);
-
+        // start TCP/IP connection to SOCKS server and then
         // handle SOCKS protocol once connection is ready
-        $handling = $connecting->then(
-            function (Stream $stream) use ($that, $loop, $timerTimeout, $protocolVersion, $auth, $timestampTimeout, $host, $port) {
-                // connection established => cancel timeout
-                $loop->cancelTimer($timerTimeout);
-
-                $timeout = max($timestampTimeout - microtime(true), 0.1);
-                return $that->handleConnectedSocks($stream, $host, $port, $timeout, $protocolVersion, $auth);
-            },
-            function (Exception $error) {
-                throw new Exception('Unable to connect to socks server', 0, $error);
+        // resolve plain connection once SOCKS protocol is completed
+        return $this->connect($this->socksHost, $this->socksPort)->then(
+            function (Stream $stream) use ($that, $protocolVersion, $auth, $host, $port) {
+                return $that->handleConnectedSocks($stream, $host, $port, $protocolVersion, $auth);
             }
         );
-
-        // resolve plain connection once SOCKS protocol is completed
-        $handling->then(array($deferred, 'resolve'), array($deferred, 'reject'));
-
-        return $deferred->promise()->then(null, function (Exception $error) use ($connecting, $handling, $loop, $timerTimeout) {
-            // cancel pending connection, SOCKS handling and timeout timer
-            $connecting->cancel();
-            $handling->cancel();
-            $loop->cancelTimer($timerTimeout);
-
-            // forefully close TCP/IP connection if it completes despite cancellation
-            $connecting->then(function (Stream $stream) {
-                $stream->close();
-            });
-
-            throw $error;
-        });
     }
 
     private function connect($host, $port)
@@ -247,11 +200,13 @@ class Client
         return new Promise\Promise(
             function ($resolve, $reject) use ($promise) {
                 // resolve/reject with result of TCP/IP connection
-                $promise->then($resolve, $reject);
+                return $promise->then($resolve, function (Exception $reason) use ($reject) {
+                    $reject(new \RuntimeException('Unable to connect to SOCKS server', 0, $reason));
+                });
             },
             function ($_, $reject) use ($promise) {
                 // cancellation should reject connection attempt
-                $reject(new RuntimeException('Connection attempt cancelled during TCP/IP connection'));
+                $reject(new RuntimeException('Connection attempt cancelled while connecting to SOCKS server'));
 
                 // forefully close TCP/IP connection if it completes despite cancellation
                 $promise->then(function (Stream $stream) {
@@ -272,19 +227,14 @@ class Client
      * @param Stream      $stream
      * @param string      $host
      * @param int         $port
-     * @param float       $timeout
      * @param string      $protocolVersion
      * @param string|null $auth
      * @return Promise Promise<stream, Exception>
      */
-    public function handleConnectedSocks(Stream $stream, $host, $port, $timeout, $protocolVersion, $auth=null)
+    public function handleConnectedSocks(Stream $stream, $host, $port, $protocolVersion, $auth = null)
     {
         $deferred = new Deferred(function ($_, $reject) {
             $reject(new RuntimeException('Connection attempt cancelled while establishing socks session'));
-        });
-
-        $timerTimeout = $this->loop->addTimer($timeout, function () use ($deferred) {
-            $deferred->reject(new Exception('Timeout while establishing socks session'));
         });
 
         $reader = new StreamReader($stream);
@@ -301,20 +251,16 @@ class Client
             $deferred->reject(new Exception('Unable to communicate...', 0, $error));
         });
 
-        $loop = $this->loop;
         $deferred->promise()->then(
-            function (Stream $stream) use ($timerTimeout, $loop, $reader) {
-                $loop->cancelTimer($timerTimeout);
+            function (Stream $stream) use ($reader) {
                 $stream->removeAllListeners('end');
 
                 $stream->removeListener('data', array($reader, 'write'));
 
                 return $stream;
             },
-            function ($error) use ($stream, $timerTimeout, $loop, $reader) {
-                $loop->cancelTimer($timerTimeout);
-
-                $stream->removeListener('data', array($reader, 'write'));
+            function ($error) use ($stream) {
+                $stream->close();
 
                 return $error;
             }

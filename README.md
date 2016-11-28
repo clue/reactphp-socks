@@ -17,6 +17,7 @@ of the actual application level protocol, such as HTTP, SMTP, IMAP, Telnet etc.
     * [DNS resolution](#dns-resolution)
     * [Authentication](#authentication)
     * [Proxy chaining](#proxy-chaining)
+    * [Connection timeout](#connection-timeout)
   * [Connector](#connector)
 * [Servers](#servers)
   * [Using a PHP SOCKS server](#using-a-php-socks-server)
@@ -98,6 +99,18 @@ $tcp->create('www.google.com', 80)->then(function (React\Stream\Stream $stream) 
 
 See also the [first example](examples).
 
+Pending connection attempts can be cancelled by cancelling its pending promise like so:
+
+```php
+$promise = $tcp->create($host, $port);
+
+$promise->cancel();
+```
+
+Calling `cancel()` on a pending promise will cancel the underlying TCP/IP
+connection to the SOCKS server and/or the SOCKS protocol negonation and reject
+the resulting promise.
+
 #### SSL/TLS encrypted
 
 If you want to connect to arbitrary SSL/TLS servers, there sure too is an easy to use API available:
@@ -115,6 +128,9 @@ $ssl->create('www.google.com',443)->then(function (React\Stream\Stream $stream) 
 ```
 
 See also the [second example](examples).
+
+Pending connection attempts can be cancelled by cancelling its pending promise
+as usual.
 
 You can optionally pass additional
 [SSL context options](http://php.net/manual/en/context.ssl.php)
@@ -277,6 +293,9 @@ $ssl->create('www.google.com', 443)->then(function ($stream) {
 
 See also the [fourth example](examples).
 
+Pending connection attempts can be cancelled by cancelling its pending promise
+as usual.
+
 > Also note how local DNS resolution is in fact entirely handled outside of this
 SOCKS client implementation.
 
@@ -373,6 +392,9 @@ $ssl->create('www.google.com', 443)->then(function ($stream) {
 
 See also the [third example](examples).
 
+Pending connection attempts can be cancelled by cancelling its pending promise
+as usual.
+
 Proxy chaining can happen on the server side and/or the client side:
 
 * If you ask your client to chain through multiple proxies, then each proxy
@@ -386,6 +408,38 @@ Proxy chaining can happen on the server side and/or the client side:
   [clue/socks-server](https://github.com/clue/php-socks-server#proxy-chaining)
   or somewhat similar when you're using the
   [Tor network](#using-the-tor-anonymity-network-to-tunnel-socks-connections).
+
+#### Connection timeout
+
+By default, neither of the above implements any timeouts for establishing remote
+connections.
+Your underlying operating system may impose limits on pending and/or idle TCP/IP
+connections, anywhere in a range of a few minutes to several hours.
+
+Many use cases require more control over the timeout and likely values much
+smaller, usually in the range of a few seconds only.
+
+You can use React's
+[`TimeoutConnector`](https://github.com/reactphp/socket-client#timeoutconnector)
+to decorate any given `ConnectorInterface` instance.
+It provides the same `create()` method, but will automatically reject the
+underlying connection attempt if it takes too long:
+
+```php
+$timeoutConnector = new React\SocketClient\TimeoutConnector($connector, 3.0, $loop);
+
+$timeoutConnector->create('google.com', 80)->then(function ($stream) {
+    // connection succeeded within 3.0 seconds
+});
+```
+
+See also any of the [examples](examples).
+
+Pending connection attempts can be cancelled by cancelling its pending promise
+as usual.
+
+> Also note how connection timeout is in fact entirely handled outside of this
+SOCKS client implementation.
 
 ### Connector
 
