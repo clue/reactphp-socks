@@ -9,8 +9,10 @@ of the actual application level protocol, such as HTTP, SMTP, IMAP, Telnet etc.
 
 * [Quickstart example](#quickstart-example)
 * [Usage](#usage)
+  * [ConnectorInterface](#connectorinterface)
+    * [create()](#create)
   * [Client](#client)
-    * [Tunnelled TCP connections](#tunnelled-tcp-connections)
+    * [Plain TCP connections](#plain-tcp-connections)
     * [Secure TLS connections](#secure-tls-connections)
     * [HTTP requests](#http-requests)
     * [Protocol version](#protocol-version)
@@ -18,7 +20,6 @@ of the actual application level protocol, such as HTTP, SMTP, IMAP, Telnet etc.
     * [Authentication](#authentication)
     * [Proxy chaining](#proxy-chaining)
     * [Connection timeout](#connection-timeout)
-  * [Connector](#connector)
 * [Servers](#servers)
   * [Using a PHP SOCKS server](#using-a-php-socks-server)
   * [Using SSH as a SOCKS server](#using-ssh-as-a-socks-server)
@@ -35,9 +36,8 @@ to google.com via a local SOCKS proxy server:
 ```php
 $loop = React\EventLoop\Factory::create();
 $client = new Client('127.0.0.1:9050', $loop);
-$connector = $client->createConnector();
 
-$connector->create('www.google.com', 80)->then(function (Stream $stream) {
+$client->create('www.google.com', 80)->then(function (Stream $stream) {
     $stream->write("GET / HTTP/1.0\r\n\r\n");
 });
 
@@ -47,6 +47,45 @@ $loop->run();
 See also the [examples](examples).
 
 ## Usage
+
+### ConnectorInterface
+
+The `ConnectorInterface` is responsible for providing an interface for
+establishing streaming connections, such as a normal TCP/IP connection.
+
+In order to use this library, you should understand how this integrates with its
+ecosystem.
+This base interface is actually defined in React's
+[SocketClient component](https://github.com/reactphp/socket-client) and used
+throughout React's ecosystem.
+
+Most higher-level components (such as HTTP, database or other networking
+service clients) accept an instance implementing this interface to create their
+TCP/IP connection to the underlying networking service.
+This is usually done via dependency injection, so it's fairly simple to actually
+swap this implementation against this library in order to connect through a
+SOCKS proxy server.
+
+The interface only offers a single method:
+
+#### create()
+
+The `create(string $host, int $port): PromiseInterface<Stream, Exception>` method
+can be used to establish a streaming connection.
+It returns a [Promise](https://github.com/reactphp/promise) which either
+fulfills with a [Stream](https://github.com/reactphp/stream) or
+rejects with an `Exception`:
+
+```php
+$connector->create('google.com', 443)->then(
+    function (Stream $stream) {
+        // connection successfully established
+    },
+    function (Exception $error) {
+        // failed to connect due to $error
+    }
+);
+```
 
 ### Client
 
@@ -83,14 +122,26 @@ $connector = new DnsConnector(
 $client = new Client('my-socks-server.local:1080', $loop, $connector);
 ```
 
-#### Tunnelled TCP connections
+This is the main class in this package.
+Because it implements the the [`ConnectorInterface`](#connectorinterface), it
+can simply be used in place of a normal connector.
+This makes it fairly simple to add SOCKS proxy support to pretty much any
+higher-level component:
 
-The `Client` uses a [Promise](https://github.com/reactphp/promise)-based interface which makes working with asynchronous functions a breeze.
-Let's open up a TCP [Stream](https://github.com/reactphp/stream) connection and write some data:
-```PHP
-$tcp = $client->createConnector();
+```diff
+- $client = new SomeClient($connector);
++ $proxy = new Client('127.0.0.1:9050', $loop);
++ $client = new SomeClient($proxy);
+```
 
-$tcp->create('www.google.com', 80)->then(function (React\Stream\Stream $stream) {
+#### Plain TCP connections
+
+The `Client` implements the [`ConnectorInterface`](#connectorinterface) and
+hence provides a single public method, the [`create()`](#create) method.
+Let's open up a streaming TCP/IP connection and write some data:
+
+```php
+$client->create('www.google.com', 80)->then(function (React\Stream\Stream $stream) {
     echo 'connected to www.google.com:80';
     $stream->write("GET / HTTP/1.0\r\n\r\n");
     // ...
@@ -118,7 +169,7 @@ your destination, you may want to wrap this connector in React's
 [`SecureConnector`](https://github.com/reactphp/socket-client#secureconnector):
 
 ```php
-$ssl = new React\SocketClient\SecureConnector($client->createConnector(), $loop);
+$ssl = new React\SocketClient\SecureConnector($client, $loop);
 
 // now create an SSL encrypted connection (notice the $ssl instead of $tcp)
 $ssl->create('www.google.com',443)->then(function (React\Stream\Stream $stream) {
@@ -143,7 +194,7 @@ You can optionally pass additional
 to the constructor like this:
 
 ```php
-$ssl = new React\SocketClient\SecureConnector($client->createConnector(), $loop, array(
+$ssl = new React\SocketClient\SecureConnector($client, $loop, array(
     'verify_peer' => false,
     'verify_peer_name' => false
 ));
@@ -272,7 +323,7 @@ $factory = new React\Dns\Resolver\Factory();
 $resolver = $factory->createCached('8.8.8.8', $loop);
 
 // resolve hostnames via DNS before forwarding resulting IP trough SOCKS server
-$dns = new React\SocketClient\DnsConnector($client->createConnector(), $resolver);
+$dns = new React\SocketClient\DnsConnector($client, $resolver);
 
 // secure TLS via the DNS connector
 $ssl = new React\SocketClient\SecureConnector($dns, $loop);
@@ -366,9 +417,9 @@ SOCKS connector from another SOCKS client like this:
 // this creates a TCP/IP connection to MiddlemanSocksServer, which then connects
 // to TargetSocksServer, which then connects to the TargetHost
 $middle = new Client($addressMiddle, $loop, new TcpConnector($loop));
-$target = new Client($addressTarget, $loop, $middle->createConnector());
+$target = new Client($addressTarget, $loop, $middle);
 
-$ssl = new React\SocketClient\SecureConnector($target->createConnector(), $loop);
+$ssl = new React\SocketClient\SecureConnector($target, $loop);
 
 $ssl->create('www.google.com', 443)->then(function ($stream) {
     // …

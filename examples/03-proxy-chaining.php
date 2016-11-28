@@ -16,9 +16,9 @@ $loop = React\EventLoop\Factory::create();
 // please note how the client uses bar (not foo!), which in turn then uses foo
 // this creates a TCP/IP connection to foo, which then connects to bar, which then connects to the target
 $foo = new Client('127.0.0.1:' . $first, $loop, new TcpConnector($loop));
-$bar = new Client('127.0.0.1:' . $second, $loop, $foo->createConnector());
+$bar = new Client('127.0.0.1:' . $second, $loop, $foo);
 
-$ssl = new SecureConnector($bar->createConnector(), $loop);
+$ssl = new SecureConnector($bar, $loop);
 
 echo 'Demo SOCKS client connecting to SOCKS proxy server chain 127.0.0.1:' . $first . ' and 127.0.0.1:' . $second . PHP_EOL;
 echo 'Not already running a SOCKS server? Try this: ssh -D ' . $first . ' localhost' . PHP_EOL;

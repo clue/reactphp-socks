@@ -20,7 +20,7 @@ $factory = new Factory();
 $resolver = $factory->createCached('8.8.8.8', $loop);
 
 // resolve hostnames via DNS before forwarding resulting IP trough SOCKS server
-$dns = new DnsConnector($client->createConnector(), $resolver);
+$dns = new DnsConnector($client, $resolver);
 
 echo 'Demo SOCKS client connecting to SOCKS server 127.0.0.1:' . $port . PHP_EOL;
 echo 'Not already running a SOCKS server? Try this: ssh -D ' . $port . ' localhost' . PHP_EOL;

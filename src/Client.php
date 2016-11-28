@@ -17,8 +17,9 @@ use \InvalidArgumentException;
 use \UnexpectedValueException;
 use RuntimeException;
 use React\Promise\CancellablePromiseInterface;
+use React\Promise\PromiseInterface;
 
-class Client
+class Client implements ConnectorInterface
 {
     /**
      *
@@ -111,32 +112,19 @@ class Client
     }
 
     /**
-     * Creates a Connector instance that can be used to establish TCP connections to remote hosts.
+     * Establish a TCP/IP connection to the given target host and port through the SOCKS server
      *
-     * This return a new `Connector` instance which can then be used to establish
-     * any number of TCP connections.
-     *
-     * @return Connector
-     * @see Connector
-     */
-    public function createConnector()
-    {
-        return new Connector($this);
-    }
-
-    /**
-     * Should not be called directly, use createConnector() instead.
-     *
-     * This method contains the internal implementation for estasblishing a
-     * connection to the SOCKS server.
+     * Many higher-level networking protocols build on top of TCP. It you're dealing
+     * with one such client implementation,  it probably uses/accepts an instance
+     * implementing React's `ConnectorInterface` (and usually its default `Connector`
+     * instance). In this case you can also pass this `Connector` instance instead
+     * to make this client implementation SOCKS-aware. That's it.
      *
      * @param string $host
      * @param int    $port
-     * @return Promise Promise<Stream,Exception>
-     * @internal use self::createConnector() instead
-     * @see self::createConnector()
+     * @return PromiseInterface Promise<Stream,Exception>
      */
-    public function createConnection($host, $port)
+    public function create($host, $port)
     {
         if ($this->protocolVersion === '4' && false === filter_var($host, FILTER_VALIDATE_IP, FILTER_FLAG_IPV4)) {
             return Promise\reject(new InvalidArgumentException('Requires an IPv4 address for SOCKS4'));

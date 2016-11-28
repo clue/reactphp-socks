@@ -73,11 +73,6 @@ class ClientTest extends TestCase
         $this->client = new Client('socks3://127.0.0.1:9050', $this->loop);
     }
 
-    public function testCreateConnector()
-    {
-        $this->assertInstanceOf('\React\SocketClient\ConnectorInterface', $this->client->createConnector());
-    }
-
     public function testCancelConnectionDuringConnectionWillCancelConnection()
     {
         $promise = new Promise(function () { }, $this->expectCallableOnce());
@@ -86,7 +81,7 @@ class ClientTest extends TestCase
         $connector->expects($this->once())->method('create')->with('127.0.0.1', 1080)->willReturn($promise);
         $this->client = new Client('127.0.0.1', $this->loop, $connector);
 
-        $promise = $this->client->createConnection('google.com', 80);
+        $promise = $this->client->create('google.com', 80);
         $promise->cancel();
 
         $this->expectPromiseReject($promise);
@@ -103,7 +98,7 @@ class ClientTest extends TestCase
         $connector->expects($this->once())->method('create')->with('127.0.0.1', 1080)->willReturn($promise);
         $this->client = new Client('127.0.0.1', $this->loop, $connector);
 
-        $promise = $this->client->createConnection('google.com', 80);
+        $promise = $this->client->create('google.com', 80);
         $promise->cancel();
 
         $this->expectPromiseReject($promise);
@@ -120,7 +115,7 @@ class ClientTest extends TestCase
         $connector->expects($this->once())->method('create')->with('127.0.0.1', 1080)->willReturn($promise);
         $this->client = new Client('127.0.0.1', $this->loop, $connector);
 
-        $promise = $this->client->createConnection('google.com', 80);
+        $promise = $this->client->create('google.com', 80);
         $promise->cancel();
 
         $this->expectPromiseReject($promise);
@@ -131,7 +126,7 @@ class ClientTest extends TestCase
      */
     public function testCreateConnection($host, $port)
     {
-        $this->assertInstanceOf('\React\Promise\PromiseInterface', $this->client->createConnection($host, $port));
+        $this->assertInstanceOf('\React\Promise\PromiseInterface', $this->client->create($host, $port));
     }
 
     public function providerAddress()
