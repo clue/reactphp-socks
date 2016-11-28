@@ -11,7 +11,7 @@ of the actual application level protocol, such as HTTP, SMTP, IMAP, Telnet etc.
 * [Usage](#usage)
   * [Client](#client)
     * [Tunnelled TCP connections](#tunnelled-tcp-connections)
-    * [SSL/TLS encrypted](#ssltls-encrypted)
+    * [Secure TLS connections](#secure-tls-connections)
     * [HTTP requests](#http-requests)
     * [Protocol version](#protocol-version)
     * [DNS resolution](#dns-resolution)
@@ -111,11 +111,14 @@ Calling `cancel()` on a pending promise will cancel the underlying TCP/IP
 connection to the SOCKS server and/or the SOCKS protocol negonation and reject
 the resulting promise.
 
-#### SSL/TLS encrypted
+#### Secure TLS connections
 
-If you want to connect to arbitrary SSL/TLS servers, there sure too is an easy to use API available:
-```PHP
-$ssl = $client->createSecureConnector();
+If you want to establish a secure TLS connection (such as HTTPS) between you and
+your destination, you may want to wrap this connector in React's
+[`SecureConnector`](https://github.com/reactphp/socket-client#secureconnector):
+
+```php
+$ssl = new React\SocketClient\SecureConnector($client->createConnector(), $loop);
 
 // now create an SSL encrypted connection (notice the $ssl instead of $tcp)
 $ssl->create('www.google.com',443)->then(function (React\Stream\Stream $stream) {
@@ -132,12 +135,15 @@ See also the [second example](examples).
 Pending connection attempts can be cancelled by cancelling its pending promise
 as usual.
 
+> Also note how secure TLS connections are in fact entirely handled outside of this
+SOCKS client implementation.
+
 You can optionally pass additional
 [SSL context options](http://php.net/manual/en/context.ssl.php)
 to the constructor like this:
 
 ```php
-$ssl = $client->createSecureConnector(array(
+$ssl = new React\SocketClient\SecureConnector($client->createConnector(), $loop, array(
     'verify_peer' => false,
     'verify_peer_name' => false
 ));
@@ -362,7 +368,7 @@ SOCKS connector from another SOCKS client like this:
 $middle = new Client($addressMiddle, $loop, new TcpConnector($loop));
 $target = new Client($addressTarget, $loop, $middle->createConnector());
 
-$ssl = $target->createSecureConnector();
+$ssl = new React\SocketClient\SecureConnector($target->createConnector(), $loop);
 
 $ssl->create('www.google.com', 443)->then(function ($stream) {
     // …

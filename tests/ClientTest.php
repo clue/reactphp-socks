@@ -78,11 +78,6 @@ class ClientTest extends TestCase
         $this->assertInstanceOf('\React\SocketClient\ConnectorInterface', $this->client->createConnector());
     }
 
-    public function testCreateSecureConnector()
-    {
-        $this->assertInstanceOf('\React\SocketClient\SecureConnector', $this->client->createSecureConnector());
-    }
-
     public function testCancelConnectionDuringConnectionWillCancelConnection()
     {
         $promise = new Promise(function () { }, $this->expectCallableOnce());

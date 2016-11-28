@@ -11,7 +11,6 @@ use React\EventLoop\LoopInterface;
 use React\SocketClient\ConnectorInterface;
 use React\SocketClient\DnsConnector;
 use React\SocketClient\TcpConnector;
-use React\SocketClient\SecureConnector;
 use Clue\React\Socks\Connector;
 use \Exception;
 use \InvalidArgumentException;
@@ -30,11 +29,6 @@ class Client
     private $socksHost;
 
     private $socksPort;
-
-    /**
-     * @var LoopInterface
-     */
-    protected $loop;
 
     private $protocolVersion = null;
 
@@ -83,7 +77,6 @@ class Client
         // check for valid protocol version from URI scheme
         $this->setProtocolVersionFromScheme($parts['scheme']);
 
-        $this->loop = $loop;
         $this->socksHost = $parts['host'];
         $this->socksPort = $parts['port'];
         $this->connector = $connector;
@@ -129,22 +122,6 @@ class Client
     public function createConnector()
     {
         return new Connector($this);
-    }
-
-    /**
-     * Creates a SecureConnector instance that can be used to establish encrypted TLS connections to remote hosts.
-     *
-     * This is actually a convenience helper method that uses React's normal
-     * `SecureConnector` wrapper and this libraries' `Connector` for the
-     * underlying TCP connection.
-     *
-     * @param array $sslContext optional SSL context options
-     * @return SecureConnector
-     * @uses self::createConnector()
-     */
-    public function createSecureConnector(array $sslContext = array())
-    {
-        return new SecureConnector($this->createConnector(), $this->loop, $sslContext);
     }
 
     /**

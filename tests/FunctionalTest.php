@@ -5,6 +5,7 @@ use Clue\React\Socks\Client;
 use Clue\React\Socks\Server\Server;
 use Clue\React\Block;
 use React\SocketClient\TimeoutConnector;
+use React\SocketClient\SecureConnector;
 
 class FunctionalTest extends TestCase
 {
@@ -166,7 +167,7 @@ class FunctionalTest extends TestCase
             $this->markTestSkipped('Required function does not exist in your environment (HHVM?)');
         }
 
-        $ssl = $this->client->createSecureConnector();
+        $ssl = new SecureConnector($this->client->createConnector(), $this->loop);
 
         $this->assertResolveStream($ssl->create('www.google.com', 443));
     }
@@ -177,7 +178,7 @@ class FunctionalTest extends TestCase
             $this->markTestSkipped('Required function does not exist in your environment (HHVM?)');
         }
 
-        $ssl = $this->client->createSecureConnector(array('verify_peer' => true));
+        $ssl = new SecureConnector($this->client->createConnector(), $this->loop, array('verify_peer' => true));
 
         $this->assertRejectPromise($ssl->create('self-signed.badssl.com', 443));
     }
@@ -188,7 +189,7 @@ class FunctionalTest extends TestCase
             $this->markTestSkipped('Required function does not exist in your environment (HHVM?)');
         }
 
-        $ssl = $this->client->createSecureConnector(array('verify_peer' => false));
+        $ssl = new SecureConnector($this->client->createConnector(), $this->loop, array('verify_peer' => false));
 
         $this->assertResolveStream($ssl->create('self-signed.badssl.com', 443));
     }
@@ -199,14 +200,14 @@ class FunctionalTest extends TestCase
             $this->markTestSkipped('Required function does not exist in your environment (HHVM?)');
         }
 
-        $ssl = $this->client->createSecureConnector();
+        $ssl = new SecureConnector($this->client->createConnector(), $this->loop);
 
         $this->assertRejectPromise($ssl->create('www.google.com', 80));
     }
 
     public function testSecureConnectorInvalidUnboundPortTimeout()
     {
-        $ssl = $this->client->createSecureConnector();
+        $ssl = new SecureConnector($this->client->createConnector(), $this->loop);
 
         // time out the connection attempt in 0.1s (as expected)
         $ssl = new TimeoutConnector($ssl, 0.1, $this->loop);
