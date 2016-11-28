@@ -35,7 +35,7 @@ to google.com via a local SOCKS proxy server:
 
 ```php
 $loop = React\EventLoop\Factory::create();
-$client = new Client('127.0.0.1:9050', $loop);
+$client = new Client('127.0.0.1:9050', new TcpConnector($loop));
 
 $client->create('www.google.com', 80)->then(function (Stream $stream) {
     $stream->write("GET / HTTP/1.0\r\n\r\n");
@@ -90,18 +90,21 @@ $connector->create('google.com', 443)->then(
 ### Client
 
 The `Client` is responsible for communication with your SOCKS server instance.
-It also registers everything with the main [`EventLoop`](https://github.com/reactphp/event-loop#usage).
-It accepts a SOCKS server URI like this:
+Its constructor simply accepts an SOCKS proxy URI and a connector used to
+connect to the SOCKS proxy server address.
+
+In its most simple form, you can simply pass React's
+[`TcpConnector`](https://github.com/reactphp/socket-client#tcpconnector)
+like this:
 
 ```php
-$loop = \React\EventLoop\Factory::create();
-$client = new Client('127.0.0.1:1080', $loop);
-```
+$connector = new React\SocketClient\TcpConnector($loop);
+$client = new Client('127.0.0.1:1080', $connector);
 
 You can omit the port if you're using the default SOCKS port 1080:
 
 ```php
-$client = new Client('127.0.0.1', $loop);
+$client = new Client('127.0.0.1', $connector);
 ```
 
 If you need custom connector settings (DNS resolution, timeouts etc.), you can explicitly pass a
@@ -119,7 +122,7 @@ $connector = new DnsConnector(
     $resolver
 );
 
-$client = new Client('my-socks-server.local:1080', $loop, $connector);
+$client = new Client('my-socks-server.local:1080', $connector);
 ```
 
 This is the main class in this package.
@@ -130,7 +133,7 @@ higher-level component:
 
 ```diff
 - $client = new SomeClient($connector);
-+ $proxy = new Client('127.0.0.1:9050', $loop);
++ $proxy = new Client('127.0.0.1:9050', $connector);
 + $client = new SomeClient($proxy);
 ```
 
@@ -283,7 +286,7 @@ If want to explicitly set the protocol version, use the supported values URI
 schemes `socks4`, `socks4a` or `socks5` as part of the SOCKS URI:
 
 ```php
-$client = new Client('socks5://127.0.0.1', $loop);
+$client = new Client('socks5://127.0.0.1', $connector);
 ```
 
 As seen above, both SOCKS5 and SOCKS4a support remote and local DNS resolution.
@@ -316,7 +319,7 @@ using SOCKS4), you can use the following code:
 
 ```php
 // usual client setup
-$client = new Client($uri, $loop);
+$client = new Client($uri, $connector);
 
 // set up DNS server to use (Google's public DNS here)
 $factory = new React\Dns\Resolver\Factory();
@@ -365,7 +368,7 @@ so this methods should not be used on a network where you have to worry about ea
 You can simply pass the authentication information as part of the SOCKS URI:
 
 ```php
-$client = new Client('username:password@127.0.0.1', $loop);
+$client = new Client('username:password@127.0.0.1', $connector);
 ```
 
 Note that both the username and password must be percent-encoded if they contain
@@ -377,7 +380,7 @@ $pass = 'p@ss';
 
 $client = new Client(
     rawurlencode($user) . ':' . rawurlencode($pass) . '@127.0.0.1',
-    $loop
+    $connector
 );
 ```
 
@@ -387,7 +390,7 @@ version 5 and complains if you have explicitly set anything else:
 
 ```php
 // throws InvalidArgumentException
-new Client('socks4://user:pass@127.0.0.1', $loop);
+new Client('socks4://user:pass@127.0.0.1', $connector);
 ```
 
 #### Proxy chaining
@@ -416,8 +419,8 @@ SOCKS connector from another SOCKS client like this:
 // which in turn then uses MiddlemanSocksServer.
 // this creates a TCP/IP connection to MiddlemanSocksServer, which then connects
 // to TargetSocksServer, which then connects to the TargetHost
-$middle = new Client($addressMiddle, $loop, new TcpConnector($loop));
-$target = new Client($addressTarget, $loop, $middle);
+$middle = new Client($addressMiddle, new TcpConnector($loop));
+$target = new Client($addressTarget, $middle);
 
 $ssl = new React\SocketClient\SecureConnector($target, $loop);
 
@@ -477,24 +480,6 @@ as usual.
 > Also note how connection timeout is in fact entirely handled outside of this
 SOCKS client implementation.
 
-### Connector
-
-The `Connector` instance can be used to establish TCP connections to remote hosts.
-Each instance can be used to establish any number of TCP connections.
-
-It implements React's `ConnectorInterface` which only provides a single
-`create()` method.
-
-The `create($host, $port)` method can be used to establish a TCP
-connection to the given target host and port.
-
-It functions as an [adapter](https://en.wikipedia.org/wiki/Adapter_pattern):
-Many higher-level networking protocols build on top of TCP. It you're dealing
-with one such client implementation,  it probably uses/accepts an instance
-implementing React's `ConnectorInterface` (and usually its default `Connector`
-instance). In this case you can also pass this `Connector` instance instead
-to make this client implementation SOCKS-aware. That's it.
-
 ## Servers
 
 ### Using a PHP SOCKS server
@@ -514,7 +499,7 @@ a `local "dynamic" application-level port forwarding`) by issuing:
 `$ ssh -D 9050 ssh-server`
 
 ```PHP
-$client = new Client('127.0.0.1:9050', $loop);
+$client = new Client('127.0.0.1:9050', $connector);
 ```
 
 ### Using the Tor (anonymity network) to tunnel SOCKS connections
@@ -529,8 +514,7 @@ Also, Tor provides hidden services through an `.onion` pseudo top-level domain
 which have to be resolved by Tor.
 
 ```PHP
-$client = new Client('127.0.0.1:9050', $loop);
-$client->setResolveLocal(false);
+$client = new Client('127.0.0.1:9050', $connector);
 ```
 
 ## Install

@@ -3,6 +3,7 @@
 use React\Stream\Stream;
 use Clue\React\Socks\Client;
 use React\Dns\Resolver\Factory;
+use React\SocketClient\TcpConnector;
 use React\SocketClient\DnsConnector;
 use React\SocketClient\SecureConnector;
 use React\SocketClient\TimeoutConnector;
@@ -13,7 +14,7 @@ $port = isset($argv[1]) ? $argv[1] : 9050;
 
 $loop = React\EventLoop\Factory::create();
 
-$client = new Client('127.0.0.1:' . $port, $loop);
+$client = new Client('127.0.0.1:' . $port, new TcpConnector($loop));
 
 // set up DNS server to use (Google's public DNS)
 $factory = new Factory();

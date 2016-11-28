@@ -6,10 +6,12 @@ use Clue\React\Socks\Server\Server;
 use Clue\React\Block;
 use React\SocketClient\TimeoutConnector;
 use React\SocketClient\SecureConnector;
+use React\SocketClient\TcpConnector;
 
 class FunctionalTest extends TestCase
 {
     private $loop;
+    private $connector;
     private $client;
     private $server;
     private $port;
@@ -23,7 +25,8 @@ class FunctionalTest extends TestCase
         $this->assertNotEquals(0, $this->port);
 
         $this->server = new Server($this->loop, $socket);
-        $this->client = new Client('127.0.0.1:' . $this->port, $this->loop);
+        $this->connector = new TcpConnector($this->loop);
+        $this->client = new Client('127.0.0.1:' . $this->port, $this->connector);
     }
 
     public function testConnection()
@@ -34,14 +37,14 @@ class FunctionalTest extends TestCase
     public function testConnectionWithIpViaSocks4()
     {
         $this->server->setProtocolVersion(4);
-        $this->client = new Client('socks4://127.0.0.1:' . $this->port, $this->loop);
+        $this->client = new Client('socks4://127.0.0.1:' . $this->port, $this->connector);
 
         $this->assertResolveStream($this->client->create('127.0.0.1', $this->port));
     }
 
     public function testConnectionWithHostnameViaSocks4Fails()
     {
-        $this->client = new Client('socks4://127.0.0.1:' . $this->port, $this->loop);
+        $this->client = new Client('socks4://127.0.0.1:' . $this->port, $this->connector);
 
         $this->assertRejectPromise($this->client->create('www.google.com', 80));
     }
@@ -53,7 +56,7 @@ class FunctionalTest extends TestCase
 
     public function testConnectionWithIpv6ViaSocks4Fails()
     {
-        $this->client = new Client('socks4://127.0.0.1:' . $this->port, $this->loop);
+        $this->client = new Client('socks4://127.0.0.1:' . $this->port, $this->connector);
 
         $this->assertRejectPromise($this->client->create('::1', 80));
     }
@@ -61,7 +64,7 @@ class FunctionalTest extends TestCase
     public function testConnectionSocks5()
     {
         $this->server->setProtocolVersion(5);
-        $this->client = new Client('socks5://127.0.0.1:' . $this->port, $this->loop);
+        $this->client = new Client('socks5://127.0.0.1:' . $this->port, $this->connector);
 
         $this->assertResolveStream($this->client->create('www.google.com', 80));
     }
@@ -70,7 +73,7 @@ class FunctionalTest extends TestCase
     {
         $this->server->setAuthArray(array('name' => 'pass'));
 
-        $this->client = new Client('name:pass@127.0.0.1:' . $this->port, $this->loop);
+        $this->client = new Client('name:pass@127.0.0.1:' . $this->port, $this->connector);
 
         $this->assertResolveStream($this->client->create('www.google.com', 80));
     }
@@ -79,7 +82,7 @@ class FunctionalTest extends TestCase
     {
         $this->server->setAuthArray(array('name' => 'p@ss:w0rd'));
 
-        $this->client = new Client(rawurlencode('name') . ':' . rawurlencode('p@ss:w0rd') . '@127.0.0.1:' . $this->port, $this->loop);
+        $this->client = new Client(rawurlencode('name') . ':' . rawurlencode('p@ss:w0rd') . '@127.0.0.1:' . $this->port, $this->connector);
 
         $this->assertResolveStream($this->client->create('www.google.com', 80));
     }
@@ -88,21 +91,21 @@ class FunctionalTest extends TestCase
     {
         $this->server->setAuthArray(array('empty' => ''));
 
-        $this->client = new Client('empty@127.0.0.1:' . $this->port, $this->loop);
+        $this->client = new Client('empty@127.0.0.1:' . $this->port, $this->connector);
 
         $this->assertResolveStream($this->client->create('www.google.com', 80));
     }
 
     public function testConnectionAuthenticationUnused()
     {
-        $this->client = new Client('name:pass@127.0.0.1:' . $this->port, $this->loop);
+        $this->client = new Client('name:pass@127.0.0.1:' . $this->port, $this->connector);
 
         $this->assertResolveStream($this->client->create('www.google.com', 80));
     }
 
     public function testConnectionInvalidProtocolMismatch()
     {
-        $this->client = new Client('socks4://127.0.0.1:' . $this->port, $this->loop);
+        $this->client = new Client('socks4://127.0.0.1:' . $this->port, $this->connector);
 
         $this->server->setProtocolVersion(5);
 
@@ -111,7 +114,7 @@ class FunctionalTest extends TestCase
 
     public function testConnectionInvalidNoAuthentication()
     {
-        $this->client = new Client('socks5://127.0.0.1:' . $this->port, $this->loop);
+        $this->client = new Client('socks5://127.0.0.1:' . $this->port, $this->connector);
 
         $this->server->setAuthArray(array('name' => 'pass'));
 
@@ -120,7 +123,7 @@ class FunctionalTest extends TestCase
 
     public function testConnectionInvalidAuthenticationMismatch()
     {
-        $this->client = new Client('user:other@127.0.0.1:' . $this->port, $this->loop);
+        $this->client = new Client('user:other@127.0.0.1:' . $this->port, $this->connector);
 
         $this->server->setAuthArray(array('name' => 'pass'));
 
