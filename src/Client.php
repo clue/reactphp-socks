@@ -3,21 +3,14 @@
 namespace Clue\React\Socks;
 
 use React\Promise;
-use React\Promise\Deferred;
-use React\Dns\Resolver\Factory as DnsFactory;
-use React\Dns\Resolver\Resolver;
-use React\Stream\Stream;
-use React\EventLoop\LoopInterface;
-use React\SocketClient\ConnectorInterface;
-use React\SocketClient\DnsConnector;
-use React\SocketClient\TcpConnector;
-use Clue\React\Socks\Connector;
-use \Exception;
-use \InvalidArgumentException;
-use \UnexpectedValueException;
-use RuntimeException;
 use React\Promise\CancellablePromiseInterface;
 use React\Promise\PromiseInterface;
+use React\Promise\Deferred;
+use React\Stream\Stream;
+use React\SocketClient\ConnectorInterface;
+use \Exception;
+use \InvalidArgumentException;
+use RuntimeException;
 
 class Client implements ConnectorInterface
 {
@@ -35,7 +28,7 @@ class Client implements ConnectorInterface
 
     private $auth = null;
 
-    public function __construct($socksUri, LoopInterface $loop, ConnectorInterface $connector = null, Resolver $resolver = null)
+    public function __construct($socksUri, ConnectorInterface $connector)
     {
         // assume default scheme if none is given
         if (strpos($socksUri, '://') === false) {
@@ -51,15 +44,6 @@ class Client implements ConnectorInterface
         // assume default port
         if (!isset($parts['port'])) {
             $parts['port'] = 1080;
-        }
-
-        if ($resolver === null) {
-            // default to using Google's public DNS server
-            $dnsResolverFactory = new DnsFactory();
-            $resolver = $dnsResolverFactory->createCached('8.8.8.8', $loop);
-        }
-        if ($connector === null) {
-            $connector = new DnsConnector(new TcpConnector($loop), $resolver);
         }
 
         // user or password in URI => SOCKS5 authentication

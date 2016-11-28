@@ -15,8 +15,8 @@ $loop = React\EventLoop\Factory::create();
 // https via the proxy chain  "foo -> bar -> target"
 // please note how the client uses bar (not foo!), which in turn then uses foo
 // this creates a TCP/IP connection to foo, which then connects to bar, which then connects to the target
-$foo = new Client('127.0.0.1:' . $first, $loop, new TcpConnector($loop));
-$bar = new Client('127.0.0.1:' . $second, $loop, $foo);
+$foo = new Client('127.0.0.1:' . $first, new TcpConnector($loop));
+$bar = new Client('127.0.0.1:' . $second, $foo);
 
 $ssl = new SecureConnector($bar, $loop);
 
