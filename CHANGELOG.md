@@ -61,6 +61,7 @@
 * Feature / BC break: Remove `setTimeout()`, use `TimeoutConnector` instead
   (#45 by @clue)
 
+  ```php
   // old (timeout only applies to TCP/IP connection)
   $client = new Client('127.0.0.1', …);
   $client->setTimeout(3.0);
