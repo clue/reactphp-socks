@@ -10,7 +10,7 @@ of the actual application level protocol, such as HTTP, SMTP, IMAP, Telnet etc.
 * [Quickstart example](#quickstart-example)
 * [Usage](#usage)
   * [ConnectorInterface](#connectorinterface)
-    * [create()](#create)
+    * [connect()](#connect)
   * [Client](#client)
     * [Plain TCP connections](#plain-tcp-connections)
     * [Secure TLS connections](#secure-tls-connections)
@@ -38,7 +38,7 @@ to google.com via a local SOCKS proxy server:
 $loop = React\EventLoop\Factory::create();
 $client = new Client('127.0.0.1:9050', new TcpConnector($loop));
 
-$client->create('www.google.com', 80)->then(function (Stream $stream) {
+$client->connect('tcp://www.google.com:80')->then(function (Stream $stream) {
     $stream->write("GET / HTTP/1.0\r\n\r\n");
 });
 
@@ -69,16 +69,16 @@ SOCKS proxy server.
 
 The interface only offers a single method:
 
-#### create()
+#### connect()
 
-The `create(string $host, int $port): PromiseInterface<Stream, Exception>` method
+The `connect(string $uri): PromiseInterface<Stream, Exception>` method
 can be used to establish a streaming connection.
 It returns a [Promise](https://github.com/reactphp/promise) which either
 fulfills with a [Stream](https://github.com/reactphp/stream) or
 rejects with an `Exception`:
 
 ```php
-$connector->create('google.com', 443)->then(
+$connector->connect('tcp://google.com:80')->then(
     function (Stream $stream) {
         // connection successfully established
     },
@@ -141,11 +141,11 @@ higher-level component:
 #### Plain TCP connections
 
 The `Client` implements the [`ConnectorInterface`](#connectorinterface) and
-hence provides a single public method, the [`create()`](#create) method.
+hence provides a single public method, the [`connect()`](#connect) method.
 Let's open up a streaming TCP/IP connection and write some data:
 
 ```php
-$client->create('www.google.com', 80)->then(function (React\Stream\Stream $stream) {
+$client->connect('tcp://www.google.com:80')->then(function (React\Stream\Stream $stream) {
     echo 'connected to www.google.com:80';
     $stream->write("GET / HTTP/1.0\r\n\r\n");
     // ...
@@ -154,10 +154,13 @@ $client->create('www.google.com', 80)->then(function (React\Stream\Stream $strea
 
 See also the [first example](examples).
 
+The `tcp://` scheme can also be omitted.
+Passing any other scheme will reject the promise.
+
 Pending connection attempts can be cancelled by cancelling its pending promise like so:
 
 ```php
-$promise = $tcp->create($host, $port);
+$promise = $tcp->connect($uri);
 
 $promise->cancel();
 ```
@@ -176,7 +179,7 @@ your destination, you may want to wrap this connector in React's
 $ssl = new React\SocketClient\SecureConnector($client, $loop);
 
 // now create an SSL encrypted connection (notice the $ssl instead of $tcp)
-$ssl->create('www.google.com',443)->then(function (React\Stream\Stream $stream) {
+$ssl->connect('tls://www.google.com:443')->then(function (React\Stream\Stream $stream) {
     // proceed with just the plain text data
     // everything is encrypted/decrypted automatically
     echo 'connected to SSL encrypted www.google.com';
@@ -186,6 +189,9 @@ $ssl->create('www.google.com',443)->then(function (React\Stream\Stream $stream) 
 ```
 
 See also the [second example](examples).
+
+The `tls://` scheme can also be omitted.
+Passing any other scheme will reject the promise.
 
 Pending connection attempts can be cancelled by cancelling its pending promise
 as usual.
@@ -332,7 +338,7 @@ $dns = new React\SocketClient\DnsConnector($client, $resolver);
 // secure TLS via the DNS connector
 $ssl = new React\SocketClient\SecureConnector($dns, $loop);
 
-$ssl->create('www.google.com', 443)->then(function ($stream) {
+$ssl->connect('tls://www.google.com:443')->then(function ($stream) {
     // …
 });
 ```
@@ -425,7 +431,7 @@ $target = new Client($addressTarget, $middle);
 
 $ssl = new React\SocketClient\SecureConnector($target, $loop);
 
-$ssl->create('www.google.com', 443)->then(function ($stream) {
+$ssl->connect('tls://www.google.com:443')->then(function ($stream) {
     // …
 });
 ```
@@ -462,13 +468,13 @@ smaller, usually in the range of a few seconds only.
 You can use React's
 [`TimeoutConnector`](https://github.com/reactphp/socket-client#timeoutconnector)
 to decorate any given `ConnectorInterface` instance.
-It provides the same `create()` method, but will automatically reject the
+It provides the same `connect()` method, but will automatically reject the
 underlying connection attempt if it takes too long:
 
 ```php
 $timeoutConnector = new React\SocketClient\TimeoutConnector($connector, 3.0, $loop);
 
-$timeoutConnector->create('google.com', 80)->then(function ($stream) {
+$timeoutConnector->connect('tcp://google.com:80')->then(function ($stream) {
     // connection succeeded within 3.0 seconds
 });
 ```

@@ -6,7 +6,7 @@ use React\Promise;
 use React\Promise\CancellablePromiseInterface;
 use React\Promise\PromiseInterface;
 use React\Promise\Deferred;
-use React\Stream\Stream;
+use React\SocketClient\ConnectionInterface;
 use React\SocketClient\ConnectorInterface;
 use \Exception;
 use \InvalidArgumentException;
@@ -20,9 +20,7 @@ class Client implements ConnectorInterface
      */
     private $connector;
 
-    private $socksHost;
-
-    private $socksPort;
+    private $socksUri;
 
     private $protocolVersion = null;
 
@@ -62,8 +60,7 @@ class Client implements ConnectorInterface
         // check for valid protocol version from URI scheme
         $this->setProtocolVersionFromScheme($parts['scheme']);
 
-        $this->socksHost = $parts['host'];
-        $this->socksPort = $parts['port'];
+        $this->socksUri = $parts['host'] . ':' . $parts['port'];
         $this->connector = $connector;
     }
 
@@ -96,7 +93,7 @@ class Client implements ConnectorInterface
     }
 
     /**
-     * Establish a TCP/IP connection to the given target host and port through the SOCKS server
+     * Establish a TCP/IP connection to the given target URI through the SOCKS server
      *
      * Many higher-level networking protocols build on top of TCP. It you're dealing
      * with one such client implementation,  it probably uses/accepts an instance
@@ -104,12 +101,23 @@ class Client implements ConnectorInterface
      * instance). In this case you can also pass this `Connector` instance instead
      * to make this client implementation SOCKS-aware. That's it.
      *
-     * @param string $host
-     * @param int    $port
-     * @return PromiseInterface Promise<Stream,Exception>
+     * @param string $uri
+     * @return PromiseInterface Promise<ConnectionInterface,Exception>
      */
-    public function create($host, $port)
+    public function connect($uri)
     {
+        if (strpos($uri, '://') === false) {
+            $uri = 'tcp://' . $uri;
+        }
+
+        $parts = parse_url($uri);
+        if (!$parts || !isset($parts['scheme'], $parts['host'], $parts['port']) || $parts['scheme'] !== 'tcp') {
+            return Promise\reject(new InvalidArgumentException('Invalid target URI specified'));
+        }
+
+        $host = trim($parts['host'], '[]');
+        $port = $parts['port'];
+
         if ($this->protocolVersion === '4' && false === filter_var($host, FILTER_VALIDATE_IP, FILTER_FLAG_IPV4)) {
             return Promise\reject(new InvalidArgumentException('Requires an IPv4 address for SOCKS4'));
         }
@@ -118,42 +126,41 @@ class Client implements ConnectorInterface
             return Promise\reject(new InvalidArgumentException('Invalid target specified'));
         }
 
+        // construct URI to SOCKS server to connect to
+        $socksUri = $this->socksUri;
+
+        // append path from URI if given
+        if (isset($parts['path'])) {
+            $socksUri .= $parts['path'];
+        }
+
+        // parse query args
+        $args = array();
+        if (isset($parts['query'])) {
+            parse_str($parts['query'], $args);
+        }
+
+        // append hostname from URI to query string unless explicitly given
+        if (!isset($args['hostname'])) {
+            $args['hostname'] = $parts['host'];
+        }
+
+        // append query string
+        $socksUri .= '?' . http_build_query($args, '', '&');;
+
+        // append fragment from URI if given
+        if (isset($parts['fragment'])) {
+            $socksUri .= '#' . $parts['fragment'];
+        }
+
         $that = $this;
 
         // start TCP/IP connection to SOCKS server and then
         // handle SOCKS protocol once connection is ready
         // resolve plain connection once SOCKS protocol is completed
-        return $this->connect($this->socksHost, $this->socksPort)->then(
-            function (Stream $stream) use ($that, $host, $port) {
+        return $this->connector->connect($socksUri)->then(
+            function (ConnectionInterface $stream) use ($that, $host, $port) {
                 return $that->handleConnectedSocks($stream, $host, $port);
-            }
-        );
-    }
-
-    private function connect($host, $port)
-    {
-        $promise = $this->connector->create($host, $port);
-
-        return new Promise\Promise(
-            function ($resolve, $reject) use ($promise) {
-                // resolve/reject with result of TCP/IP connection
-                return $promise->then($resolve, function (Exception $reason) use ($reject) {
-                    $reject(new \RuntimeException('Unable to connect to SOCKS server', 0, $reason));
-                });
-            },
-            function ($_, $reject) use ($promise) {
-                // cancellation should reject connection attempt
-                $reject(new RuntimeException('Connection attempt cancelled while connecting to SOCKS server'));
-
-                // forefully close TCP/IP connection if it completes despite cancellation
-                $promise->then(function (Stream $stream) {
-                    $stream->close();
-                });
-
-                // (try to) cancel pending TCP/IP connection
-                if ($promise instanceof CancellablePromiseInterface) {
-                    $promise->cancel();
-                }
             }
         );
     }
@@ -161,13 +168,13 @@ class Client implements ConnectorInterface
     /**
      * Internal helper used to handle the communication with the SOCKS server
      *
-     * @param Stream      $stream
-     * @param string      $host
-     * @param int         $port
-     * @return Promise Promise<stream, Exception>
+     * @param ConnectionInterface $stream
+     * @param string              $host
+     * @param int                 $port
+     * @return Promise Promise<ConnectionInterface, Exception>
      * @internal
      */
-    public function handleConnectedSocks(Stream $stream, $host, $port)
+    public function handleConnectedSocks(ConnectionInterface $stream, $host, $port)
     {
         $deferred = new Deferred(function ($_, $reject) {
             $reject(new RuntimeException('Connection attempt cancelled while establishing socks session'));
@@ -188,7 +195,7 @@ class Client implements ConnectorInterface
         });
 
         $deferred->promise()->then(
-            function (Stream $stream) use ($reader) {
+            function (ConnectionInterface $stream) use ($reader) {
                 $stream->removeAllListeners('end');
 
                 $stream->removeListener('data', array($reader, 'write'));
@@ -202,14 +209,14 @@ class Client implements ConnectorInterface
             }
         );
 
-        $stream->on('end', function (Stream $stream) use ($deferred) {
+        $stream->on('end', function () use ($stream, $deferred) {
             $deferred->reject(new Exception('Premature end while establishing socks session'));
         });
 
         return $deferred->promise();
     }
 
-    private function handleSocks4(Stream $stream, $host, $port, StreamReader $reader)
+    private function handleSocks4(ConnectionInterface $stream, $host, $port, StreamReader $reader)
     {
         // do not resolve hostname. only try to convert to IP
         $ip = ip2long($host);
@@ -236,7 +243,7 @@ class Client implements ConnectorInterface
         });
     }
 
-    private function handleSocks5(Stream $stream, $host, $port, StreamReader $reader)
+    private function handleSocks5(ConnectionInterface $stream, $host, $port, StreamReader $reader)
     {
         // protocol version 5
         $data = pack('C', 0x05);

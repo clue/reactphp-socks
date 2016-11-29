@@ -22,7 +22,7 @@ $ssl = new SecureConnector($client, $loop);
 // time out connection attempt in 3.0s
 $ssl = new TimeoutConnector($ssl, 3.0, $loop);
 
-$ssl->create('www.google.com', 443)->then(function (Stream $stream) {
+$ssl->connect('tls://www.google.com:443')->then(function (Stream $stream) {
     echo 'connected' . PHP_EOL;
     $stream->write("GET / HTTP/1.0\r\n\r\n");
     $stream->on('data', function ($data) {

@@ -23,7 +23,7 @@ $ssl = new SecureConnector($bar, $loop);
 echo 'Demo SOCKS client connecting to SOCKS proxy server chain 127.0.0.1:' . $first . ' and 127.0.0.1:' . $second . PHP_EOL;
 echo 'Not already running a SOCKS server? Try this: ssh -D ' . $first . ' localhost' . PHP_EOL;
 
-$ssl->create('www.google.com', 443)->then(function (Stream $stream) {
+$ssl->connect('tls://www.google.com:443')->then(function (Stream $stream) {
     echo 'connected' . PHP_EOL;
     $stream->write("GET / HTTP/1.0\r\n\r\n");
     $stream->on('data', function ($data) {

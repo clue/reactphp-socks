@@ -1,6 +1,5 @@
 <?php
 
-use React\Stream\Stream;
 use Clue\React\Socks\Client;
 use React\SocketClient\TcpConnector;
 use React\SocketClient\TimeoutConnector;
@@ -19,7 +18,7 @@ echo 'Not already running a SOCKS server? Try this: ssh -D ' . $port . ' localho
 // time out connection attempt in 3.0s
 $tcp = new TimeoutConnector($client, 3.0, $loop);
 
-$tcp->create('www.google.com', 80)->then(function (Stream $stream) {
+$tcp->connect('tcp://www.google.com:80')->then(function (Stream $stream) {
     echo 'connected' . PHP_EOL;
     $stream->write("GET / HTTP/1.0\r\n\r\n");
     $stream->on('data', function ($data) {

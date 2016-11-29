@@ -31,7 +31,7 @@ class FunctionalTest extends TestCase
 
     public function testConnection()
     {
-        $this->assertResolveStream($this->client->create('www.google.com', 80));
+        $this->assertResolveStream($this->client->connect('www.google.com:80'));
     }
 
     public function testConnectionWithIpViaSocks4()
@@ -39,26 +39,26 @@ class FunctionalTest extends TestCase
         $this->server->setProtocolVersion(4);
         $this->client = new Client('socks4://127.0.0.1:' . $this->port, $this->connector);
 
-        $this->assertResolveStream($this->client->create('127.0.0.1', $this->port));
+        $this->assertResolveStream($this->client->connect('127.0.0.1:' . $this->port));
     }
 
     public function testConnectionWithHostnameViaSocks4Fails()
     {
         $this->client = new Client('socks4://127.0.0.1:' . $this->port, $this->connector);
 
-        $this->assertRejectPromise($this->client->create('www.google.com', 80));
+        $this->assertRejectPromise($this->client->connect('www.google.com:80'));
     }
 
     public function testConnectionWithInvalidPortFails()
     {
-        $this->assertRejectPromise($this->client->create('www.google.com', 100000));
+        $this->assertRejectPromise($this->client->connect('www.google.com:100000'));
     }
 
     public function testConnectionWithIpv6ViaSocks4Fails()
     {
         $this->client = new Client('socks4://127.0.0.1:' . $this->port, $this->connector);
 
-        $this->assertRejectPromise($this->client->create('::1', 80));
+        $this->assertRejectPromise($this->client->connect('[::1]:80'));
     }
 
     public function testConnectionSocks5()
@@ -66,7 +66,7 @@ class FunctionalTest extends TestCase
         $this->server->setProtocolVersion(5);
         $this->client = new Client('socks5://127.0.0.1:' . $this->port, $this->connector);
 
-        $this->assertResolveStream($this->client->create('www.google.com', 80));
+        $this->assertResolveStream($this->client->connect('www.google.com:80'));
     }
 
     public function testConnectionAuthenticationFromUri()
@@ -75,7 +75,7 @@ class FunctionalTest extends TestCase
 
         $this->client = new Client('name:pass@127.0.0.1:' . $this->port, $this->connector);
 
-        $this->assertResolveStream($this->client->create('www.google.com', 80));
+        $this->assertResolveStream($this->client->connect('www.google.com:80'));
     }
 
     public function testConnectionAuthenticationFromUriEncoded()
@@ -84,7 +84,7 @@ class FunctionalTest extends TestCase
 
         $this->client = new Client(rawurlencode('name') . ':' . rawurlencode('p@ss:w0rd') . '@127.0.0.1:' . $this->port, $this->connector);
 
-        $this->assertResolveStream($this->client->create('www.google.com', 80));
+        $this->assertResolveStream($this->client->connect('www.google.com:80'));
     }
 
     public function testConnectionAuthenticationFromUriWithOnlyUserAndNoPassword()
@@ -93,14 +93,14 @@ class FunctionalTest extends TestCase
 
         $this->client = new Client('empty@127.0.0.1:' . $this->port, $this->connector);
 
-        $this->assertResolveStream($this->client->create('www.google.com', 80));
+        $this->assertResolveStream($this->client->connect('www.google.com:80'));
     }
 
     public function testConnectionAuthenticationUnused()
     {
         $this->client = new Client('name:pass@127.0.0.1:' . $this->port, $this->connector);
 
-        $this->assertResolveStream($this->client->create('www.google.com', 80));
+        $this->assertResolveStream($this->client->connect('www.google.com:80'));
     }
 
     public function testConnectionInvalidProtocolMismatch()
@@ -109,7 +109,7 @@ class FunctionalTest extends TestCase
 
         $this->server->setProtocolVersion(5);
 
-        $this->assertRejectPromise($this->client->create('127.0.0.1', 80));
+        $this->assertRejectPromise($this->client->connect('127.0.0.1:80'));
     }
 
     public function testConnectionInvalidNoAuthentication()
@@ -118,7 +118,7 @@ class FunctionalTest extends TestCase
 
         $this->server->setAuthArray(array('name' => 'pass'));
 
-        $this->assertRejectPromise($this->client->create('www.google.com', 80));
+        $this->assertRejectPromise($this->client->connect('www.google.com:80'));
     }
 
     public function testConnectionInvalidAuthenticationMismatch()
@@ -127,22 +127,22 @@ class FunctionalTest extends TestCase
 
         $this->server->setAuthArray(array('name' => 'pass'));
 
-        $this->assertRejectPromise($this->client->create('www.google.com', 80));
+        $this->assertRejectPromise($this->client->connect('www.google.com:80'));
     }
 
     public function testConnectorOkay()
     {
-        $this->assertResolveStream($this->client->create('www.google.com', 80));
+        $this->assertResolveStream($this->client->connect('www.google.com:80'));
     }
 
     public function testConnectorInvalidDomain()
     {
-        $this->assertRejectPromise($this->client->create('www.google.commm', 80));
+        $this->assertRejectPromise($this->client->connect('www.google.commm:80'));
     }
 
     public function testConnectorCancelConnection()
     {
-        $promise = $this->client->create('www.google.com', 80);
+        $promise = $this->client->connect('www.google.com:80');
         $promise->cancel();
 
         $this->assertRejectPromise($promise);
@@ -153,7 +153,7 @@ class FunctionalTest extends TestCase
         // time out the connection attempt in 0.1s (as expected)
         $tcp = new TimeoutConnector($this->client, 0.1, $this->loop);
 
-        $this->assertRejectPromise($tcp->create('www.google.com', 8080));
+        $this->assertRejectPromise($tcp->connect('www.google.com:8080'));
     }
 
     public function testSecureConnectorOkay()
@@ -164,7 +164,7 @@ class FunctionalTest extends TestCase
 
         $ssl = new SecureConnector($this->client, $this->loop);
 
-        $this->assertResolveStream($ssl->create('www.google.com', 443));
+        $this->assertResolveStream($ssl->connect('www.google.com:443'));
     }
 
     public function testSecureConnectorToBadSslWithVerifyFails()
@@ -175,7 +175,7 @@ class FunctionalTest extends TestCase
 
         $ssl = new SecureConnector($this->client, $this->loop, array('verify_peer' => true));
 
-        $this->assertRejectPromise($ssl->create('self-signed.badssl.com', 443));
+        $this->assertRejectPromise($ssl->connect('self-signed.badssl.com:443'));
     }
 
     public function testSecureConnectorToBadSslWithoutVerifyWorks()
@@ -186,7 +186,7 @@ class FunctionalTest extends TestCase
 
         $ssl = new SecureConnector($this->client, $this->loop, array('verify_peer' => false));
 
-        $this->assertResolveStream($ssl->create('self-signed.badssl.com', 443));
+        $this->assertResolveStream($ssl->connect('self-signed.badssl.com:443'));
     }
 
     public function testSecureConnectorInvalidPlaintextIsNotSsl()
@@ -197,7 +197,7 @@ class FunctionalTest extends TestCase
 
         $ssl = new SecureConnector($this->client, $this->loop);
 
-        $this->assertRejectPromise($ssl->create('www.google.com', 80));
+        $this->assertRejectPromise($ssl->connect('www.google.com:80'));
     }
 
     public function testSecureConnectorInvalidUnboundPortTimeout()
@@ -207,7 +207,7 @@ class FunctionalTest extends TestCase
         // time out the connection attempt in 0.1s (as expected)
         $ssl = new TimeoutConnector($ssl, 0.1, $this->loop);
 
-        $this->assertRejectPromise($ssl->create('www.google.com', 8080));
+        $this->assertRejectPromise($ssl->connect('www.google.com:8080'));
     }
 
     private function createSocketServer()
