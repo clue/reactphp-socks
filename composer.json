@@ -24,6 +24,6 @@
         "evenement/evenement": "~1.0|~2.0"
     },
     "require-dev": {
-        "clue/socks-react": "^0.4"
+        "clue/socks-react": "^0.6"
     }
 }

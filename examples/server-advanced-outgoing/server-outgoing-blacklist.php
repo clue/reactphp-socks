@@ -3,8 +3,7 @@
 use React\EventLoop\Factory as Loopfactory;
 use ConnectionManager\Extra\Multiple\ConnectionManagerSelective;
 use React\Socket\Server as Socket;
-use Clue\React\Socks\Server;
-use Clue\React\Socks\Client;
+use Clue\React\Socks\Server\Server;
 use ConnectionManager\Extra\ConnectionManagerReject;
 use React\SocketClient\Connector;
 use React\Dns\Resolver\Factory;
