@@ -4,27 +4,28 @@
         "Read more about it at https://getcomposer.org/doc/01-basic-usage.md#composer-lock-the-lock-file",
         "This file is @generated automatically"
     ],
-    "hash": "5039a168a0fe06a8f67059aa558cdbc2",
-    "content-hash": "3b0974f73a5442b008c637670cf4ab89",
+    "hash": "1f978e4c31bf1436c75a08c83544698a",
+    "content-hash": "acc288cd19f6a2e86b194fd818c5671b",
     "packages": [
         {
             "name": "clue/connection-manager-extra",
-            "version": "v0.3.3",
+            "version": "v0.5.0",
             "source": {
                 "type": "git",
                 "url": "https://github.com/clue/php-connection-manager-extra.git",
-                "reference": "3600e96bbb56aebb6a38caa0878f56afb3e3f5b1"
+                "reference": "582dc7bffd6280b1332b3dbefc7e023aa96e3ac0"
             },
             "dist": {
                 "type": "zip",
-                "url": "https://api.github.com/repos/clue/php-connection-manager-extra/zipball/3600e96bbb56aebb6a38caa0878f56afb3e3f5b1",
-                "reference": "3600e96bbb56aebb6a38caa0878f56afb3e3f5b1",
+                "url": "https://api.github.com/repos/clue/php-connection-manager-extra/zipball/582dc7bffd6280b1332b3dbefc7e023aa96e3ac0",
+                "reference": "582dc7bffd6280b1332b3dbefc7e023aa96e3ac0",
                 "shasum": ""
             },
             "require": {
                 "php": ">=5.3",
                 "react/event-loop": "^0.4 || ^0.3",
-                "react/promise": "^2.0 || ^1.1",
+                "react/promise": "^2.1 || ^1.2",
+                "react/promise-timer": "^1.1",
                 "react/socket-client": "^0.5 || ^0.4 || ^0.3"
             },
             "type": "library",
@@ -43,7 +44,7 @@
                     "email": "christian@lueck.tv"
                 }
             ],
-            "description": "Extra decorators for creating async TCP/IP connections built upon react/socket-client",
+            "description": "Extra decorators for creating async TCP/IP connections, built on top of React PHP's SocketClient",
             "homepage": "https://github.com/clue/php-connection-manager-extra",
             "keywords": [
                 "Connection",
@@ -53,12 +54,13 @@
                 "firewall",
                 "network",
                 "random",
+                "reactphp",
                 "reject",
                 "repeat",
                 "retry",
                 "timeout"
             ],
-            "time": "2016-05-29 20:45:58"
+            "time": "2016-06-01 12:25:01"
         },
         {
             "name": "clue/socks-react",

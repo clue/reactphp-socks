@@ -1,6 +1,6 @@
 <?php
 
-use React\EventLoop\Factory as Loopfactory;
+use React\EventLoop\Factory as LoopFactory;
 use ConnectionManager\Extra\Multiple\ConnectionManagerSelective;
 use React\Socket\Server as Socket;
 use Clue\React\Socks\Server\Server;
@@ -23,16 +23,13 @@ $resolver = $factory->createCached('8.8.8.8', $loop);
 $permit = new Connector($loop, $resolver);
 
 // this connector selectively picks one of the the attached connectors depending on the target address
-$connector = new ConnectionManagerSelective();
-
-// default connector => permit everything
-$connector->addConnectionManagerFor($permit, '*', '*', 100);
-
-// reject youtube.com
-$connector->addConnectionManagerFor($reject, '*.youtube.com');
-
-// reject unencrypted HTTP for google.com
-$connector->addConnectionManagerFor($reject, 'www.google.com', 80);
+// reject youtube.com and unencrypted HTTP for google.com
+// default connctor: permit everything
+$connector = new ConnectionManagerSelective(array(
+    '*.youtube.com' => $reject,
+    'www.google.com:80' => $reject,
+    '*' => $permit
+));
 
 // start the server socket listening on localhost:$port for incoming socks connections
 $socket = new Socket($loop);

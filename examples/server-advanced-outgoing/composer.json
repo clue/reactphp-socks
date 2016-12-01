@@ -2,6 +2,6 @@
     "require": {
         "clue/socks-react": "^0.6",
         "clue/socks-server": "^0.5",
-        "clue/connection-manager-extra": "^0.3"
+        "clue/connection-manager-extra": "^0.5"
     }
 }
