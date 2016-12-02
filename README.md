@@ -185,6 +185,8 @@ $server->setAuthArray(array(
 ));
 ```
 
+See also the [second example](examples).
+
 If you do not want to use authentication anymore:
 
 ```PHP
@@ -232,6 +234,8 @@ $socket->listen($middlemanPort, 'localhost');
 // start a new server which forwards all connections to the other SOCKS server
 $server = new Server($loop, $socket, $client);
 ```
+
+See also the [example #11](examples).
 
 Proxy chaining can happen on the server side and/or the client side:
 

@@ -1,11 +1,13 @@
 <?php
 
+// A SOCKS server that forwards (proxy chaining) to a another SOCKS server
+
 use Clue\React\Socks\Client;
 use Clue\React\Socks\Server\Server;
 use React\Socket\Server as Socket;
 use React\SocketClient\TcpConnector;
 
-include_once __DIR__.'/vendor/autoload.php';
+include_once __DIR__.'/../vendor/autoload.php';
 
 $myPort = isset($argv[1]) ? $argv[1] : 9051;
 $otherPort = isset($argv[2]) ? $argv[2] : 9050;
@@ -24,6 +26,6 @@ $socket->listen($myPort, 'localhost');
 $server = new Server($loop, $socket, $target);
 
 echo 'SOCKS server listening on localhost:' . $myPort . ' (which forwards everything to target SOCKS server 127.0.0.1:' . $otherPort . ')' . PHP_EOL;
-echo 'Not already running the target SOCKS server? Try this: php server-auth.php ' . $otherPort . PHP_EOL;
+echo 'Not already running the target SOCKS server? Try this: php 02-server-with-password.php ' . $otherPort . PHP_EOL;
 
 $loop->run();

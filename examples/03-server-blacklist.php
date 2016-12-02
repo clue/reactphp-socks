@@ -1,5 +1,7 @@
 <?php
 
+// A SOCKS server that rejects connections to some domains (blacklist / filtering)
+
 use React\EventLoop\Factory as LoopFactory;
 use ConnectionManager\Extra\Multiple\ConnectionManagerSelective;
 use React\Socket\Server as Socket;
@@ -8,7 +10,7 @@ use ConnectionManager\Extra\ConnectionManagerReject;
 use React\SocketClient\Connector;
 use React\Dns\Resolver\Factory;
 
-require __DIR__ . '/vendor/autoload.php';
+require __DIR__ . '/../vendor/autoload.php';
 
 $port = isset($argv[1]) ? $argv[1] : 9050;
 

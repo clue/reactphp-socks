@@ -1,5 +1,7 @@
 <?php
 
+// A SOCKS server that randomly forwards (proxy chaining) to a pool of SOCKS servers
+
 use React\EventLoop\Factory as LoopFactory;
 use ConnectionManager\Extra\Multiple\ConnectionManagerRandom;
 use React\Socket\Server as Socket;
@@ -7,7 +9,7 @@ use Clue\React\Socks\Server\Server;
 use Clue\React\Socks\Client;
 use React\SocketClient\TcpConnector;
 
-require __DIR__ . '/vendor/autoload.php';
+require __DIR__ . '/../vendor/autoload.php';
 
 $port = isset($argv[1]) ? $argv[1] : 9050;
 
