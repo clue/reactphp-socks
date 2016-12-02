@@ -162,7 +162,7 @@ $promise->cancel();
 ```
 
 Calling `cancel()` on a pending promise will cancel the underlying TCP/IP
-connection to the SOCKS server and/or the SOCKS protocol negonation and reject
+connection to the SOCKS server and/or the SOCKS protocol negotiation and reject
 the resulting promise.
 
 #### Secure TLS connections
