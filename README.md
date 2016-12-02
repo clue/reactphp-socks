@@ -185,6 +185,8 @@ $server->setAuthArray(array(
 ));
 ```
 
+See also the [second example](examples).
+
 If you do not want to use authentication anymore:
 
 ```PHP
@@ -215,23 +217,25 @@ In order to connect through another SOCKS server, you can simply use a SOCKS
 connector from the following SOCKS client package:
 
 ```bash
-$ composer require clue/socks-react:^0.4
+$ composer require clue/socks-react:^0.6
 ```
 
 You can now create a SOCKS `Client` instance like this: 
 
 ```php
 // set next SOCKS server localhost:$targetPort as target
-$target = new Clue\React\Socks\Client('127.0.0.1:' . $targetPort, $loop);
-$target->setAuth('user', 'p@ssw0rd');
+$connector = new React\SocketClient\TcpConnector($loop);
+$client = new Clue\React\Socks\Client('user:pass@127.0.0.1:' . $targetPort, $connector);
 
 // listen on localhost:$middlemanPort
 $socket = new Socket($loop);
 $socket->listen($middlemanPort, 'localhost');
 
 // start a new server which forwards all connections to the other SOCKS server
-$server = new Server($loop, $socket, $target->createConnector());
+$server = new Server($loop, $socket, $client);
 ```
+
+See also the [example #11](examples).
 
 Proxy chaining can happen on the server side and/or the client side:
 

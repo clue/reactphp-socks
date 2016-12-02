@@ -1,15 +1,16 @@
 <?php
 
-use React\EventLoop\Factory as Loopfactory;
+// A SOCKS server that rejects connections to some domains (blacklist / filtering)
+
+use React\EventLoop\Factory as LoopFactory;
 use ConnectionManager\Extra\Multiple\ConnectionManagerSelective;
 use React\Socket\Server as Socket;
-use Clue\React\Socks\Server;
-use Clue\React\Socks\Client;
+use Clue\React\Socks\Server\Server;
 use ConnectionManager\Extra\ConnectionManagerReject;
 use React\SocketClient\Connector;
 use React\Dns\Resolver\Factory;
 
-require __DIR__ . '/vendor/autoload.php';
+require __DIR__ . '/../vendor/autoload.php';
 
 $port = isset($argv[1]) ? $argv[1] : 9050;
 
@@ -24,16 +25,13 @@ $resolver = $factory->createCached('8.8.8.8', $loop);
 $permit = new Connector($loop, $resolver);
 
 // this connector selectively picks one of the the attached connectors depending on the target address
-$connector = new ConnectionManagerSelective();
-
-// default connector => permit everything
-$connector->addConnectionManagerFor($permit, '*', '*', 100);
-
-// reject youtube.com
-$connector->addConnectionManagerFor($reject, '*.youtube.com');
-
-// reject unencrypted HTTP for google.com
-$connector->addConnectionManagerFor($reject, 'www.google.com', 80);
+// reject youtube.com and unencrypted HTTP for google.com
+// default connctor: permit everything
+$connector = new ConnectionManagerSelective(array(
+    '*.youtube.com' => $reject,
+    'www.google.com:80' => $reject,
+    '*' => $permit
+));
 
 // start the server socket listening on localhost:$port for incoming socks connections
 $socket = new Socket($loop);
