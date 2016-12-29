@@ -100,6 +100,7 @@ like this:
 ```php
 $connector = new React\SocketClient\TcpConnector($loop);
 $client = new Client('127.0.0.1:1080', $connector);
+```
 
 You can omit the port if you're using the default SOCKS port 1080:
 
