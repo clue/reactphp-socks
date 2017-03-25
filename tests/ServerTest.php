@@ -12,8 +12,7 @@ class ServerTest extends TestCase
 
     public function setUp()
     {
-        $socket = $this->getMockBuilder('React\Socket\Server')
-            ->disableOriginalConstructor()
+        $socket = $this->getMockBuilder('React\Socket\ServerInterface')
             ->getMock();
 
         $loop = $this->getMockBuilder('React\EventLoop\StreamSelectLoop')

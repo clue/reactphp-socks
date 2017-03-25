@@ -20,8 +20,8 @@ class FunctionalTest extends TestCase
     {
         $this->loop = React\EventLoop\Factory::create();
 
-        $socket = $this->createSocketServer();
-        $this->port = $socket->getPort();
+        $socket = new React\Socket\Server(0, $this->loop);
+        $this->port = parse_url('tcp://' . $socket->getAddress(), PHP_URL_PORT);
         $this->assertNotEquals(0, $this->port);
 
         $this->server = new Server($this->loop, $socket);
@@ -182,14 +182,6 @@ class FunctionalTest extends TestCase
         $ssl = new SecureConnector($tcp, $this->loop);
 
         $this->assertRejectPromise($ssl->create('www.google.com', 8080));
-    }
-
-    private function createSocketServer()
-    {
-        $socket = new React\Socket\Server($this->loop);
-        $socket->listen(0);
-
-        return $socket;
     }
 
     private function assertResolveStream($promise)

@@ -10,8 +10,7 @@ $port = isset($argv[1]) ? $argv[1] : 9050;
 $loop = React\EventLoop\Factory::create();
 
 // listen on localhost:$port
-$socket = new Socket($loop);
-$socket->listen($port,'localhost');
+$socket = new Socket($port, $loop);
 
 // start a new server listening for incoming connection on the given socket
 // require authentication and hence make this a SOCKS5-only server
@@ -21,6 +20,6 @@ $server->setAuthArray(array(
     'user' => 'p@ssw0rd'
 ));
 
-echo 'SOCKS5 server requiring authentication listening on localhost:' . $port . PHP_EOL;
+echo 'SOCKS5 server requiring authentication listening on ' . $socket->getAddress() . PHP_EOL;
 
 $loop->run();

@@ -29,12 +29,11 @@ $connector = new ConnectionManagerRandom(array(
 ));
 
 // start the server socket listening on localhost:$port for incoming socks connections
-$socket = new Socket($loop);
-$socket->listen($port, 'localhost');
+$socket = new Socket($port, $loop);
 
 // start the actual socks server on the given server socket and using our connection manager for outgoing connections
 $server = new Server($loop, $socket, $connector);
 
-echo 'SOCKS server listening on localhost:' . $port . PHP_EOL;
+echo 'SOCKS server listening on ' . $socket->getAddress() . PHP_EOL;
 
 $loop->run();

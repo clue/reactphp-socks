@@ -9,11 +9,12 @@ use React\Promise\Deferred;
 use React\Promise\PromiseInterface;
 use React\Promise\CancellablePromiseInterface;
 use React\Stream\Stream;
+use React\Stream\DuplexStreamInterface;
 use React\Dns\Resolver\Factory as DnsFactory;
 use React\SocketClient\ConnectorInterface;
 use React\SocketClient\DnsConnector;
 use React\SocketClient\TcpConnector;
-use React\Socket\Connection;
+use React\Socket\ConnectionInterface;
 use React\EventLoop\LoopInterface;
 use \UnexpectedValueException;
 use \InvalidArgumentException;
@@ -95,7 +96,7 @@ class Server extends EventEmitter
         $this->auth = null;
     }
 
-    public function onConnection(Connection $connection)
+    public function onConnection(ConnectionInterface $connection)
     {
         $that = $this;
         $handling = $this->handleSocks($connection)->then(function($remote) use ($connection){
@@ -118,7 +119,7 @@ class Server extends EventEmitter
      *
      * @param Stream $stream
      */
-    public function endConnection(Stream $stream)
+    public function endConnection(DuplexStreamInterface $stream)
     {
         $tid = true;
         $loop = $this->loop;
@@ -145,7 +146,7 @@ class Server extends EventEmitter
         }
     }
 
-    private function handleSocks(Stream $stream)
+    private function handleSocks(DuplexStreamInterface $stream)
     {
         $reader = new StreamReader();
         $stream->on('data', array($reader, 'write'));
@@ -177,7 +178,7 @@ class Server extends EventEmitter
         });
     }
 
-    public function handleSocks4(Stream $stream, $protocolVersion, StreamReader $reader)
+    public function handleSocks4(DuplexStreamInterface $stream, $protocolVersion, StreamReader $reader)
     {
         // suppliying hostnames is only allowed for SOCKS4a (or automatically detected version)
         $supportsHostname = ($protocolVersion === null || $protocolVersion === '4a');
@@ -223,7 +224,7 @@ class Server extends EventEmitter
         });
     }
 
-    public function handleSocks5(Stream $stream, $auth=null, StreamReader $reader)
+    public function handleSocks5(DuplexStreamInterface $stream, $auth=null, StreamReader $reader)
     {
         $that = $this;
         return $reader->readByte()->then(function ($num) use ($reader) {
@@ -318,7 +319,7 @@ class Server extends EventEmitter
         });
     }
 
-    public function connectTarget(Stream $stream, array $target)
+    public function connectTarget(DuplexStreamInterface $stream, array $target)
     {
         $stream->emit('target', $target);
         $that = $this;
