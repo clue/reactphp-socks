@@ -7,8 +7,7 @@ use ConnectionManager\Extra\Multiple\ConnectionManagerSelective;
 use React\Socket\Server as Socket;
 use Clue\React\Socks\Server\Server;
 use ConnectionManager\Extra\ConnectionManagerReject;
-use React\SocketClient\Connector;
-use React\Dns\Resolver\Factory;
+use React\Socket\Connector;
 
 require __DIR__ . '/../vendor/autoload.php';
 
@@ -19,10 +18,8 @@ $loop = LoopFactory::create();
 // create a connector that rejects the connection
 $reject = new ConnectionManagerReject();
 
-// create an actual connector that establishes real connections (uses Google's public DNS)
-$factory = new Factory();
-$resolver = $factory->createCached('8.8.8.8', $loop);
-$permit = new Connector($loop, $resolver);
+// create an actual connector that establishes real connections
+$permit = new Connector($loop);
 
 // this connector selectively picks one of the the attached connectors depending on the target address
 // reject youtube.com and unencrypted HTTP for google.com

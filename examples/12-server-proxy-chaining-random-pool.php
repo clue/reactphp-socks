@@ -7,7 +7,7 @@ use ConnectionManager\Extra\Multiple\ConnectionManagerRandom;
 use React\Socket\Server as Socket;
 use Clue\React\Socks\Server\Server;
 use Clue\React\Socks\Client;
-use React\SocketClient\TcpConnector;
+use React\Socket\TcpConnector;
 
 require __DIR__ . '/../vendor/autoload.php';
 

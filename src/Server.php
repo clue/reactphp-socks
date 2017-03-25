@@ -8,12 +8,8 @@ use React\Promise;
 use React\Promise\Deferred;
 use React\Promise\PromiseInterface;
 use React\Promise\CancellablePromiseInterface;
-use React\Stream\Stream;
-use React\Stream\DuplexStreamInterface;
-use React\Dns\Resolver\Factory as DnsFactory;
-use React\SocketClient\ConnectorInterface;
-use React\SocketClient\DnsConnector;
-use React\SocketClient\TcpConnector;
+use React\Socket\ConnectorInterface;
+use React\Socket\Connector;
 use React\Socket\ConnectionInterface;
 use React\EventLoop\LoopInterface;
 use \UnexpectedValueException;
@@ -34,10 +30,7 @@ class Server extends EventEmitter
     public function __construct(LoopInterface $loop, ServerInterface $serverInterface, ConnectorInterface $connector = null)
     {
         if ($connector === null) {
-            // default to using Google's public DNS server
-            $dnsResolverFactory = new DnsFactory();
-            $resolver = $dnsResolverFactory->createCached('8.8.8.8', $loop);
-            $connector = new DnsConnector(new TcpConnector($loop), $resolver);
+            $connector = new Connector($loop);
         }
 
         $this->loop = $loop;
@@ -116,10 +109,8 @@ class Server extends EventEmitter
 
     /**
      * gracefully shutdown connection by flushing all remaining data and closing stream
-     *
-     * @param Stream $stream
      */
-    public function endConnection(DuplexStreamInterface $stream)
+    public function endConnection(ConnectionInterface $stream)
     {
         $tid = true;
         $loop = $this->loop;
@@ -146,7 +137,7 @@ class Server extends EventEmitter
         }
     }
 
-    private function handleSocks(DuplexStreamInterface $stream)
+    private function handleSocks(ConnectionInterface $stream)
     {
         $reader = new StreamReader();
         $stream->on('data', array($reader, 'write'));
@@ -178,7 +169,7 @@ class Server extends EventEmitter
         });
     }
 
-    public function handleSocks4(DuplexStreamInterface $stream, $protocolVersion, StreamReader $reader)
+    public function handleSocks4(ConnectionInterface $stream, $protocolVersion, StreamReader $reader)
     {
         // suppliying hostnames is only allowed for SOCKS4a (or automatically detected version)
         $supportsHostname = ($protocolVersion === null || $protocolVersion === '4a');
@@ -210,7 +201,7 @@ class Server extends EventEmitter
                 return array($ip, $data['port']);
             }
         })->then(function ($target) use ($stream, $that) {
-            return $that->connectTarget($stream, $target)->then(function (Stream $remote) use ($stream){
+            return $that->connectTarget($stream, $target)->then(function (ConnectionInterface $remote) use ($stream){
                 $stream->write(pack('C8', 0x00, 0x5a, 0x00, 0x00, 0x00, 0x00, 0x00, 0x00));
 
                 return $remote;
@@ -224,7 +215,7 @@ class Server extends EventEmitter
         });
     }
 
-    public function handleSocks5(DuplexStreamInterface $stream, $auth=null, StreamReader $reader)
+    public function handleSocks5(ConnectionInterface $stream, $auth=null, StreamReader $reader)
     {
         $that = $this;
         return $reader->readByte()->then(function ($num) use ($reader) {
@@ -307,7 +298,7 @@ class Server extends EventEmitter
             return $that->connectTarget($stream, $target);
         }, function($error) use ($stream) {
             throw new UnexpectedValueException('SOCKS5 protocol error',0,$error);
-        })->then(function (Stream $remote) use ($stream) {
+        })->then(function (ConnectionInterface $remote) use ($stream) {
             $stream->write(pack('C4Nn', 0x05, 0x00, 0x00, 0x01, 0, 0));
 
             return $remote;
@@ -319,17 +310,17 @@ class Server extends EventEmitter
         });
     }
 
-    public function connectTarget(DuplexStreamInterface $stream, array $target)
+    public function connectTarget(ConnectionInterface $stream, array $target)
     {
         $stream->emit('target', $target);
         $that = $this;
-        $connecting = $this->connect($target[0], $target[1]);
+        $connecting = $this->connector->connect($target[0] . ':' . $target[1]);
 
         $stream->on('close', function () use ($connecting) {
             $connecting->cancel();
         });
 
-        return $connecting->then(function (Stream $remote) use ($stream, $that) {
+        return $connecting->then(function (ConnectionInterface $remote) use ($stream, $that) {
             $stream->pipe($remote, array('end'=>false));
             $remote->pipe($stream, array('end'=>false));
 
@@ -351,31 +342,5 @@ class Server extends EventEmitter
         }, function(Exception $error) {
             throw new UnexpectedValueException('Unable to connect to remote target', 0, $error);
         });
-    }
-
-    private function connect($host, $port)
-    {
-        $promise = $this->connector->create($host, $port);
-
-        return new Promise\Promise(
-            function ($resolve, $reject) use ($promise) {
-                // resolve/reject with result of TCP/IP connection
-                $promise->then($resolve, $reject);
-            },
-            function ($_, $reject) use ($promise) {
-                // cancellation should reject connection attempt
-                $reject(new RuntimeException('Connection attempt cancelled'));
-
-                // forefully close TCP/IP connection if it completes despite cancellation
-                $promise->then(function (Stream $stream) {
-                    $stream->close();
-                });
-
-                // (try to) cancel pending TCP/IP connection
-                if ($promise instanceof CancellablePromiseInterface) {
-                    $promise->cancel();
-                }
-            }
-        );
     }
 }

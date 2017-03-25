@@ -5,7 +5,7 @@
 use Clue\React\Socks\Client;
 use Clue\React\Socks\Server\Server;
 use React\Socket\Server as Socket;
-use React\SocketClient\TcpConnector;
+use React\Socket\TcpConnector;
 
 include_once __DIR__.'/../vendor/autoload.php';
 

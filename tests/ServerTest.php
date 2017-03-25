@@ -15,12 +15,10 @@ class ServerTest extends TestCase
         $socket = $this->getMockBuilder('React\Socket\ServerInterface')
             ->getMock();
 
-        $loop = $this->getMockBuilder('React\EventLoop\StreamSelectLoop')
-            ->disableOriginalConstructor()
+        $loop = $this->getMockBuilder('React\EventLoop\LoopInterface')
             ->getMock();
 
-        $this->connector = $this->getMockBuilder('React\SocketClient\Connector')
-            ->disableOriginalConstructor()
+        $this->connector = $this->getMockBuilder('React\Socket\ConnectorInterface')
             ->getMock();
 
         $this->server = new Server($loop, $socket, $this->connector);
@@ -85,11 +83,11 @@ class ServerTest extends TestCase
 
     public function testConnectWillCreateConnection()
     {
-        $stream = $this->getMockBuilder('React\Stream\Stream')->disableOriginalConstructor()->getMock();
+        $stream = $this->getMockBuilder('React\Socket\ConnectionInterface')->getMock();
 
         $promise = new Promise(function () { });
 
-        $this->connector->expects($this->once())->method('create')->with('google.com', 80)->willReturn($promise);
+        $this->connector->expects($this->once())->method('connect')->with('google.com:80')->willReturn($promise);
 
         $promise = $this->server->connectTarget($stream, array('google.com', 80));
 
@@ -98,11 +96,11 @@ class ServerTest extends TestCase
 
     public function testConnectWillRejectIfConnectionFails()
     {
-        $stream = $this->getMockBuilder('React\Stream\Stream')->disableOriginalConstructor()->getMock();
+        $stream = $this->getMockBuilder('React\Socket\ConnectionInterface')->getMock();
 
         $promise = new Promise(function ($_, $reject) { $reject(new \RuntimeException()); });
 
-        $this->connector->expects($this->once())->method('create')->with('google.com', 80)->willReturn($promise);
+        $this->connector->expects($this->once())->method('connect')->with('google.com:80')->willReturn($promise);
 
         $promise = $this->server->connectTarget($stream, array('google.com', 80));
 
@@ -111,11 +109,14 @@ class ServerTest extends TestCase
 
     public function testConnectWillCancelConnectionIfStreamCloses()
     {
-        $stream = $this->getMockBuilder('React\Stream\Stream')->disableOriginalConstructor()->setMethods(array('close'))->getMock();
+        $stream = $this->getMockBuilder('React\Socket\Connection')->disableOriginalConstructor()->setMethods(array('close'))->getMock();
 
-        $promise = new Promise(function () { }, $this->expectCallableOnce());
+        $promise = new Promise(function () { }, function () {
+            throw new \RuntimeException();
+        });
 
-        $this->connector->expects($this->once())->method('create')->with('google.com', 80)->willReturn($promise);
+
+        $this->connector->expects($this->once())->method('connect')->with('google.com:80')->willReturn($promise);
 
         $promise = $this->server->connectTarget($stream, array('google.com', 80));
 
@@ -126,31 +127,19 @@ class ServerTest extends TestCase
 
     public function testConnectWillAbortIfPromiseIsCancelled()
     {
-        $stream = $this->getMockBuilder('React\Stream\Stream')->disableOriginalConstructor()->getMock();
+        $stream = $this->getMockBuilder('React\Socket\ConnectionInterface')->getMock();
 
-        $promise = new Promise(function () { }, $this->expectCallableOnce());
+        $promise = new Promise(function () { }, function () {
+            throw new \RuntimeException();
+        });
 
-        $this->connector->expects($this->once())->method('create')->with('google.com', 80)->willReturn($promise);
+        $this->connector->expects($this->once())->method('connect')->with('google.com:80')->willReturn($promise);
 
         $promise = $this->server->connectTarget($stream, array('google.com', 80));
 
         $promise->cancel();
 
         $promise->then(null, $this->expectCallableOnce());
-    }
-
-    public function testConnectWillCloseStreamIfConnectorResolvesDespiteCancellation()
-    {
-        $stream = $this->getMockBuilder('React\Stream\Stream')->disableOriginalConstructor()->getMock();
-        $stream->expects($this->once())->method('close');
-
-        $promise = new Promise(function () { }, function ($resolve) use ($stream) { $resolve($stream); });
-
-        $this->connector->expects($this->once())->method('create')->with('google.com', 80)->willReturn($promise);
-
-        $promise = $this->server->connectTarget($stream, array('google.com', 80));
-
-        $promise->cancel();
     }
 
     public function testHandleSocksConnectionWillEndOnInvalidData()
@@ -170,7 +159,7 @@ class ServerTest extends TestCase
 
         $promise = new Promise(function () { });
 
-        $this->connector->expects($this->once())->method('create')->with('127.0.0.1', 80)->willReturn($promise);
+        $this->connector->expects($this->once())->method('connect')->with('127.0.0.1:80')->willReturn($promise);
 
         $this->server->onConnection($connection);
 
@@ -183,7 +172,7 @@ class ServerTest extends TestCase
 
         $promise = new Promise(function () { }, $this->expectCallableOnce());
 
-        $this->connector->expects($this->once())->method('create')->with('127.0.0.1', 80)->willReturn($promise);
+        $this->connector->expects($this->once())->method('connect')->with('127.0.0.1:80')->willReturn($promise);
 
         $this->server->onConnection($connection);
 
