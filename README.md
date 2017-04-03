@@ -38,7 +38,7 @@ to google.com via a local SOCKS proxy server:
 $loop = React\EventLoop\Factory::create();
 $client = new Client('127.0.0.1:9050', new TcpConnector($loop));
 
-$client->connect('tcp://www.google.com:80')->then(function (Stream $stream) {
+$client->connect('tcp://www.google.com:80')->then(function (ConnectionInterface $stream) {
     $stream->write("GET / HTTP/1.0\r\n\r\n");
 });
 
@@ -57,7 +57,7 @@ establishing streaming connections, such as a normal TCP/IP connection.
 In order to use this library, you should understand how this integrates with its
 ecosystem.
 This base interface is actually defined in React's
-[SocketClient component](https://github.com/reactphp/socket-client) and used
+[Socket component](https://github.com/reactphp/socket) and used
 throughout React's ecosystem.
 
 Most higher-level components (such as HTTP, database or other networking
@@ -71,15 +71,15 @@ The interface only offers a single method:
 
 #### connect()
 
-The `connect(string $uri): PromiseInterface<Stream, Exception>` method
+The `connect(string $uri): PromiseInterface<ConnectionInterface, Exception>` method
 can be used to establish a streaming connection.
 It returns a [Promise](https://github.com/reactphp/promise) which either
-fulfills with a [Stream](https://github.com/reactphp/stream) or
+fulfills with a [ConnectionInterface](https://github.com/reactphp/socket#connectioninterface) or
 rejects with an `Exception`:
 
 ```php
 $connector->connect('tcp://google.com:80')->then(
-    function (Stream $stream) {
+    function (ConnectionInterface $stream) {
         // connection successfully established
     },
     function (Exception $error) {
@@ -95,11 +95,11 @@ Its constructor simply accepts an SOCKS proxy URI and a connector used to
 connect to the SOCKS proxy server address.
 
 In its most simple form, you can simply pass React's
-[`TcpConnector`](https://github.com/reactphp/socket-client#tcpconnector)
+[`TcpConnector`](https://github.com/reactphp/socket#tcpconnector)
 like this:
 
 ```php
-$connector = new React\SocketClient\TcpConnector($loop);
+$connector = new React\Socket\TcpConnector($loop);
 $client = new Client('127.0.0.1:1080', $connector);
 
 You can omit the port if you're using the default SOCKS port 1080:
@@ -109,7 +109,7 @@ $client = new Client('127.0.0.1', $connector);
 ```
 
 If you need custom connector settings (DNS resolution, timeouts etc.), you can explicitly pass a
-custom instance of the [`ConnectorInterface`](https://github.com/reactphp/socket-client#connectorinterface):
+custom instance of the [`ConnectorInterface`](https://github.com/reactphp/socket#connectorinterface):
 
 ```php
 // use local DNS server
@@ -145,7 +145,7 @@ hence provides a single public method, the [`connect()`](#connect) method.
 Let's open up a streaming TCP/IP connection and write some data:
 
 ```php
-$client->connect('tcp://www.google.com:80')->then(function (React\Stream\Stream $stream) {
+$client->connect('tcp://www.google.com:80')->then(function (ConnectonInterface $stream) {
     echo 'connected to www.google.com:80';
     $stream->write("GET / HTTP/1.0\r\n\r\n");
     // ...
@@ -173,13 +173,13 @@ the resulting promise.
 
 If you want to establish a secure TLS connection (such as HTTPS) between you and
 your destination, you may want to wrap this connector in React's
-[`SecureConnector`](https://github.com/reactphp/socket-client#secureconnector):
+[`SecureConnector`](https://github.com/reactphp/socket#secureconnector):
 
 ```php
-$ssl = new React\SocketClient\SecureConnector($client, $loop);
+$ssl = new React\Socket\SecureConnector($client, $loop);
 
 // now create an SSL encrypted connection (notice the $ssl instead of $tcp)
-$ssl->connect('tls://www.google.com:443')->then(function (React\Stream\Stream $stream) {
+$ssl->connect('tls://www.google.com:443')->then(function (ConnectionInterface $stream) {
     // proceed with just the plain text data
     // everything is encrypted/decrypted automatically
     echo 'connected to SSL encrypted www.google.com';
@@ -204,7 +204,7 @@ You can optionally pass additional
 to the constructor like this:
 
 ```php
-$ssl = new React\SocketClient\SecureConnector($client, $loop, array(
+$ssl = new React\Socket\SecureConnector($client, $loop, array(
     'verify_peer' => false,
     'verify_peer_name' => false
 ));
@@ -333,10 +333,10 @@ $factory = new React\Dns\Resolver\Factory();
 $resolver = $factory->createCached('8.8.8.8', $loop);
 
 // resolve hostnames via DNS before forwarding resulting IP trough SOCKS server
-$dns = new React\SocketClient\DnsConnector($client, $resolver);
+$dns = new React\Socket\DnsConnector($client, $resolver);
 
 // secure TLS via the DNS connector
-$ssl = new React\SocketClient\SecureConnector($dns, $loop);
+$ssl = new React\Socket\SecureConnector($dns, $loop);
 
 $ssl->connect('tls://www.google.com:443')->then(function ($stream) {
     // …
@@ -429,7 +429,7 @@ SOCKS connector from another SOCKS client like this:
 $middle = new Client($addressMiddle, new TcpConnector($loop));
 $target = new Client($addressTarget, $middle);
 
-$ssl = new React\SocketClient\SecureConnector($target, $loop);
+$ssl = new React\Socket\SecureConnector($target, $loop);
 
 $ssl->connect('tls://www.google.com:443')->then(function ($stream) {
     // …
@@ -466,13 +466,13 @@ Many use cases require more control over the timeout and likely values much
 smaller, usually in the range of a few seconds only.
 
 You can use React's
-[`TimeoutConnector`](https://github.com/reactphp/socket-client#timeoutconnector)
+[`TimeoutConnector`](https://github.com/reactphp/socket#timeoutconnector)
 to decorate any given `ConnectorInterface` instance.
 It provides the same `connect()` method, but will automatically reject the
 underlying connection attempt if it takes too long:
 
 ```php
-$timeoutConnector = new React\SocketClient\TimeoutConnector($connector, 3.0, $loop);
+$timeoutConnector = new React\Socket\TimeoutConnector($connector, 3.0, $loop);
 
 $timeoutConnector->connect('tcp://google.com:80')->then(function ($stream) {
     // connection succeeded within 3.0 seconds
@@ -564,7 +564,7 @@ MIT, see LICENSE
 * If you want to learn more about how the
   [`ConnectorInterface`](#connectorinterface) and its usual implementations look
   like, refer to the documentation of the underlying
-  [react/socket-client](https://github.com/reactphp/socket-client) component.
+  [react/socket component](https://github.com/reactphp/socket).
 * As an alternative to a SOCKS (SOCKS4/SOCKS5) proxy, you may also want to look into
   using an HTTP CONNECT proxy instead.
   You may want to use [clue/http-proxy-react](https://github.com/clue/php-http-proxy-react)

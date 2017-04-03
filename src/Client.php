@@ -3,11 +3,10 @@
 namespace Clue\React\Socks;
 
 use React\Promise;
-use React\Promise\CancellablePromiseInterface;
 use React\Promise\PromiseInterface;
 use React\Promise\Deferred;
-use React\SocketClient\ConnectionInterface;
-use React\SocketClient\ConnectorInterface;
+use React\Socket\ConnectionInterface;
+use React\Socket\ConnectorInterface;
 use \Exception;
 use \InvalidArgumentException;
 use RuntimeException;
