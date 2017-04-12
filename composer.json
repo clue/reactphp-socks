@@ -24,6 +24,7 @@
         "evenement/evenement": "~1.0|~2.0"
     },
     "require-dev": {
+        "phpunit/phpunit": "^4.8",
         "clue/socks-react": "^0.6",
         "clue/connection-manager-extra": "^0.5"
     }
