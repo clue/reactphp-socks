@@ -14,6 +14,7 @@ of the actual application level protocol, such as HTTP, SMTP, IMAP, Telnet etc.
     * [Authentication](#authentication)
     * [Proxy chaining](#proxy-chaining)
 * [Install](#install)
+* [Tests](#tests)
 * [License](#license)
 * [More](#more)
 
@@ -261,6 +262,21 @@ $ composer require clue/socks-server:^0.5.1
 ```
 
 See also the [CHANGELOG](CHANGELOG.md) for details about version upgrades.
+
+## Tests
+
+To run the test suite, you first need to clone this repo and then install all
+dependencies [through Composer](http://getcomposer.org):
+
+```bash
+$ composer install
+```
+
+To run the test suite, go to the project root and run:
+
+```bash
+$ php vendor/bin/phpunit
+```
 
 ## License
 
