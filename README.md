@@ -218,7 +218,7 @@ In order to connect through another SOCKS server, you can simply use a SOCKS
 connector from the following SOCKS client package:
 
 ```bash
-$ composer require clue/socks-react:^0.6
+$ composer require clue/socks-react:^0.7
 ```
 
 You can now create a SOCKS `Client` instance like this: 
