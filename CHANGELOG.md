@@ -1,5 +1,16 @@
 # Changelog
 
+## 0.7.0 (2017-04-14)
+
+* Feature / BC break: Update Socket to v0.7
+  (#12 by @clue)
+
+* Improve test suite by adding PHPUnit to require-dev
+  (#11 by @clue)
+
+> The `v0.6.0` release has been skipped intentionally to avoid confusion with
+  the release tags of `clue/socks-react` and `react/socket`.
+
 ## 0.5.1 (2016-11-25)
 
 * Feature: Cancel pending outgoing connection if incoming connection closes
