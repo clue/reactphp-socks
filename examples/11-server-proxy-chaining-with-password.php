@@ -5,7 +5,7 @@
 use Clue\React\Socks\Client;
 use Clue\React\Socks\Server\Server;
 use React\Socket\Server as Socket;
-use React\SocketClient\TcpConnector;
+use React\Socket\TcpConnector;
 
 include_once __DIR__.'/../vendor/autoload.php';
 
@@ -19,13 +19,12 @@ $connector = new TcpConnector($loop);
 $target = new Client('user:p%40ssw0rd@127.0.0.1:' . $otherPort, $connector);
 
 // listen on localhost:$myPort
-$socket = new Socket($loop);
-$socket->listen($myPort, 'localhost');
+$socket = new Socket($myPort, $loop);
 
 // start a new server which forwards all connections to the other SOCKS server
 $server = new Server($loop, $socket, $target);
 
-echo 'SOCKS server listening on localhost:' . $myPort . ' (which forwards everything to target SOCKS server 127.0.0.1:' . $otherPort . ')' . PHP_EOL;
+echo 'SOCKS server listening on ' . $socket->getAddress() . ' (which forwards everything to target SOCKS server 127.0.0.1:' . $otherPort . ')' . PHP_EOL;
 echo 'Not already running the target SOCKS server? Try this: php 02-server-with-password.php ' . $otherPort . PHP_EOL;
 
 $loop->run();

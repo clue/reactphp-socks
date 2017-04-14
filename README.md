@@ -58,7 +58,7 @@ $server = new Server($loop, $socket);
 ```
 
 If you need custom connector settings (DNS resolution, timeouts etc.), you can explicitly pass a
-custom instance of the [`ConnectorInterface`](https://github.com/reactphp/socket-client#connectorinterface):
+custom instance of the [`ConnectorInterface`](https://github.com/reactphp/socket#connectorinterface):
 
 ```php
 // use local DNS server
@@ -225,7 +225,7 @@ You can now create a SOCKS `Client` instance like this:
 
 ```php
 // set next SOCKS server localhost:$targetPort as target
-$connector = new React\SocketClient\TcpConnector($loop);
+$connector = new React\Socket\TcpConnector($loop);
 $client = new Clue\React\Socks\Client('user:pass@127.0.0.1:' . $targetPort, $connector);
 
 // listen on localhost:$middlemanPort
