@@ -15,7 +15,7 @@ class ClientTest extends TestCase
     public function setUp()
     {
         $this->loop = React\EventLoop\Factory::create();
-        $this->connector = $this->getMock('React\SocketClient\ConnectorInterface');
+        $this->connector = $this->getMockBuilder('React\SocketClient\ConnectorInterface')->getMock();
         $this->client = new Client('127.0.0.1:1080', $this->connector);
     }
 

@@ -25,6 +25,7 @@ of the actual application level protocol, such as HTTP, SMTP, IMAP, Telnet etc.
   * [Using SSH as a SOCKS server](#using-ssh-as-a-socks-server)
   * [Using the Tor (anonymity network) to tunnel SOCKS connections](#using-the-tor-anonymity-network-to-tunnel-socks-connections)
 * [Install](#install)
+* [Tests](#tests)
 * [License](#license)
 * [More](#more)
 
@@ -530,6 +531,21 @@ $ composer require clue/socks-react:^0.6
 ```
 
 See also the [CHANGELOG](CHANGELOG.md) for details about version upgrades.
+
+## Tests
+
+To run the test suite, you first need to clone this repo and then install all
+dependencies [through Composer](http://getcomposer.org):
+
+```bash
+$ composer install
+```
+
+To run the test suite, go to the project root and run:
+
+```bash
+$ php vendor/bin/phpunit
+```
 
 ## License
 
