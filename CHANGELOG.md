@@ -1,5 +1,30 @@
 # Changelog
 
+## 0.7.0 (2017-04-14)
+
+*   Feature / BC break: Replace depreacted SocketClient with Socket v0.7 and
+    use `connect($uri)` instead of `create($host, $port)`
+    (#51 by @clue)
+
+    ```php
+    // old
+    $connector = new React\SocketClient\TcpConnector($loop);
+    $client = new Client(1080, $connector);
+    $client->create('google.com', 80)->then(function (Stream $conn) {
+        $conn->write("…");
+    });
+
+    // new
+    $connector = new React\Socket\TcpConnector($loop);
+    $client = new Client(1080, $connector);
+    $client->connect('google.com:80')->then(function (ConnectionInterface $conn) {
+        $conn->write("…");
+    });
+    ```
+
+*   Improve test suite by adding PHPUnit to require-dev
+    (#50 by @clue)
+
 ## 0.6.0 (2016-11-29)
 
 * Feature / BC break: Pass connector into `Client` instead of loop, remove unneeded deps
