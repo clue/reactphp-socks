@@ -74,7 +74,7 @@ class StreamReader
 
         $this->readBufferCallback(function (&$buffer) use ($bytes, $deferred) {
             if (strlen($buffer) >= $bytes) {
-                $deferred->resolve(substr($buffer, 0, $bytes));
+                $deferred->resolve((string)substr($buffer, 0, $bytes));
                 $buffer = (string)substr($buffer, $bytes);
 
                 return StreamReader::RET_DONE;
