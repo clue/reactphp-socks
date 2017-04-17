@@ -1,8 +1,9 @@
 <?php
 
 use Clue\React\Socks\Client;
-use Clue\React\Socks\Server\Server;
+use Clue\React\Socks\Server;
 use Clue\React\Block;
+use React\Promise\PromiseInterface;
 use React\Socket\TimeoutConnector;
 use React\Socket\SecureConnector;
 use React\Socket\TcpConnector;
@@ -12,8 +13,9 @@ class FunctionalTest extends TestCase
     private $loop;
     private $connector;
     private $client;
-    private $server;
+
     private $port;
+    private $server;
 
     public function setUp()
     {
@@ -33,9 +35,15 @@ class FunctionalTest extends TestCase
         $this->assertResolveStream($this->client->connect('www.google.com:80'));
     }
 
+    public function testConnectionInvalid()
+    {
+        $this->assertRejectPromise($this->client->connect('www.google.com.invalid:80'));
+    }
+
     public function testConnectionWithIpViaSocks4()
     {
-        $this->server->setProtocolVersion(4);
+        $this->server->setProtocolVersion('4');
+
         $this->client = new Client('socks4://127.0.0.1:' . $this->port, $this->connector);
 
         $this->assertResolveStream($this->client->connect('127.0.0.1:' . $this->port));
@@ -58,6 +66,14 @@ class FunctionalTest extends TestCase
         $this->client = new Client('socks4://127.0.0.1:' . $this->port, $this->connector);
 
         $this->assertRejectPromise($this->client->connect('[::1]:80'));
+    }
+
+    public function testConnectionSocks4a()
+    {
+        $this->server->setProtocolVersion('4a');
+        $this->client = new Client('socks4a://127.0.0.1:' . $this->port, $this->connector);
+
+        $this->assertResolveStream($this->client->connect('www.google.com:80'));
     }
 
     public function testConnectionSocks5()
@@ -95,6 +111,14 @@ class FunctionalTest extends TestCase
         $this->assertResolveStream($this->client->connect('www.google.com:80'));
     }
 
+    public function testConnectionAuthenticationEmptyPassword()
+    {
+        $this->server->setAuthArray(array('user' => ''));
+        $this->client = new Client('user@127.0.0.1:' . $this->port, $this->connector);
+
+        $this->assertResolveStream($this->client->connect('www.google.com:80'));
+    }
+
     public function testConnectionAuthenticationUnused()
     {
         $this->client = new Client('name:pass@127.0.0.1:' . $this->port, $this->connector);
@@ -102,29 +126,45 @@ class FunctionalTest extends TestCase
         $this->assertResolveStream($this->client->connect('www.google.com:80'));
     }
 
-    public function testConnectionInvalidProtocolMismatch()
+    public function testConnectionInvalidProtocolDoesNotMatchDefault()
     {
-        $this->client = new Client('socks4://127.0.0.1:' . $this->port, $this->connector);
-
         $this->server->setProtocolVersion(5);
 
-        $this->assertRejectPromise($this->client->connect('127.0.0.1:80'));
+        $this->client = new Client('socks4://127.0.0.1:' . $this->port, $this->connector);
+
+        $this->assertRejectPromise($this->client->connect('www.google.com:80'));
+    }
+
+    public function testConnectionInvalidProtocolDoesNotMatchSocks5()
+    {
+        $this->server->setProtocolVersion(5);
+        $this->client = new Client('socks4a://127.0.0.1:' . $this->port, $this->connector);
+
+        $this->assertRejectPromise($this->client->connect('www.google.com:80'));
+    }
+
+    public function testConnectionInvalidProtocolDoesNotMatchSocks4()
+    {
+        $this->server->setProtocolVersion(4);
+        $this->client = new Client('socks5://127.0.0.1:' . $this->port, $this->connector);
+
+        $this->assertRejectPromise($this->client->connect('www.google.com:80'));
     }
 
     public function testConnectionInvalidNoAuthentication()
     {
-        $this->client = new Client('socks5://127.0.0.1:' . $this->port, $this->connector);
-
         $this->server->setAuthArray(array('name' => 'pass'));
+
+        $this->client = new Client('socks5://127.0.0.1:' . $this->port, $this->connector);
 
         $this->assertRejectPromise($this->client->connect('www.google.com:80'));
     }
 
     public function testConnectionInvalidAuthenticationMismatch()
     {
-        $this->client = new Client('user:other@127.0.0.1:' . $this->port, $this->connector);
-
         $this->server->setAuthArray(array('name' => 'pass'));
+
+        $this->client = new Client('user:pass@127.0.0.1:' . $this->port, $this->connector);
 
         $this->assertRejectPromise($this->client->connect('www.google.com:80'));
     }

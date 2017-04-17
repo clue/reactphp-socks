@@ -1,6 +1,6 @@
 # clue/socks-react [![Build Status](https://travis-ci.org/clue/php-socks-react.svg?branch=master)](https://travis-ci.org/clue/php-socks-react)
 
-Async SOCKS client library to connect to SOCKS4, SOCKS4a and SOCKS5 proxy servers, built on top of React PHP.
+Async SOCKS4, SOCKS4a and SOCKS5 proxy client and server implementation, built on top of ReactPHP.
 
 The SOCKS protocol family can be used to easily tunnel TCP connections independent
 of the actual application level protocol, such as HTTP, SMTP, IMAP, Telnet etc.
@@ -20,6 +20,10 @@ of the actual application level protocol, such as HTTP, SMTP, IMAP, Telnet etc.
     * [Authentication](#authentication)
     * [Proxy chaining](#proxy-chaining)
     * [Connection timeout](#connection-timeout)
+  * [Server](#server)
+    * [Protocol version](#server-protocol-version)
+    * [Authentication](#server-authentication)
+    * [Proxy chaining](#server-proxy-chaining)
 * [Servers](#servers)
   * [Using a PHP SOCKS server](#using-a-php-socks-server)
   * [Using SSH as a SOCKS server](#using-ssh-as-a-socks-server)
@@ -41,6 +45,22 @@ $client = new Client('127.0.0.1:9050', new TcpConnector($loop));
 $client->connect('tcp://www.google.com:80')->then(function (ConnectionInterface $stream) {
     $stream->write("GET / HTTP/1.0\r\n\r\n");
 });
+
+$loop->run();
+```
+
+If you're not already running any other [SOCKS proxy server](#servers),
+you can use the following code to create a SOCKS
+proxy server listening for connections on `localhost:1080`:
+
+```php
+$loop = React\EventLoop\Factory::create();
+
+// listen on localhost:1080
+$socket = new Socket('127.0.0.1:1080', $loop);
+
+// start a new server listening for incoming connection on the given socket
+$server = new Server($loop, $socket);
 
 $loop->run();
 ```
@@ -450,10 +470,9 @@ Proxy chaining can happen on the server side and/or the client side:
 
 * If you ask your server to chain through another proxy, then your client does
   not really know anything about chaining at all.
-  This means that this is a server-only property and not part of this project.
-  For example, you can find this in the companion SOCKS server side project
-  [clue/socks-server](https://github.com/clue/php-socks-server#proxy-chaining)
-  or somewhat similar when you're using the
+  This means that this is a server-only property and not part of this class.
+  For example, you can find this in the below [`Server`](#server-proxy-chaining)
+  class or somewhat similar when you're using the
   [Tor network](#using-the-tor-anonymity-network-to-tunnel-socks-connections).
 
 #### Connection timeout
@@ -488,6 +507,148 @@ as usual.
 > Also note how connection timeout is in fact entirely handled outside of this
 SOCKS client implementation.
 
+### Server
+
+The `Server` is responsible for accepting incoming communication from SOCKS clients
+and forwarding the requested connection to the target host.
+It also registers everything with the main [`EventLoop`](https://github.com/reactphp/event-loop#usage)
+and an underlying TCP/IP socket server like this:
+
+```php
+$loop = \React\EventLoop\Factory::create();
+
+// listen on localhost:$port
+$socket = new Socket($port, $loop);
+
+$server = new Server($loop, $socket);
+```
+
+If you need custom connector settings (DNS resolution, timeouts etc.), you can explicitly pass a
+custom instance of the [`ConnectorInterface`](https://github.com/reactphp/socket#connectorinterface):
+
+```php
+// use local DNS server
+$dnsResolverFactory = new DnsFactory();
+$resolver = $dnsResolverFactory->createCached('127.0.0.1', $loop);
+
+// outgoing connections to target host via interface 192.168.10.1
+$connector = new DnsConnector(
+    new TcpConnector($loop, array('bindto' => '192.168.10.1:0')),
+    $resolver
+);
+
+$server = new Server($loop, $socket, $connector);
+```
+
+#### Server protocol version
+
+The `Server` supports all protocol versions (SOCKS4, SOCKS4a and SOCKS5) by default.
+
+If want to explicitly set the protocol version, use the supported values `4`, `4a` or `5`:
+
+```PHP
+$server->setProtocolVersion(5);
+```
+
+In order to reset the protocol version to its default (i.e. automatic detection),
+use `null` as protocol version.
+
+```PHP
+$server->setProtocolVersion(null);
+```
+
+#### Server authentication
+
+By default, the `Server` does not require any authentication from the clients.
+You can enable authentication support so that clients need to pass a valid
+username and password before forwarding any connections.
+
+Setting authentication on the `Server` enforces each further connected client
+to use protocol version 5 (SOCKS5).
+If a client tries to use any other protocol version, does not send along
+authentication details or if authentication details can not be verified,
+the connection will be rejected.
+
+Because your authentication mechanism might take some time to actually check
+the provided authentication credentials (like querying a remote database or webservice),
+the server side uses a [Promise](https://github.com/reactphp/promise) based interface.
+While this might seem complex at first, it actually provides a very simple way
+to handle simultanous connections in a non-blocking fashion and increases overall performance.
+
+```PHP
+$server->setAuth(function ($username, $password) {
+    // either return a boolean success value right away
+    // or use promises for delayed authentication
+});
+```
+
+Or if you only accept static authentication details, you can use the simple
+array-based authentication method as a shortcut:
+
+```PHP
+$server->setAuthArray(array(
+    'tom' => 'password',
+    'admin' => 'root'
+));
+```
+
+See also [example #12](examples).
+
+If you do not want to use authentication anymore:
+
+```PHP
+$server->unsetAuth();
+```
+
+#### Server proxy chaining
+
+The `Server` is responsible for creating connections to the target host.
+
+```
+Client -> SocksServer -> TargetHost
+```
+
+Sometimes it may be required to establish outgoing connections via another SOCKS
+server.
+For example, this can be useful if your target SOCKS server requires
+authentication, but your client does not support sending authentication
+information (e.g. like most webbrowser).
+
+```
+Client -> MiddlemanSocksServer -> TargetSocksServer -> TargetHost
+```
+
+The `Server` uses any instance of the `ConnectorInterface` to establish outgoing
+connections.
+In order to connect through another SOCKS server, you can simply use the
+[`Client`](#client) SOCKS connector from above.
+You can create a SOCKS `Client` instance like this: 
+
+```php
+// set next SOCKS server localhost:$targetPort as target
+$connector = new React\Socket\TcpConnector($loop);
+$client = new Client('user:pass@127.0.0.1:' . $targetPort, $connector);
+
+// listen on localhost:$middlemanPort
+$socket = new Socket($middlemanPort, $loop);
+
+// start a new server which forwards all connections to the other SOCKS server
+$server = new Server($loop, $socket, $client);
+```
+
+See also [example #21](examples).
+
+Proxy chaining can happen on the server side and/or the client side:
+
+* If you ask your client to chain through multiple proxies, then each proxy
+  server does not really know anything about chaining at all.
+  This means that this is a client-only property and not part of this class.
+  For example, you can find this in the above [`Client`](#proxy-chaining) class.
+
+* If you ask your server to chain through another proxy, then your client does
+  not really know anything about chaining at all.
+  This means that this is a server-only property and can be implemented as above.
+
 ## Servers
 
 ### Using a PHP SOCKS server
@@ -495,7 +656,7 @@ SOCKS client implementation.
 * If you're looking for an end-user SOCKS server daemon, you may want to
   use [clue/psocksd](https://github.com/clue/psocksd).
 * If you're looking for a SOCKS server implementation, consider using
-  [clue/socks-server](https://github.com/clue/php-socks-server).
+  the above [`Server`](#server) class.
 
 ### Using SSH as a SOCKS server
 
@@ -579,5 +740,3 @@ MIT, see LICENSE
   concurrently working with multiple connectors and more.
 * If you're looking for an end-user SOCKS server daemon, you may want to
   use [clue/psocksd](https://github.com/clue/psocksd).
-* If you're looking for a SOCKS server implementation, consider using
-  [clue/socks-server](https://github.com/clue/php-socks-server).
