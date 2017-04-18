@@ -1,5 +1,19 @@
 # Changelog
 
+## 0.8.0 (2017-04-18)
+
+*   Feature: Merge `Server` class from clue/socks-server
+    (#52 by @clue)
+
+    ```php
+    $socket = new React\Socket\Server(1080, $loop);
+    $server = new Clue\React\Socks\Server($loop, $socket);
+    ```
+
+    > Upgrading from [clue/socks-server](https://github.com/clue/php-socks-server)?
+      The classes have been moved as-is, so you can simply start using the new
+      class name `Clue\React\Socks\Server` with no other changes required.
+
 ## 0.7.0 (2017-04-14)
 
 *   Feature / BC break: Replace depreacted SocketClient with Socket v0.7 and
