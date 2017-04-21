@@ -2,7 +2,6 @@
 
 use Clue\React\Socks\Server;
 use React\Promise\Promise;
-use React\Stream\Stream;
 
 class ServerTest extends TestCase
 {

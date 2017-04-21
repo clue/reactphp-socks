@@ -179,7 +179,7 @@ class Client implements ConnectorInterface
             $reject(new RuntimeException('Connection attempt cancelled while establishing socks session'));
         });
 
-        $reader = new StreamReader($stream);
+        $reader = new StreamReader();
         $stream->on('data', array($reader, 'write'));
 
         if ($this->protocolVersion === '5') {
