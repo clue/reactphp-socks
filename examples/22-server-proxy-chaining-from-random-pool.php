@@ -7,7 +7,7 @@ use ConnectionManager\Extra\Multiple\ConnectionManagerRandom;
 use React\Socket\Server as Socket;
 use Clue\React\Socks\Server;
 use Clue\React\Socks\Client;
-use React\Socket\TcpConnector;
+use React\Socket\Connector;
 
 require __DIR__ . '/../vendor/autoload.php';
 
@@ -28,10 +28,10 @@ $loop = LoopFactory::create();
 
 // forward to socks server listening on 127.0.0.1:9051-9053
 // this connector randomly picks one of the the attached connectors from the pool
-$tcp = new TcpConnector($loop);
+$connector = new Connector($loop);
 $clients = array();
 foreach ($pool as $proxy) {
-    $clients []= new Client($proxy, $tcp);
+    $clients []= new Client($proxy, $connector);
 }
 $connector = new ConnectionManagerRandom($clients);
 

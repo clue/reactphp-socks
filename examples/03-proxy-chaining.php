@@ -1,9 +1,8 @@
 <?php
 
 use Clue\React\Socks\Client;
-use React\Socket\TcpConnector;
-use React\Socket\ConnectionInterface;
 use React\Socket\Connector;
+use React\Socket\ConnectionInterface;
 
 require __DIR__ . '/../vendor/autoload.php';
 
@@ -15,7 +14,7 @@ $loop = React\EventLoop\Factory::create();
 // https via the proxy chain  "foo -> bar -> target"
 // please note how the client uses bar (not foo!), which in turn then uses foo
 // this creates a TCP/IP connection to foo, which then connects to bar, which then connects to the target
-$foo = new Client($first, new TcpConnector($loop));
+$foo = new Client($first, new Connector($loop));
 $bar = new Client($second, $foo);
 
 $connector = new Connector($loop, array(

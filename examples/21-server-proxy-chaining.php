@@ -5,14 +5,14 @@
 use Clue\React\Socks\Client;
 use Clue\React\Socks\Server;
 use React\Socket\Server as Socket;
-use React\Socket\TcpConnector;
+use React\Socket\Connector;
 
 require __DIR__ . '/../vendor/autoload.php';
 
 $loop = React\EventLoop\Factory::create();
 
 // set next SOCKS server 127.0.0.1:1080 as target
-$connector = new TcpConnector($loop);
+$connector = new Connector($loop);
 $proxy = isset($argv[2]) ? $argv[2] : 'user:p%40ssw0rd@127.0.0.1:1080';
 $target = new Client($proxy, $connector);
 

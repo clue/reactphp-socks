@@ -40,7 +40,7 @@ to google.com via a local SOCKS proxy server:
 
 ```php
 $loop = React\EventLoop\Factory::create();
-$client = new Client('127.0.0.1:1080', new TcpConnector($loop));
+$client = new Client('127.0.0.1:1080', new Connector($loop));
 
 $client->connect('tcp://www.google.com:80')->then(function (ConnectionInterface $stream) {
     $stream->write("GET / HTTP/1.0\r\n\r\n");
@@ -115,11 +115,11 @@ Its constructor simply accepts an SOCKS proxy URI and a connector used to
 connect to the SOCKS proxy server address.
 
 In its most simple form, you can simply pass React's
-[`TcpConnector`](https://github.com/reactphp/socket#tcpconnector)
+[`Connector`](https://github.com/reactphp/socket#connector)
 like this:
 
 ```php
-$connector = new React\Socket\TcpConnector($loop);
+$connector = new React\Socket\Connector($loop);
 $client = new Client('127.0.0.1:1080', $connector);
 ```
 
@@ -173,6 +173,23 @@ $client->connect('tcp://www.google.com:80')->then(function (ConnectonInterface $
 });
 ```
 
+You can either use the `Client` directly or you may want to wrap this connector
+in React's [`Connector`](https://github.com/reactphp/socket#connector):
+
+```php
+$connector = new React\Socket\Connector($loop, array(
+    'tcp' => $client,
+    'dns' => false
+));
+
+$connector->connect('tcp://www.google.com:80')->then(function (ConnectonInterface $stream) {
+    echo 'connected to www.google.com:80';
+    $stream->write("GET / HTTP/1.0\r\n\r\n");
+    // ...
+});
+
+```
+
 See also the [first example](examples).
 
 The `tcp://` scheme can also be omitted.
@@ -181,7 +198,7 @@ Passing any other scheme will reject the promise.
 Pending connection attempts can be cancelled by cancelling its pending promise like so:
 
 ```php
-$promise = $tcp->connect($uri);
+$promise = $connector->connect($uri);
 
 $promise->cancel();
 ```
@@ -194,13 +211,17 @@ the resulting promise.
 
 If you want to establish a secure TLS connection (such as HTTPS) between you and
 your destination, you may want to wrap this connector in React's
+[`Connector`](https://github.com/reactphp/socket#connector) or the low-level
 [`SecureConnector`](https://github.com/reactphp/socket#secureconnector):
 
 ```php
-$ssl = new React\Socket\SecureConnector($client, $loop);
+$connector = new React\Socket\Connector($loop, array(
+    'tcp' => $client,
+    'dns' => false
+));
 
 // now create an SSL encrypted connection (notice the $ssl instead of $tcp)
-$ssl->connect('tls://www.google.com:443')->then(function (ConnectionInterface $stream) {
+$connector->connect('tls://www.google.com:443')->then(function (ConnectionInterface $stream) {
     // proceed with just the plain text data
     // everything is encrypted/decrypted automatically
     echo 'connected to SSL encrypted www.google.com';
@@ -211,23 +232,28 @@ $ssl->connect('tls://www.google.com:443')->then(function (ConnectionInterface $s
 
 See also the [second example](examples).
 
-The `tls://` scheme can also be omitted.
+If you use the low-level `SecureConnector`, then the `tls://` scheme can also
+be omitted.
 Passing any other scheme will reject the promise.
 
 Pending connection attempts can be cancelled by cancelling its pending promise
 as usual.
 
-> Also note how secure TLS connections are in fact entirely handled outside of this
-SOCKS client implementation.
+> Also note how secure TLS connections are in fact entirely handled outside of
+  this SOCKS client implementation.
 
 You can optionally pass additional
 [SSL context options](http://php.net/manual/en/context.ssl.php)
 to the constructor like this:
 
 ```php
-$ssl = new React\Socket\SecureConnector($client, $loop, array(
-    'verify_peer' => false,
-    'verify_peer_name' => false
+$connector = new React\Socket\Connector($loop, array(
+    'tcp' => $client,
+    'tls' => array(
+        'verify_peer' => false,
+        'verify_peer_name' => false
+    ),
+    'dns' => false
 ));
 ```
 
@@ -342,26 +368,29 @@ if it should not resolve target hostnames because its outgoing DNS traffic might
 be intercepted (in particular when using the
 [Tor network](#using-the-tor-anonymity-network-to-tunnel-socks-connections)).
 
+As noted above, the `Client` defaults to using remote DNS resolution.
+However, wrapping the `Client` in React's
+[`Connector`](https://github.com/reactphp/socket#connector) actually
+performs local DNS resolution unless explicitly defined otherwise.
+Given that remote DNS resolution is assumed to be the preferred mode, all
+other examples explicitly disable DNS resoltion like this:
+
+```php
+$connector = new React\Socket\Connector($loop, array(
+    'tcp' => $client,
+    'dns' => false
+));
+```
+
 If you want to explicitly use *local DNS resolution* (such as when explicitly
 using SOCKS4), you can use the following code:
 
 ```php
-// usual client setup
-$client = new Client($uri, $connector);
-
-// set up DNS server to use (Google's public DNS here)
-$factory = new React\Dns\Resolver\Factory();
-$resolver = $factory->createCached('8.8.8.8', $loop);
-
-// resolve hostnames via DNS before forwarding resulting IP trough SOCKS server
-$dns = new React\Socket\DnsConnector($client, $resolver);
-
-// secure TLS via the DNS connector
-$ssl = new React\Socket\SecureConnector($dns, $loop);
-
-$ssl->connect('tls://www.google.com:443')->then(function ($stream) {
-    // …
-});
+// set up Connector which uses Google's public DNS (8.8.8.8)
+$connector = new React\Socket\Connector($loop, array(
+    'tcp' => $client,
+    'dns' => '8.8.8.8'
+));
 ```
 
 See also the [fourth example](examples).
@@ -370,7 +399,7 @@ Pending connection attempts can be cancelled by cancelling its pending promise
 as usual.
 
 > Also note how local DNS resolution is in fact entirely handled outside of this
-SOCKS client implementation.
+  SOCKS client implementation.
 
 If you've explicitly set the client to SOCKS4 and stick to the default
 *remote DNS resolution*, then you may only connect to IPv4 addresses because
@@ -449,12 +478,15 @@ SOCKS connector from another SOCKS client like this:
 // which in turn then uses MiddlemanSocksServer.
 // this creates a TCP/IP connection to MiddlemanSocksServer, which then connects
 // to TargetSocksServer, which then connects to the TargetHost
-$middle = new Client($addressMiddle, new TcpConnector($loop));
-$target = new Client($addressTarget, $middle);
+$middle = new Client('127.0.0.1:1080', new Connector($loop));
+$target = new Client('example.com:1080', $middle);
 
-$ssl = new React\Socket\SecureConnector($target, $loop);
+$connector = new React\Socket\Connector($loop, array(
+    'tcp' => $target,
+    'dns' => false
+));
 
-$ssl->connect('tls://www.google.com:443')->then(function ($stream) {
+$connector->connect('tls://www.google.com:443')->then(function ($stream) {
     // …
 });
 ```
@@ -479,7 +511,7 @@ Proxy chaining can happen on the server side and/or the client side:
 
 #### Connection timeout
 
-By default, neither of the above implements any timeouts for establishing remote
+By default, the `Client` does not implement any timeouts for establishing remote
 connections.
 Your underlying operating system may impose limits on pending and/or idle TCP/IP
 connections, anywhere in a range of a few minutes to several hours.
@@ -487,16 +519,21 @@ connections, anywhere in a range of a few minutes to several hours.
 Many use cases require more control over the timeout and likely values much
 smaller, usually in the range of a few seconds only.
 
-You can use React's
+You can use React's [`Connector`](https://github.com/reactphp/socket#connector)
+or the low-level
 [`TimeoutConnector`](https://github.com/reactphp/socket#timeoutconnector)
 to decorate any given `ConnectorInterface` instance.
 It provides the same `connect()` method, but will automatically reject the
 underlying connection attempt if it takes too long:
 
 ```php
-$timeoutConnector = new React\Socket\TimeoutConnector($connector, 3.0, $loop);
+$connector = new Connector($loop, array(
+    'tcp' => $client,
+    'dns' => false,
+    'timeout' => 3.0
+));
 
-$timeoutConnector->connect('tcp://google.com:80')->then(function ($stream) {
+$connector->connect('tcp://google.com:80')->then(function ($stream) {
     // connection succeeded within 3.0 seconds
 });
 ```
@@ -507,7 +544,7 @@ Pending connection attempts can be cancelled by cancelling its pending promise
 as usual.
 
 > Also note how connection timeout is in fact entirely handled outside of this
-SOCKS client implementation.
+  SOCKS client implementation.
 
 ### Server
 
@@ -627,12 +664,12 @@ In order to connect through another SOCKS server, you can simply use the
 You can create a SOCKS `Client` instance like this: 
 
 ```php
-// set next SOCKS server localhost:$targetPort as target
-$connector = new React\Socket\TcpConnector($loop);
-$client = new Client('user:pass@127.0.0.1:' . $targetPort, $connector);
+// set next SOCKS server example.com:1080 as target
+$connector = new React\Socket\Connector($loop);
+$client = new Client('user:pass@example.com:1080', $connector);
 
-// listen on localhost:$middlemanPort
-$socket = new Socket($middlemanPort, $loop);
+// listen on localhost:1080
+$socket = new Socket('127.0.0.1:1080', $loop);
 
 // start a new server which forwards all connections to the other SOCKS server
 $server = new Server($loop, $socket, $client);

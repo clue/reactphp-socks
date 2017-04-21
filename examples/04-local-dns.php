@@ -1,9 +1,8 @@
 <?php
 
 use Clue\React\Socks\Client;
-use React\Socket\TcpConnector;
-use React\Socket\ConnectionInterface;
 use React\Socket\Connector;
+use React\Socket\ConnectionInterface;
 
 require __DIR__ . '/../vendor/autoload.php';
 
@@ -12,7 +11,7 @@ $proxy = isset($argv[1]) ? $argv[1] : '127.0.0.1:1080';
 $loop = React\EventLoop\Factory::create();
 
 // set up DNS server to use (Google's public DNS)
-$client = new Client($proxy, new TcpConnector($loop));
+$client = new Client($proxy, new Connector($loop));
 $connector = new Connector($loop, array(
     'tcp' => $client,
     'timeout' => 3.0,
