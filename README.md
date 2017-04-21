@@ -40,7 +40,7 @@ to google.com via a local SOCKS proxy server:
 
 ```php
 $loop = React\EventLoop\Factory::create();
-$client = new Client('127.0.0.1:9050', new TcpConnector($loop));
+$client = new Client('127.0.0.1:1080', new TcpConnector($loop));
 
 $client->connect('tcp://www.google.com:80')->then(function (ConnectionInterface $stream) {
     $stream->write("GET / HTTP/1.0\r\n\r\n");
@@ -155,7 +155,7 @@ higher-level component:
 
 ```diff
 - $client = new SomeClient($connector);
-+ $proxy = new Client('127.0.0.1:9050', $connector);
++ $proxy = new Client('127.0.0.1:1080', $connector);
 + $client = new SomeClient($proxy);
 ```
 
@@ -434,7 +434,9 @@ Sometimes it may be required to establish outgoing connections via another SOCKS
 server.
 For example, this can be useful if you want to conceal your origin address.
 
+```
 Client -> MiddlemanSocksServer -> TargetSocksServer -> TargetHost
+```
 
 The `Client` uses any instance of the `ConnectorInterface` to establish
 outgoing connections.
@@ -662,13 +664,19 @@ Proxy chaining can happen on the server side and/or the client side:
 
 If you already have an SSH server set up, you can easily use it as a SOCKS
 tunnel end point. On your client, simply start your SSH client and use
-the `-D [port]` option to start a local SOCKS server (quoting the man page:
+the `-D <port>` option to start a local SOCKS server (quoting the man page:
 a `local "dynamic" application-level port forwarding`) by issuing:
 
-`$ ssh -D 9050 ssh-server`
+```bash
+# either start local SOCKS server
+$ ssh -D 1080 localhost
+
+# or start local SOCKS server tunneling through remote host
+$ ssh -D 1080 example.com
+```
 
 ```PHP
-$client = new Client('127.0.0.1:9050', $connector);
+$client = new Client('127.0.0.1:1080', $connector);
 ```
 
 ### Using the Tor (anonymity network) to tunnel SOCKS connections

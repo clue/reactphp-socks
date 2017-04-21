@@ -5,9 +5,9 @@ use React\Socket\TcpConnector;
 use React\Socket\ConnectionInterface;
 use React\Socket\Connector;
 
-include_once __DIR__.'/../vendor/autoload.php';
+require __DIR__ . '/../vendor/autoload.php';
 
-$first = isset($argv[1]) ? $argv[1] : 9050;
+$first = isset($argv[1]) ? $argv[1] : '127.0.0.1:1080';
 $second = isset($argv[2]) ? $argv[2] : $first;
 
 $loop = React\EventLoop\Factory::create();
@@ -15,8 +15,8 @@ $loop = React\EventLoop\Factory::create();
 // https via the proxy chain  "foo -> bar -> target"
 // please note how the client uses bar (not foo!), which in turn then uses foo
 // this creates a TCP/IP connection to foo, which then connects to bar, which then connects to the target
-$foo = new Client('127.0.0.1:' . $first, new TcpConnector($loop));
-$bar = new Client('127.0.0.1:' . $second, $foo);
+$foo = new Client($first, new TcpConnector($loop));
+$bar = new Client($second, $foo);
 
 $connector = new Connector($loop, array(
     'tcp' => $bar,
@@ -24,8 +24,7 @@ $connector = new Connector($loop, array(
     'dns' => false
 ));
 
-echo 'Demo SOCKS client connecting to SOCKS proxy server chain 127.0.0.1:' . $first . ' and 127.0.0.1:' . $second . PHP_EOL;
-echo 'Not already running a SOCKS server? Try this: ssh -D ' . $first . ' localhost' . PHP_EOL;
+echo 'Demo SOCKS client connecting to SOCKS proxy server chain ' . $first . ' and ' . $second . PHP_EOL;
 
 $connector->connect('tls://www.google.com:443')->then(function (ConnectionInterface $stream) {
     echo 'connected' . PHP_EOL;

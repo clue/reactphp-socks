@@ -3,14 +3,13 @@
 use Clue\React\Socks\Server;
 use React\Socket\Server as Socket;
 
-include_once __DIR__.'/../vendor/autoload.php';
-
-$port = isset($argv[1]) ? $argv[1] : 9050;
+require __DIR__ . '/../vendor/autoload.php';
 
 $loop = React\EventLoop\Factory::create();
 
-// listen on localhost:$port
-$socket = new Socket($port, $loop);
+// listen on 127.0.0.1:1080 or first argument
+$listen = isset($argv[1]) ? $argv[1] : '127.0.0.1:1080';
+$socket = new Socket($listen, $loop);
 
 // start a new server listening for incoming connection on the given socket
 // require authentication and hence make this a SOCKS5-only server

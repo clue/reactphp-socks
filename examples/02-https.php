@@ -5,21 +5,20 @@ use React\Socket\TcpConnector;
 use React\Socket\ConnectionInterface;
 use React\Socket\Connector;
 
-include_once __DIR__.'/../vendor/autoload.php';
+require __DIR__ . '/../vendor/autoload.php';
 
-$port = isset($argv[1]) ? $argv[1] : 9050;
+$proxy = isset($argv[1]) ? $argv[1] : '127.0.0.1:1080';
 
 $loop = React\EventLoop\Factory::create();
 
-$client = new Client('127.0.0.1:' . $port, new TcpConnector($loop));
+$client = new Client($proxy, new TcpConnector($loop));
 $connector = new Connector($loop, array(
     'tcp' => $client,
     'timeout' => 3.0,
     'dns' => false
 ));
 
-echo 'Demo SOCKS client connecting to SOCKS server 127.0.0.1:' . $port . PHP_EOL;
-echo 'Not already running a SOCKS server? Try this: ssh -D ' . $port . ' localhost' . PHP_EOL;
+echo 'Demo SOCKS client connecting to SOCKS server ' . $proxy . PHP_EOL;
 
 $connector->connect('tls://www.google.com:443')->then(function (ConnectionInterface $stream) {
     echo 'connected' . PHP_EOL;
