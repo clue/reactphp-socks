@@ -702,15 +702,23 @@ Proxy chaining can happen on the server side and/or the client side:
 If you already have an SSH server set up, you can easily use it as a SOCKS
 tunnel end point. On your client, simply start your SSH client and use
 the `-D <port>` option to start a local SOCKS server (quoting the man page:
-a `local "dynamic" application-level port forwarding`) by issuing:
+a `local "dynamic" application-level port forwarding`).
+
+You can start a local SOCKS server by creating a loopback connection to your
+local system if you already run an SSH daemon:
 
 ```bash
-# either start local SOCKS server
 $ ssh -D 1080 localhost
+```
 
-# or start local SOCKS server tunneling through remote host
+Alternatively, you can start a local SOCKS server tunneling through a given
+remote host that runs an SSH daemon:
+
+```bash
 $ ssh -D 1080 example.com
 ```
+
+Now you can simply use this SSH SOCKS server like this:
 
 ```PHP
 $client = new Client('127.0.0.1:1080', $connector);
