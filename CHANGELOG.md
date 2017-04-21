@@ -1,5 +1,13 @@
 # Changelog
 
+## 0.8.1 (2016-04-21)
+
+*   Update examples to use URIs with default port 1080 and accept proxy URI arguments
+    (#54 by @clue)
+
+*   Remove now unneeded dependency on `react/stream`
+    (#55 by @clue)
+
 ## 0.8.0 (2017-04-18)
 
 *   Feature: Merge `Server` class from clue/socks-server
