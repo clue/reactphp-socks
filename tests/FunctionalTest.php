@@ -22,7 +22,11 @@ class FunctionalTest extends TestCase
         $this->loop = React\EventLoop\Factory::create();
 
         $socket = new React\Socket\Server(0, $this->loop);
-        $this->port = parse_url('tcp://' . $socket->getAddress(), PHP_URL_PORT);
+        $address = $socket->getAddress();
+        if (strpos($address, '://') === false) {
+            $address = 'tcp://' . $address;
+        }
+        $this->port = parse_url($address, PHP_URL_PORT);
         $this->assertNotEquals(0, $this->port);
 
         $this->server = new Server($this->loop, $socket);
