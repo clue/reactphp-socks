@@ -1,6 +1,11 @@
 # Changelog
 
-## 0.8.1 (2016-04-21)
+## 0.8.2 (2017-05-09)
+
+*   Feature: Forward compatibility with upcoming Socket v1.0 and v0.8
+    (#56 by @clue)
+
+## 0.8.1 (2017-04-21)
 
 *   Update examples to use URIs with default port 1080 and accept proxy URI arguments
     (#54 by @clue)
