@@ -66,8 +66,8 @@ class Server extends EventEmitter
             throw new UnexpectedValueException('Authentication requires SOCKS5. Consider using protocol version 5 or waive authentication');
         }
         // wrap authentication callback in order to cast its return value to a promise
-        $this->auth = function($username, $password) use ($auth) {
-            $ret = call_user_func($auth, $username, $password);
+        $this->auth = function($username, $password, $remote) use ($auth) {
+            $ret = call_user_func($auth, $username, $password, $remote);
             if ($ret instanceof PromiseInterface) {
                 return $ret;
             }
@@ -237,9 +237,17 @@ class Server extends EventEmitter
                     return $reader->readByte()->then(function ($length) use ($reader) {
                         return $reader->readLength($length);
                     })->then(function ($password) use ($username, $auth, $stream) {
-                        // username and password known => authenticate
-                        // echo 'auth: ' . $username.' : ' . $password . PHP_EOL;
-                        return $auth($username, $password)->then(function () use ($stream, $username) {
+                        // username and password given => authenticate
+                        $remote = $stream->getRemoteAddress();
+                        if ($remote !== null) {
+                            // remove transport scheme and prefix socks5:// instead
+                            if (($pos = strpos($remote, '://')) !== false) {
+                                $remote = substr($remote, $pos + 3);
+                            }
+                            $remote = 'socks5://' . rawurlencode($username) . ':' . rawurlencode($password) . '@' . $remote;
+                        }
+
+                        return $auth($username, $password, $remote)->then(function () use ($stream, $username) {
                             // accept
                             $stream->emit('auth', array($username));
                             $stream->write(pack('C2', 0x01, 0x00));

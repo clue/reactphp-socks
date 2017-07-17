@@ -97,6 +97,40 @@ class FunctionalTest extends TestCase
         $this->assertResolveStream($this->client->connect('www.google.com:80'));
     }
 
+    public function testConnectionAuthenticationCallback()
+    {
+        $called = 0;
+        $that = $this;
+        $this->server->setAuth(function ($name, $pass, $remote) use ($that, &$called) {
+            ++$called;
+            $that->assertEquals('name', $name);
+            $that->assertEquals('pass', $pass);
+            $that->assertStringStartsWith('socks5://name:pass@127.0.0.1:', $remote);
+
+            return true;
+        });
+
+        $this->client = new Client('name:pass@127.0.0.1:' . $this->port, $this->connector);
+
+        $this->assertResolveStream($this->client->connect('www.google.com:80'));
+        $this->assertEquals(1, $called);
+    }
+
+    public function testConnectionAuthenticationCallbackWillNotBeInvokedIfClientsSendsNoAuth()
+    {
+        $called = 0;
+        $this->server->setAuth(function () use (&$called) {
+            ++$called;
+
+            return true;
+        });
+
+        $this->client = new Client('127.0.0.1:' . $this->port, $this->connector);
+
+        $this->assertRejectPromise($this->client->connect('www.google.com:80'));
+        $this->assertEquals(0, $called);
+    }
+
     public function testConnectionAuthenticationFromUriEncoded()
     {
         $this->server->setAuthArray(array('name' => 'p@ss:w0rd'));

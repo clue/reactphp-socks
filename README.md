@@ -615,9 +615,15 @@ While this might seem complex at first, it actually provides a very simple way
 to handle simultanous connections in a non-blocking fashion and increases overall performance.
 
 ```PHP
-$server->setAuth(function ($username, $password) {
+$server->setAuth(function ($username, $password, $remote) {
     // either return a boolean success value right away
     // or use promises for delayed authentication
+
+    // $remote is a full URI à la socks5://user:pass@192.168.1.1:1234
+    // useful for logging or extracting parts, such as the remote IP
+    $ip = parse_url($remote, PHP_URL_HOST);
+
+    return ($username === 'root' && $ip === '127.0.0.1');
 });
 ```
 
