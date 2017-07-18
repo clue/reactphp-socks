@@ -7,14 +7,12 @@ use React\Socket\ServerInterface;
 use React\Promise;
 use React\Promise\Deferred;
 use React\Promise\PromiseInterface;
-use React\Promise\CancellablePromiseInterface;
 use React\Socket\ConnectorInterface;
 use React\Socket\Connector;
 use React\Socket\ConnectionInterface;
 use React\EventLoop\LoopInterface;
 use \UnexpectedValueException;
 use \InvalidArgumentException;
-use \RuntimeException;
 use \Exception;
 
 class Server extends EventEmitter
@@ -320,9 +318,21 @@ class Server extends EventEmitter
 
     public function connectTarget(ConnectionInterface $stream, array $target)
     {
+        $uri = $target[0];
+        if (strpos($uri, ':') !== false) {
+            $uri = '[' . $uri . ']';
+        }
+        $uri = $uri . ':' . $target[1];
+
+        // validate URI so a string hostname can not pass excessive URI parts
+        $parts = parse_url('tcp://' . $uri);
+        if (!$parts || !isset($parts['scheme'], $parts['host'], $parts['port']) || count($parts) !== 3) {
+            return Promise\reject(new InvalidArgumentException('Invalid target URI given'));
+        }
+
         $stream->emit('target', $target);
         $that = $this;
-        $connecting = $this->connector->connect($target[0] . ':' . $target[1]);
+        $connecting = $this->connector->connect($uri);
 
         $stream->on('close', function () use ($connecting) {
             $connecting->cancel();
