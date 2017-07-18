@@ -152,7 +152,7 @@ class ServerTest extends TestCase
         $connection->emit('data', array('asdasdasdasdasd'));
     }
 
-    public function testHandleSocks4ConnectionWillEstablishOutgoingConnection()
+    public function testHandleSocks4ConnectionWithIpv4WillEstablishOutgoingConnection()
     {
         $connection = $this->getMockBuilder('React\Socket\Connection')->disableOriginalConstructor()->setMethods(array('pause', 'end'))->getMock();
 
@@ -165,7 +165,31 @@ class ServerTest extends TestCase
         $connection->emit('data', array("\x04\x01" . "\x00\x50" . pack('N', ip2long('127.0.0.1')) . "\x00"));
     }
 
-    public function testHandleSocks5ConnectionWillEstablishOutgoingConnection()
+    public function testHandleSocks4aConnectionWithHostnameWillEstablishOutgoingConnection()
+    {
+        $connection = $this->getMockBuilder('React\Socket\Connection')->disableOriginalConstructor()->setMethods(array('pause', 'end'))->getMock();
+
+        $promise = new Promise(function () { });
+
+        $this->connector->expects($this->once())->method('connect')->with('example.com:80')->willReturn($promise);
+
+        $this->server->onConnection($connection);
+
+        $connection->emit('data', array("\x04\x01" . "\x00\x50" . "\x00\x00\x00\x01" . "\x00" . "example.com" . "\x00"));
+    }
+
+    public function testHandleSocks4aConnectionWithInvalidHostnameWillNotEstablishOutgoingConnection()
+    {
+        $connection = $this->getMockBuilder('React\Socket\Connection')->disableOriginalConstructor()->setMethods(array('pause', 'end'))->getMock();
+
+        $this->connector->expects($this->never())->method('connect');
+
+        $this->server->onConnection($connection);
+
+        $connection->emit('data', array("\x04\x01" . "\x00\x50" . "\x00\x00\x00\x01" . "\x00" . "tls://example.com:80?" . "\x00"));
+    }
+
+    public function testHandleSocks5ConnectionWithIpv4WillEstablishOutgoingConnection()
     {
         $connection = $this->getMockBuilder('React\Socket\Connection')->disableOriginalConstructor()->setMethods(array('pause', 'end', 'write'))->getMock();
 
@@ -189,6 +213,30 @@ class ServerTest extends TestCase
         $this->server->onConnection($connection);
 
         $connection->emit('data', array("\x05\x01\x00" . "\x05\x01\x00\x04" . inet_pton('::1') . "\x00\x50"));
+    }
+
+    public function testHandleSocks5ConnectionWithHostnameWillEstablishOutgoingConnection()
+    {
+        $connection = $this->getMockBuilder('React\Socket\Connection')->disableOriginalConstructor()->setMethods(array('pause', 'end', 'write'))->getMock();
+
+        $promise = new Promise(function () { });
+
+        $this->connector->expects($this->once())->method('connect')->with('example.com:80')->willReturn($promise);
+
+        $this->server->onConnection($connection);
+
+        $connection->emit('data', array("\x05\x01\x00" . "\x05\x01\x00\x03\x0B" . "example.com" . "\x00\x50"));
+    }
+
+    public function testHandleSocks5ConnectionWithInvalidHostnameWillNotEstablishOutgoingConnection()
+    {
+        $connection = $this->getMockBuilder('React\Socket\Connection')->disableOriginalConstructor()->setMethods(array('pause', 'end', 'write'))->getMock();
+
+        $this->connector->expects($this->never())->method('connect');
+
+        $this->server->onConnection($connection);
+
+        $connection->emit('data', array("\x05\x01\x00" . "\x05\x01\x00\x03\x15" . "tls://example.com:80?" . "\x00\x50"));
     }
 
     public function testHandleSocksConnectionWillCancelOutputConnectionIfIncomingCloses()
