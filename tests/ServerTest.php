@@ -152,7 +152,7 @@ class ServerTest extends TestCase
         $connection->emit('data', array('asdasdasdasdasd'));
     }
 
-    public function testHandleSocksConnectionWillEstablishOutgoingConnection()
+    public function testHandleSocks4ConnectionWillEstablishOutgoingConnection()
     {
         $connection = $this->getMockBuilder('React\Socket\Connection')->disableOriginalConstructor()->setMethods(array('pause', 'end'))->getMock();
 
@@ -163,6 +163,32 @@ class ServerTest extends TestCase
         $this->server->onConnection($connection);
 
         $connection->emit('data', array("\x04\x01" . "\x00\x50" . pack('N', ip2long('127.0.0.1')) . "\x00"));
+    }
+
+    public function testHandleSocks5ConnectionWillEstablishOutgoingConnection()
+    {
+        $connection = $this->getMockBuilder('React\Socket\Connection')->disableOriginalConstructor()->setMethods(array('pause', 'end', 'write'))->getMock();
+
+        $promise = new Promise(function () { });
+
+        $this->connector->expects($this->once())->method('connect')->with('127.0.0.1:80')->willReturn($promise);
+
+        $this->server->onConnection($connection);
+
+        $connection->emit('data', array("\x05\x01\x00" . "\x05\x01\x00\x01" . pack('N', ip2long('127.0.0.1')) . "\x00\x50"));
+    }
+
+    public function testHandleSocks5ConnectionWithIpv6WillEstablishOutgoingConnection()
+    {
+        $connection = $this->getMockBuilder('React\Socket\Connection')->disableOriginalConstructor()->setMethods(array('pause', 'end', 'write'))->getMock();
+
+        $promise = new Promise(function () { });
+
+        $this->connector->expects($this->once())->method('connect')->with('[::1]:80')->willReturn($promise);
+
+        $this->server->onConnection($connection);
+
+        $connection->emit('data', array("\x05\x01\x00" . "\x05\x01\x00\x04" . inet_pton('::1') . "\x00\x50"));
     }
 
     public function testHandleSocksConnectionWillCancelOutputConnectionIfIncomingCloses()

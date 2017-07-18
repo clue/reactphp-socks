@@ -320,9 +320,15 @@ class Server extends EventEmitter
 
     public function connectTarget(ConnectionInterface $stream, array $target)
     {
+        $uri = $target[0];
+        if (strpos($uri, ':') !== false) {
+            $uri = '[' . $uri . ']';
+        }
+        $uri = $uri . ':' . $target[1];
+
         $stream->emit('target', $target);
         $that = $this;
-        $connecting = $this->connector->connect($target[0] . ':' . $target[1]);
+        $connecting = $this->connector->connect($uri);
 
         $stream->on('close', function () use ($connecting) {
             $connecting->cancel();
