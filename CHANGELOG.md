@@ -1,5 +1,26 @@
 # Changelog
 
+## 0.8.3 (2017-07-18)
+
+*   Feature: Pass full remote URI as parameter to authentication callback
+    (#58 by @clue)
+
+    ```php
+    // new third parameter passed to authentication callback
+    $server->setAuth(function ($user, $pass, $remote) {
+        $ip = parse_url($remote, PHP_URL_HOST);
+        
+        return ($ip === '127.0.0.1');
+    });
+    ```
+
+*   Fix: Fix connecting to IPv6 address via SOCKS5 server and validate target
+    URI so hostname can not contain excessive URI components
+    (#59 by @clue)
+
+*   Improve test suite by fixing HHVM build for now again and ignore future HHVM build errors
+    (#57 by @clue)
+
 ## 0.8.2 (2017-05-09)
 
 *   Feature: Forward compatibility with upcoming Socket v1.0 and v0.8
