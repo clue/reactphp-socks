@@ -21,6 +21,7 @@ of the actual application level protocol, such as HTTP, SMTP, IMAP, Telnet etc.
     * [Proxy chaining](#proxy-chaining)
     * [Connection timeout](#connection-timeout)
   * [Server](#server)
+    * [Server connector](#server-connector)
     * [Protocol version](#server-protocol-version)
     * [Authentication](#server-authentication)
     * [Proxy chaining](#server-proxy-chaining)
@@ -562,6 +563,11 @@ $socket = new Socket($port, $loop);
 $server = new Server($loop, $socket);
 ```
 
+#### Server connector
+
+The `Server` uses an instance of the [`ConnectorInterface`](#connectorinterface)
+to establish outgoing connections for each incoming connection request.
+
 If you need custom connector settings (DNS resolution, timeouts etc.), you can explicitly pass a
 custom instance of the [`ConnectorInterface`](https://github.com/reactphp/socket#connectorinterface):
 
@@ -578,6 +584,18 @@ $connector = new DnsConnector(
 
 $server = new Server($loop, $socket, $connector);
 ```
+
+If you want to forward the outgoing connection through another SOCKS proxy, you
+may also pass a [`Client`](#client) instance as a connector, see also
+[server proxy chaining](#server-proxy-chaining) for more details.
+
+Internally, the `Server` uses the normal [`connect()`](#connect) method, but
+it also passes the original client IP as the `?source={remote}` parameter.
+The `source` parameter contains the full remote URI, including the protocol
+and any authentication details, for example `socks5://user:pass@1.2.3.4:5678`.
+You can use this parameter for logging purposes or to restrict connection
+requests for certain clients by providing a custom implementation of the
+[`ConnectorInterface`](#connectorinterface).
 
 #### Server protocol version
 
