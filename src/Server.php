@@ -172,6 +172,15 @@ class Server extends EventEmitter
         // suppliying hostnames is only allowed for SOCKS4a (or automatically detected version)
         $supportsHostname = ($protocolVersion === null || $protocolVersion === '4a');
 
+        $remote = $stream->getRemoteAddress();
+        if ($remote !== null) {
+            // remove transport scheme and prefix socks4:// instead
+            if (($pos = strpos($remote, '://')) !== false) {
+                $remote = substr($remote, $pos + 3);
+            }
+            $remote = 'socks4://' . $remote;
+        }
+
         $that = $this;
         return $reader->readByteAssert(0x01)->then(function () use ($reader) {
             return $reader->readBinary(array(
@@ -179,7 +188,7 @@ class Server extends EventEmitter
                 'ipLong' => 'N',
                 'null'   => 'C'
             ));
-        })->then(function ($data) use ($reader, $supportsHostname) {
+        })->then(function ($data) use ($reader, $supportsHostname, $remote) {
             if ($data['null'] !== 0x00) {
                 throw new Exception('Not a null byte');
             }
@@ -191,12 +200,12 @@ class Server extends EventEmitter
             }
             if ($data['ipLong'] < 256 && $supportsHostname) {
                 // invalid IP => probably a SOCKS4a request which appends the hostname
-                return $reader->readStringNull()->then(function ($string) use ($data){
-                    return array($string, $data['port']);
+                return $reader->readStringNull()->then(function ($string) use ($data, $remote){
+                    return array($string, $data['port'], $remote);
                 });
             } else {
                 $ip = long2ip($data['ipLong']);
-                return array($ip, $data['port']);
+                return array($ip, $data['port'], $remote);
             }
         })->then(function ($target) use ($stream, $that) {
             return $that->connectTarget($stream, $target)->then(function (ConnectionInterface $remote) use ($stream){
@@ -215,14 +224,24 @@ class Server extends EventEmitter
 
     public function handleSocks5(ConnectionInterface $stream, $auth=null, StreamReader $reader)
     {
+        $remote = $stream->getRemoteAddress();
+        if ($remote !== null) {
+            // remove transport scheme and prefix socks5:// instead
+            if (($pos = strpos($remote, '://')) !== false) {
+                $remote = substr($remote, $pos + 3);
+            }
+            $remote = 'socks5://' . $remote;
+        }
+
         $that = $this;
         return $reader->readByte()->then(function ($num) use ($reader) {
             // $num different authentication mechanisms offered
             return $reader->readLength($num);
-        })->then(function ($methods) use ($reader, $stream, $auth) {
+        })->then(function ($methods) use ($reader, $stream, $auth, &$remote) {
             if ($auth === null && strpos($methods,"\x00") !== false) {
                 // accept "no authentication"
                 $stream->write(pack('C2', 0x05, 0x00));
+
                 return 0x00;
             } else if ($auth !== null && strpos($methods,"\x02") !== false) {
                 // username/password authentication (RFC 1929) sub negotiation
@@ -231,18 +250,15 @@ class Server extends EventEmitter
                     return $reader->readByte();
                 })->then(function ($length) use ($reader) {
                     return $reader->readLength($length);
-                })->then(function ($username) use ($reader, $auth, $stream) {
+                })->then(function ($username) use ($reader, $auth, $stream, &$remote) {
                     return $reader->readByte()->then(function ($length) use ($reader) {
                         return $reader->readLength($length);
-                    })->then(function ($password) use ($username, $auth, $stream) {
+                    })->then(function ($password) use ($username, $auth, $stream, &$remote) {
                         // username and password given => authenticate
-                        $remote = $stream->getRemoteAddress();
+
+                        // prefix username/password to remote URI
                         if ($remote !== null) {
-                            // remove transport scheme and prefix socks5:// instead
-                            if (($pos = strpos($remote, '://')) !== false) {
-                                $remote = substr($remote, $pos + 3);
-                            }
-                            $remote = 'socks5://' . rawurlencode($username) . ':' . rawurlencode($password) . '@' . $remote;
+                            $remote = str_replace('://', '://' . rawurlencode($username) . ':' . rawurlencode($password) . '@', $remote);
                         }
 
                         return $auth($username, $password, $remote)->then(function () use ($stream, $username) {
@@ -296,9 +312,9 @@ class Server extends EventEmitter
             } else {
                 throw new UnexpectedValueException('Invalid target type');
             }
-        })->then(function ($host) use ($reader) {
-            return $reader->readBinary(array('port'=>'n'))->then(function ($data) use ($host) {
-                return array($host, $data['port']);
+        })->then(function ($host) use ($reader, &$remote) {
+            return $reader->readBinary(array('port'=>'n'))->then(function ($data) use ($host, &$remote) {
+                return array($host, $data['port'], $remote);
             });
         })->then(function ($target) use ($that, $stream) {
             return $that->connectTarget($stream, $target);
@@ -322,12 +338,16 @@ class Server extends EventEmitter
         if (strpos($uri, ':') !== false) {
             $uri = '[' . $uri . ']';
         }
-        $uri = $uri . ':' . $target[1];
+        $uri .= ':' . $target[1];
 
         // validate URI so a string hostname can not pass excessive URI parts
         $parts = parse_url('tcp://' . $uri);
         if (!$parts || !isset($parts['scheme'], $parts['host'], $parts['port']) || count($parts) !== 3) {
             return Promise\reject(new InvalidArgumentException('Invalid target URI given'));
+        }
+
+        if (isset($target[2])) {
+            $uri .= '?source=' . rawurlencode($target[2]);
         }
 
         $stream->emit('target', $target);
