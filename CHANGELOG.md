@@ -1,5 +1,10 @@
 # Changelog
 
+## 0.8.4 (2017-07-27)
+
+*   Feature: Server now passes client source address to Connector
+    (#60 by @clue)
+
 ## 0.8.3 (2017-07-18)
 
 *   Feature: Pass full remote URI as parameter to authentication callback
