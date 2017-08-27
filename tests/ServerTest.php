@@ -2,6 +2,7 @@
 
 use Clue\React\Socks\Server;
 use React\Promise\Promise;
+use React\Promise\Timer\TimeoutException;
 
 class ServerTest extends TestCase
 {
@@ -154,6 +155,67 @@ class ServerTest extends TestCase
         $promise->then(null, $this->expectCallableOnce());
     }
 
+    public function provideConnectionErrors()
+    {
+        return array(
+            array(
+                new RuntimeException('', SOCKET_EACCES),
+                Server::ERROR_NOT_ALLOWED_BY_RULESET
+            ),
+            array(
+                new RuntimeException('', SOCKET_ENETUNREACH),
+                Server::ERROR_NETWORK_UNREACHABLE
+            ),
+            array(
+                new RuntimeException('', SOCKET_EHOSTUNREACH),
+                Server::ERROR_HOST_UNREACHABLE,
+            ),
+            array(
+                new RuntimeException('', SOCKET_ECONNREFUSED),
+                Server::ERROR_CONNECTION_REFUSED
+            ),
+            array(
+                new RuntimeException('Connection refused'),
+                Server::ERROR_CONNECTION_REFUSED
+            ),
+            array(
+                new RuntimeException('', SOCKET_ETIMEDOUT),
+                Server::ERROR_TTL
+            ),
+            array(
+                new TimeoutException(1.0),
+                Server::ERROR_TTL
+            ),
+            array(
+                new RuntimeException(),
+                Server::ERROR_GENERAL
+            )
+        );
+    }
+
+    /**
+     * @dataProvider provideConnectionErrors
+     * @param Exception $error
+     * @param int       $expectedCode
+     */
+    public function testConnectWillReturnMappedSocks5ErrorCodeFromConnector($error, $expectedCode)
+    {
+        $stream = $this->getMockBuilder('React\Socket\ConnectionInterface')->getMock();
+
+        $promise = \React\Promise\reject($error);
+
+        $this->connector->expects($this->once())->method('connect')->willReturn($promise);
+
+        $promise = $this->server->connectTarget($stream, array('google.com', 80));
+
+        $code = null;
+        $promise->then(null, function ($error) use (&$code) {
+            $code = $error->getCode();
+        });
+
+        $this->assertEquals($expectedCode, $code);
+    }
+
     public function testHandleSocksConnectionWillEndOnInvalidData()
     {
         $connection = $this->getMockBuilder('React\Socket\Connection')->disableOriginalConstructor()->setMethods(array('pause', 'end'))->getMock();
@@ -269,13 +331,43 @@ class ServerTest extends TestCase
         $connection->emit('data', array("\x05\x01\x00" . "\x05\x01\x00\x03\x0B" . "example.com" . "\x00\x50"));
     }
 
-    public function testHandleSocks5ConnectionWithInvalidHostnameWillNotEstablishOutgoingConnection()
+    public function testHandleSocks5ConnectionWithConnectorRefusedWillReturnReturnRefusedError()
+    {
+        $connection = $this->getMockBuilder('React\Socket\Connection')->disableOriginalConstructor()->setMethods(array('pause', 'end', 'write'))->getMock();
+
+        $promise = \React\Promise\reject(new RuntimeException('Connection refused'));
+
+        $this->connector->expects($this->once())->method('connect')->with('example.com:80')->willReturn($promise);
+
+        $this->server->onConnection($connection);
+
+        $connection->expects($this->exactly(2))->method('write')->withConsecutive(array("\x05\x00"), array("\x05\x05" . "\x00\x01\x00\x00\x00\x00\x00\x00"));
+
+        $connection->emit('data', array("\x05\x01\x00" . "\x05\x01\x00\x03\x0B" . "example.com" . "\x00\x50"));
+    }
+
+    public function testHandleSocks5UdpCommandWillNotEstablishOutgoingConnectionAndReturnCommandError()
     {
         $connection = $this->getMockBuilder('React\Socket\Connection')->disableOriginalConstructor()->setMethods(array('pause', 'end', 'write'))->getMock();
 
         $this->connector->expects($this->never())->method('connect');
 
         $this->server->onConnection($connection);
+
+        $connection->expects($this->exactly(2))->method('write')->withConsecutive(array("\x05\x00"), array("\x05\x07" . "\x00\x01\x00\x00\x00\x00\x00\x00"));
+
+        $connection->emit('data', array("\x05\x01\x00" . "\x05\x03\x00\x03\x0B" . "example.com" . "\x00\x50"));
+    }
+
+    public function testHandleSocks5ConnectionWithInvalidHostnameWillNotEstablishOutgoingConnectionAndReturnGeneralError()
+    {
+        $connection = $this->getMockBuilder('React\Socket\Connection')->disableOriginalConstructor()->setMethods(array('pause', 'end', 'write'))->getMock();
+
+        $this->connector->expects($this->never())->method('connect');
+
+        $this->server->onConnection($connection);
+
+        $connection->expects($this->exactly(2))->method('write')->withConsecutive(array("\x05\x00"), array("\x05\x01" . "\x00\x01\x00\x00\x00\x00\x00\x00"));
 
         $connection->emit('data', array("\x05\x01\x00" . "\x05\x01\x00\x03\x15" . "tls://example.com:80?" . "\x00\x50"));
     }
