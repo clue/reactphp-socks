@@ -160,6 +160,9 @@ class Client implements ConnectorInterface
         return $this->connector->connect($socksUri)->then(
             function (ConnectionInterface $stream) use ($that, $host, $port) {
                 return $that->handleConnectedSocks($stream, $host, $port);
+            },
+            function (Exception $e) {
+                throw new RuntimeException('Unable to connect to proxy (ECONNREFUSED)', defined('SOCKET_ECONNREFUSED') ? SOCKET_ECONNREFUSED : 111, $e);
             }
         );
     }

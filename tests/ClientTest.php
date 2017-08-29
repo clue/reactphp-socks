@@ -120,6 +120,17 @@ class ClientTest extends TestCase
         $this->assertInstanceOf('\React\Promise\PromiseInterface', $promise);
     }
 
+    public function testConnectorRejectsWillRejectConnection()
+    {
+        $promise = \React\Promise\Reject(new RuntimeException());
+
+        $this->connector->expects($this->once())->method('connect')->with('127.0.0.1:1080?hostname=google.com')->willReturn($promise);
+
+        $promise = $this->client->connect('google.com:80');
+
+        $promise->then(null, $this->expectCallableOnceWithExceptionCode(SOCKET_ECONNREFUSED));
+    }
+
     public function testCancelConnectionDuringConnectionWillCancelConnection()
     {
         $promise = new Promise(function () { }, function () {
