@@ -122,7 +122,7 @@ class ClientTest extends TestCase
 
     public function testConnectorRejectsWillRejectConnection()
     {
-        $promise = \React\Promise\Reject(new RuntimeException());
+        $promise = \React\Promise\reject(new RuntimeException());
 
         $this->connector->expects($this->once())->method('connect')->with('127.0.0.1:1080?hostname=google.com')->willReturn($promise);
 
@@ -158,5 +158,35 @@ class ClientTest extends TestCase
         $promise->cancel();
 
         $promise->then(null, $this->expectCallableOnceWithExceptionCode(SOCKET_ECONNABORTED));
+    }
+
+    public function testEmitConnectionCloseDuringSessionWillRejectConnection()
+    {
+        $stream = $this->getMockBuilder('React\Socket\Connection')->disableOriginalConstructor()->setMethods(array('write', 'close'))->getMock();
+
+        $promise = \React\Promise\resolve($stream);
+
+        $this->connector->expects($this->once())->method('connect')->with('127.0.0.1:1080?hostname=google.com')->willReturn($promise);
+
+        $promise = $this->client->connect('google.com:80');
+
+        $stream->emit('close');
+
+        $promise->then(null, $this->expectCallableOnceWithExceptionCode(SOCKET_ECONNRESET));
+    }
+
+    public function testEmitConnectionErrorDuringSessionWillRejectConnection()
+    {
+        $stream = $this->getMockBuilder('React\Socket\Connection')->disableOriginalConstructor()->setMethods(array('write', 'close'))->getMock();
+
+        $promise = \React\Promise\resolve($stream);
+
+        $this->connector->expects($this->once())->method('connect')->with('127.0.0.1:1080?hostname=google.com')->willReturn($promise);
+
+        $promise = $this->client->connect('google.com:80');
+
+        $stream->emit('error', array(new RuntimeException()));
+
+        $promise->then(null, $this->expectCallableOnceWithExceptionCode(SOCKET_EIO));
     }
 }

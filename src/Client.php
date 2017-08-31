@@ -185,6 +185,14 @@ class Client implements ConnectorInterface
         $reader = new StreamReader();
         $stream->on('data', array($reader, 'write'));
 
+        $stream->on('error', $onError = function (Exception $e) use ($deferred) {
+            $deferred->reject(new RuntimeException('Stream error while waiting for response from proxy (EIO)', defined('SOCKET_EIO') ? SOCKET_EIO : 5, $e));
+        });
+
+        $stream->on('close', $onClose = function () use ($deferred) {
+            $deferred->reject(new RuntimeException('Connection to proxy lost while waiting for response (ECONNRESET)', defined('SOCKET_ECONNRESET') ? SOCKET_ECONNRESET : 104));
+        });
+
         if ($this->protocolVersion === '5') {
             $promise = $this->handleSocks5($stream, $host, $port, $reader);
         } else {
@@ -196,26 +204,21 @@ class Client implements ConnectorInterface
             $deferred->reject(new Exception('Unable to communicate...', 0, $error));
         });
 
-        $deferred->promise()->then(
-            function (ConnectionInterface $stream) use ($reader) {
-                $stream->removeAllListeners('end');
-
+        return $deferred->promise()->then(
+            function (ConnectionInterface $stream) use ($reader, $onError, $onClose) {
                 $stream->removeListener('data', array($reader, 'write'));
+                $stream->removeListener('error', $onError);
+                $stream->removeListener('close', $onClose);
 
                 return $stream;
             },
-            function ($error) use ($stream) {
+            function ($error) use ($stream, $onClose) {
+                $stream->removeListener('close', $onClose);
                 $stream->close();
 
-                return $error;
+                throw $error;
             }
         );
-
-        $stream->on('end', function () use ($stream, $deferred) {
-            $deferred->reject(new Exception('Premature end while establishing socks session'));
-        });
-
-        return $deferred->promise();
     }
 
     private function handleSocks4(ConnectionInterface $stream, $host, $port, StreamReader $reader)
