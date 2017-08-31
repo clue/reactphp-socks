@@ -164,21 +164,12 @@ class FunctionalTest extends TestCase
         $this->assertResolveStream($this->client->connect('www.google.com:80'));
     }
 
-    public function testConnectionInvalidProtocolDoesNotMatchDefault()
-    {
-        $this->server->setProtocolVersion(5);
-
-        $this->client = new Client('socks4://127.0.0.1:' . $this->port, $this->connector);
-
-        $this->assertRejectPromise($this->client->connect('www.google.com:80'));
-    }
-
     public function testConnectionInvalidProtocolDoesNotMatchSocks5()
     {
         $this->server->setProtocolVersion(5);
         $this->client = new Client('socks4a://127.0.0.1:' . $this->port, $this->connector);
 
-        $this->assertRejectPromise($this->client->connect('www.google.com:80'));
+        $this->assertRejectPromise($this->client->connect('www.google.com:80'), '', SOCKET_ECONNRESET);
     }
 
     public function testConnectionInvalidProtocolDoesNotMatchSocks4()
@@ -186,7 +177,7 @@ class FunctionalTest extends TestCase
         $this->server->setProtocolVersion(4);
         $this->client = new Client('socks5://127.0.0.1:' . $this->port, $this->connector);
 
-        $this->assertRejectPromise($this->client->connect('www.google.com:80'));
+        $this->assertRejectPromise($this->client->connect('www.google.com:80'), '', SOCKET_ECONNRESET);
     }
 
     public function testConnectionInvalidNoAuthentication()
@@ -195,7 +186,7 @@ class FunctionalTest extends TestCase
 
         $this->client = new Client('socks5://127.0.0.1:' . $this->port, $this->connector);
 
-        $this->assertRejectPromise($this->client->connect('www.google.com:80'));
+        $this->assertRejectPromise($this->client->connect('www.google.com:80'), '', SOCKET_EACCES);
     }
 
     public function testConnectionInvalidAuthenticationMismatch()
@@ -204,7 +195,7 @@ class FunctionalTest extends TestCase
 
         $this->client = new Client('user:pass@127.0.0.1:' . $this->port, $this->connector);
 
-        $this->assertRejectPromise($this->client->connect('www.google.com:80'));
+        $this->assertRejectPromise($this->client->connect('www.google.com:80'), '', SOCKET_EACCES);
     }
 
     public function testConnectorOkay()
@@ -298,11 +289,11 @@ class FunctionalTest extends TestCase
         Block\await($promise, $this->loop, 2.0);
     }
 
-    private function assertRejectPromise($promise)
+    private function assertRejectPromise($promise, $message = '', $code = null)
     {
         $this->expectPromiseReject($promise);
 
-        $this->setExpectedException('Exception');
+        $this->setExpectedException('Exception', $message, $code);
 
         Block\await($promise, $this->loop, 2.0);
     }

@@ -196,7 +196,7 @@ See also the [first example](examples).
 The `tcp://` scheme can also be omitted.
 Passing any other scheme will reject the promise.
 
-Pending connection attempts can be cancelled by cancelling its pending promise like so:
+Pending connection attempts can be canceled by canceling its pending promise like so:
 
 ```php
 $promise = $connector->connect($uri);
@@ -237,7 +237,7 @@ If you use the low-level `SecureConnector`, then the `tls://` scheme can also
 be omitted.
 Passing any other scheme will reject the promise.
 
-Pending connection attempts can be cancelled by cancelling its pending promise
+Pending connection attempts can be canceled by canceling its pending promise
 as usual.
 
 > Also note how secure TLS connections are in fact entirely handled outside of
@@ -396,7 +396,7 @@ $connector = new React\Socket\Connector($loop, array(
 
 See also the [fourth example](examples).
 
-Pending connection attempts can be cancelled by cancelling its pending promise
+Pending connection attempts can be canceled by canceling its pending promise
 as usual.
 
 > Also note how local DNS resolution is in fact entirely handled outside of this
@@ -441,6 +441,12 @@ $client = new Client(
     $connector
 );
 ```
+
+> The authentication details will be transmitted in cleartext to the SOCKS proxy
+  server only if it requires username/password authentication.
+  If the authentication details are missing or not accepted by the remote SOCKS
+  proxy server, it is expected to reject each connection attempt with an
+  exception error code of `SOCKET_EACCES` (13).
 
 Authentication is only supported by protocol version 5 (SOCKS5),
 so passing authentication to the `Client` enforces communication with protocol
@@ -494,7 +500,7 @@ $connector->connect('tls://www.google.com:443')->then(function ($stream) {
 
 See also the [third example](examples).
 
-Pending connection attempts can be cancelled by cancelling its pending promise
+Pending connection attempts can be canceled by canceling its pending promise
 as usual.
 
 Proxy chaining can happen on the server side and/or the client side:
@@ -541,7 +547,7 @@ $connector->connect('tcp://google.com:80')->then(function ($stream) {
 
 See also any of the [examples](examples).
 
-Pending connection attempts can be cancelled by cancelling its pending promise
+Pending connection attempts can be canceled by canceling its pending promise
 as usual.
 
 > Also note how connection timeout is in fact entirely handled outside of this

@@ -138,7 +138,7 @@ class ServerTest extends TestCase
         $promise->then(null, $this->expectCallableOnce());
     }
 
-    public function testConnectWillAbortIfPromiseIsCancelled()
+    public function testConnectWillAbortIfPromiseIsCanceled()
     {
         $stream = $this->getMockBuilder('React\Socket\ConnectionInterface')->getMock();
 
