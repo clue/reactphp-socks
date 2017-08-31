@@ -200,8 +200,13 @@ class Client implements ConnectorInterface
         }
         $promise->then(function () use ($deferred, $stream) {
             $deferred->resolve($stream);
-        }, function($error) use ($deferred) {
-            $deferred->reject(new Exception('Unable to communicate...', 0, $error));
+        }, function (Exception $error) use ($deferred) {
+            // pass custom RuntimeException through as-is, otherwise wrap in protocol error
+            if (!$error instanceof RuntimeException) {
+                $error = new RuntimeException('Invalid response received from proxy (EBADMSG)', defined('SOCKET_EBADMSG') ? SOCKET_EBADMSG: 71, $error);
+            }
+
+            $deferred->reject($error);
         });
 
         return $deferred->promise()->then(
@@ -242,8 +247,11 @@ class Client implements ConnectorInterface
             'port'   => 'n',
             'ip'     => 'N'
         ))->then(function ($data) {
-            if ($data['null'] !== 0x00 || $data['status'] !== 0x5a) {
+            if ($data['null'] !== 0x00) {
                 throw new Exception('Invalid SOCKS response');
+            }
+            if ($data['status'] !== 0x5a) {
+                throw new RuntimeException('Proxy refused connection with SOCKS error code ' . sprintf('0x%02X', $data['status']) . ' (ECONNREFUSED)', defined('SOCKET_ECONNREFUSED') ? SOCKET_ECONNREFUSED : 111);
             }
         });
     }
@@ -282,12 +290,12 @@ class Client implements ConnectorInterface
                     'status'  => 'C'
                 ))->then(function ($data) {
                     if ($data['version'] !== 0x01 || $data['status'] !== 0x00) {
-                        throw new Exception('Username/Password authentication failed');
+                        throw new RuntimeException('Username/Password authentication failed (EACCES)', defined('SOCKET_EACCES') ? SOCKET_EACCES : 13);
                     }
                 });
             } else if ($data['method'] !== 0x00) {
                 // any other method than "no authentication"
-                throw new Exception('Unacceptable authentication method requested');
+                throw new RuntimeException('No acceptable authentication method found (EACCES)', defined('SOCKET_EACCES') ? SOCKET_EACCES : 13);
             }
         })->then(function () use ($stream, $reader, $host, $port) {
             // do not resolve hostname. only try to convert to (binary/packed) IP
@@ -312,8 +320,11 @@ class Client implements ConnectorInterface
                 'type'    => 'C'
             ));
         })->then(function ($data) use ($reader) {
-            if ($data['version'] !== 0x05 || $data['status'] !== 0x00 || $data['null'] !== 0x00) {
+            if ($data['version'] !== 0x05 || $data['null'] !== 0x00) {
                 throw new Exception('Invalid SOCKS response');
+            }
+            if ($data['status'] !== 0x00) {
+                throw new RuntimeException('Proxy refused connection with SOCKS error code ' . sprintf('0x%02X', $data['status']) . ' (ECONNREFUSED)', defined('SOCKET_ECONNREFUSED') ? SOCKET_ECONNREFUSED : 111);
             }
             if ($data['type'] === 0x01) {
                 // IPv4 address => skip IP and port

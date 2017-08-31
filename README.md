@@ -442,6 +442,12 @@ $client = new Client(
 );
 ```
 
+> The authentication details will be transmitted in cleartext to the SOCKS proxy
+  server only if it requires username/password authentication.
+  If the authentication details are missing or not accepted by the remote SOCKS
+  proxy server, it is expected to reject each connection attempt with an
+  exception error code of `SOCKET_EACCES` (13).
+
 Authentication is only supported by protocol version 5 (SOCKS5),
 so passing authentication to the `Client` enforces communication with protocol
 version 5 and complains if you have explicitly set anything else:

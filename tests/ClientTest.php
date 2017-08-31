@@ -178,6 +178,7 @@ class ClientTest extends TestCase
     public function testEmitConnectionErrorDuringSessionWillRejectConnection()
     {
         $stream = $this->getMockBuilder('React\Socket\Connection')->disableOriginalConstructor()->setMethods(array('write', 'close'))->getMock();
+        $stream->expects($this->once())->method('close');
 
         $promise = \React\Promise\resolve($stream);
 
@@ -188,5 +189,57 @@ class ClientTest extends TestCase
         $stream->emit('error', array(new RuntimeException()));
 
         $promise->then(null, $this->expectCallableOnceWithExceptionCode(SOCKET_EIO));
+    }
+
+    public function testEmitInvalidSocks4DataDuringSessionWillRejectConnection()
+    {
+        $stream = $this->getMockBuilder('React\Socket\Connection')->disableOriginalConstructor()->setMethods(array('write', 'close'))->getMock();
+        $stream->expects($this->once())->method('close');
+
+        $promise = \React\Promise\resolve($stream);
+
+        $this->connector->expects($this->once())->method('connect')->with('127.0.0.1:1080?hostname=google.com')->willReturn($promise);
+
+        $promise = $this->client->connect('google.com:80');
+
+        $stream->emit('data', array("HTTP/1.1 400 Bad Request\r\n\r\n"));
+
+        $promise->then(null, $this->expectCallableOnceWithExceptionCode(SOCKET_EBADMSG));
+    }
+
+    public function testEmitInvalidSocks5DataDuringSessionWillRejectConnection()
+    {
+        $stream = $this->getMockBuilder('React\Socket\Connection')->disableOriginalConstructor()->setMethods(array('write', 'close'))->getMock();
+        $stream->expects($this->once())->method('close');
+
+        $promise = \React\Promise\resolve($stream);
+
+        $this->connector->expects($this->once())->method('connect')->with('127.0.0.1:1080?hostname=google.com')->willReturn($promise);
+
+        $this->client = new Client('socks5://127.0.0.1:1080', $this->connector);
+
+        $promise = $this->client->connect('google.com:80');
+
+        $stream->emit('data', array("HTTP/1.1 400 Bad Request\r\n\r\n"));
+
+        $promise->then(null, $this->expectCallableOnceWithExceptionCode(SOCKET_EBADMSG));
+    }
+
+    public function testEmitSocks5DataErrorDuringSessionWillRejectConnection()
+    {
+        $stream = $this->getMockBuilder('React\Socket\Connection')->disableOriginalConstructor()->setMethods(array('write', 'close'))->getMock();
+        $stream->expects($this->once())->method('close');
+
+        $promise = \React\Promise\resolve($stream);
+
+        $this->connector->expects($this->once())->method('connect')->with('127.0.0.1:1080?hostname=google.com')->willReturn($promise);
+
+        $this->client = new Client('socks5://127.0.0.1:1080', $this->connector);
+
+        $promise = $this->client->connect('google.com:80');
+
+        $stream->emit('data', array("\x05\x00" . "\x05\x01\x00\x00"));
+
+        $promise->then(null, $this->expectCallableOnceWithExceptionCode(SOCKET_ECONNREFUSED));
     }
 }
