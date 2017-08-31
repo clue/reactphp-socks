@@ -179,7 +179,7 @@ class Client implements ConnectorInterface
     public function handleConnectedSocks(ConnectionInterface $stream, $host, $port)
     {
         $deferred = new Deferred(function ($_, $reject) {
-            $reject(new RuntimeException('Connection attempt cancelled while establishing socks session'));
+            $reject(new RuntimeException('Connection canceled while establishing SOCKS session (ECONNABORTED)', defined('SOCKET_ECONNABORTED') ? SOCKET_ECONNABORTED : 103));
         });
 
         $reader = new StreamReader();

@@ -157,6 +157,6 @@ class ClientTest extends TestCase
         $promise = $this->client->connect('google.com:80');
         $promise->cancel();
 
-        $this->expectPromiseReject($promise);
+        $promise->then(null, $this->expectCallableOnceWithExceptionCode(SOCKET_ECONNABORTED));
     }
 }
