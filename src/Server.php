@@ -14,9 +14,28 @@ use React\EventLoop\LoopInterface;
 use \UnexpectedValueException;
 use \InvalidArgumentException;
 use \Exception;
+use React\Promise\Timer\TimeoutException;
 
 class Server extends EventEmitter
 {
+    // the following error codes are only used for SOCKS5 only
+    /** @internal */
+    const ERROR_GENERAL = 0x01;
+    /** @internal */
+    const ERROR_NOT_ALLOWED_BY_RULESET = 0x02;
+    /** @internal */
+    const ERROR_NETWORK_UNREACHABLE = 0x03;
+    /** @internal */
+    const ERROR_HOST_UNREACHABLE = 0x04;
+    /** @internal */
+    const ERROR_CONNECTION_REFUSED = 0x05;
+    /** @internal */
+    const ERROR_TTL = 0x06;
+    /** @internal */
+    const ERROR_COMMAND_UNSUPPORTED = 0x07;
+    /** @internal */
+    const ERROR_ADDRESS_UNSUPPORTED = 0x08;
+
     protected $loop;
 
     private $connector;
@@ -274,7 +293,7 @@ class Server extends EventEmitter
                 });
             } else {
                 // reject all offered authentication methods
-                $stream->end(pack('C2', 0x05, 0xFF));
+                $stream->write(pack('C2', 0x05, 0xFF));
                 throw new UnexpectedValueException('No acceptable authentication mechanism found');
             }
         })->then(function ($method) use ($reader, $stream) {
@@ -289,7 +308,7 @@ class Server extends EventEmitter
                 throw new UnexpectedValueException('Invalid SOCKS version');
             }
             if ($data['command'] !== 0x01) {
-                throw new UnexpectedValueException('Only CONNECT requests supported');
+                throw new UnexpectedValueException('Only CONNECT requests supported', Server::ERROR_COMMAND_UNSUPPORTED);
             }
 //             if ($data['null'] !== 0x00) {
 //                 throw new UnexpectedValueException('Reserved byte has to be NULL');
@@ -310,7 +329,7 @@ class Server extends EventEmitter
                     return inet_ntop($addr);
                 });
             } else {
-                throw new UnexpectedValueException('Invalid target type');
+                throw new UnexpectedValueException('Invalid address type', Server::ERROR_ADDRESS_UNSUPPORTED);
             }
         })->then(function ($host) use ($reader, &$remote) {
             return $reader->readBinary(array('port'=>'n'))->then(function ($data) use ($host, &$remote) {
@@ -319,14 +338,13 @@ class Server extends EventEmitter
         })->then(function ($target) use ($that, $stream) {
             return $that->connectTarget($stream, $target);
         }, function($error) use ($stream) {
-            throw new UnexpectedValueException('SOCKS5 protocol error',0,$error);
+            throw new UnexpectedValueException('SOCKS5 protocol error', $error->getCode(), $error);
         })->then(function (ConnectionInterface $remote) use ($stream) {
             $stream->write(pack('C4Nn', 0x05, 0x00, 0x00, 0x01, 0, 0));
 
             return $remote;
         }, function(Exception $error) use ($stream){
-            $code = 0x01;
-            $stream->end(pack('C4Nn', 0x05, $code, 0x00, 0x01, 0, 0));
+            $stream->write(pack('C4Nn', 0x05, $error->getCode() === 0 ? Server::ERROR_GENERAL : $error->getCode(), 0x00, 0x01, 0, 0));
 
             throw $error;
         });
@@ -378,7 +396,25 @@ class Server extends EventEmitter
 
             return $remote;
         }, function(Exception $error) {
-            throw new UnexpectedValueException('Unable to connect to remote target', 0, $error);
+            // default to general/unknown error
+            $code = Server::ERROR_GENERAL;
+
+            // map common socket error conditions to limited list of SOCKS error codes
+            if ((defined('SOCKET_EACCES') && $error->getCode() === SOCKET_EACCES) || $error->getCode() === 13) {
+                $code = Server::ERROR_NOT_ALLOWED_BY_RULESET;
+            } elseif ((defined('SOCKET_EHOSTUNREACH') && $error->getCode() === SOCKET_EHOSTUNREACH) || $error->getCode() === 113) {
+                $code = Server::ERROR_HOST_UNREACHABLE;
+            } elseif ((defined('SOCKET_ENETUNREACH') && $error->getCode() === SOCKET_ENETUNREACH) || $error->getCode() === 101) {
+                $code = Server::ERROR_NETWORK_UNREACHABLE;
+            } elseif ((defined('SOCKET_ECONNREFUSED') && $error->getCode() === SOCKET_ECONNREFUSED) || $error->getCode() === 111 || $error->getMessage() === 'Connection refused') {
+                // Socket component does not currently assign an error code for this, so we have to resort to checking the exception message
+                $code = Server::ERROR_CONNECTION_REFUSED;
+            } elseif ((defined('SOCKET_ETIMEDOUT') && $error->getCode() === SOCKET_ETIMEDOUT) || $error->getCode() === 110 || $error instanceof TimeoutException) {
+                // Socket component does not currently assign an error code for this, but we can rely on the TimeoutException
+                $code = Server::ERROR_TTL;
+            }
+
+            throw new UnexpectedValueException('Unable to connect to remote target', $code, $error);
         });
     }
 }
