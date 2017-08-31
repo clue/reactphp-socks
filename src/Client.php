@@ -324,7 +324,27 @@ class Client implements ConnectorInterface
                 throw new Exception('Invalid SOCKS response');
             }
             if ($data['status'] !== 0x00) {
-                throw new RuntimeException('Proxy refused connection with SOCKS error code ' . sprintf('0x%02X', $data['status']) . ' (ECONNREFUSED)', defined('SOCKET_ECONNREFUSED') ? SOCKET_ECONNREFUSED : 111);
+                // map limited list of SOCKS error codes to common socket error conditions
+                // @link https://tools.ietf.org/html/rfc1928#section-6
+                if ($data['status'] === Server::ERROR_GENERAL) {
+                    throw new RuntimeException('SOCKS server reported a general server failure (ECONNREFUSED)', defined('SOCKET_ECONNREFUSED') ? SOCKET_ECONNREFUSED : 111);
+                } elseif ($data['status'] === Server::ERROR_NOT_ALLOWED_BY_RULESET) {
+                    throw new RuntimeException('SOCKS server reported connection is not allowed by ruleset (EACCES)', defined('SOCKET_EACCES') ? SOCKET_EACCES : 13);
+                } elseif ($data['status'] === Server::ERROR_NETWORK_UNREACHABLE) {
+                    throw new RuntimeException('SOCKS server reported network unreachable (ENETUNREACH)', defined('SOCKET_ENETUNREACH') ? SOCKET_ENETUNREACH : 101);
+                } elseif ($data['status'] === Server::ERROR_HOST_UNREACHABLE) {
+                    throw new RuntimeException('SOCKS server reported host unreachable (EHOSTUNREACH)', defined('SOCKET_EHOSTUNREACH') ? SOCKET_EHOSTUNREACH : 113);
+                } elseif ($data['status'] === Server::ERROR_CONNECTION_REFUSED) {
+                    throw new RuntimeException('SOCKS server reported connection refused (ECONNREFUSED)', defined('SOCKET_ECONNREFUSED') ? SOCKET_ECONNREFUSED : 111);
+                } elseif ($data['status'] === Server::ERROR_TTL) {
+                    throw new RuntimeException('SOCKS server reported TTL/timeout expired (ETIMEDOUT)', defined('SOCKET_ETIMEDOUT') ? SOCKET_ETIMEDOUT : 110);
+                } elseif ($data['status'] === Server::ERROR_COMMAND_UNSUPPORTED) {
+                    throw new RuntimeException('SOCKS server does not support the CONNECT command (EPROTO)', defined('SOCKET_EPROTO') ? SOCKET_EPROTO : 71);
+                } elseif ($data['status'] === Server::ERROR_ADDRESS_UNSUPPORTED) {
+                    throw new RuntimeException('SOCKS server does not support this address type (EPROTO)', defined('SOCKET_EPROTO') ? SOCKET_EPROTO : 71);
+                }
+
+                throw new RuntimeException('SOCKS server reported an unassigned error code ' . sprintf('0x%02X', $data['status']) . ' (ECONNREFUSED)', defined('SOCKET_ECONNREFUSED') ? SOCKET_ECONNREFUSED : 111);
             }
             if ($data['type'] === 0x01) {
                 // IPv4 address => skip IP and port
