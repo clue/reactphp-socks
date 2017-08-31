@@ -141,11 +141,11 @@ class Client implements ConnectorInterface
 
         // append hostname from URI to query string unless explicitly given
         if (!isset($args['hostname'])) {
-            $args['hostname'] = $parts['host'];
+            $args['hostname'] = $host;
         }
 
         // append query string
-        $socksUri .= '?' . http_build_query($args, '', '&');;
+        $socksUri .= '?' . http_build_query($args, '', '&');
 
         // append fragment from URI if given
         if (isset($parts['fragment'])) {

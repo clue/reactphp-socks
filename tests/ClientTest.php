@@ -262,6 +262,24 @@ class ClientTest extends TestCase
         $promise->then(null, $this->expectCallableOnceWithExceptionCode(SOCKET_EBADMSG));
     }
 
+    public function testEmitSocks5DataIpv6AddressWillResolveConnection()
+    {
+        $stream = $this->getMockBuilder('React\Socket\Connection')->disableOriginalConstructor()->setMethods(array('write', 'close'))->getMock();
+        $stream->expects($this->never())->method('close');
+
+        $promise = \React\Promise\resolve($stream);
+
+        $this->connector->expects($this->once())->method('connect')->with('127.0.0.1:1080?hostname=%3A%3A1')->willReturn($promise);
+
+        $this->client = new Client('socks5://127.0.0.1:1080', $this->connector);
+
+        $promise = $this->client->connect('[::1]:80');
+
+        $stream->emit('data', array("\x05\x00" . "\x05\x00\x00\x04" . inet_pton('::1') . "\x00\x50"));
+
+        $promise->then($this->expectCallableOnce());
+    }
+
     public function testEmitSocks5DataHostnameAddressWillResolveConnection()
     {
         $stream = $this->getMockBuilder('React\Socket\Connection')->disableOriginalConstructor()->setMethods(array('write', 'close'))->getMock();
