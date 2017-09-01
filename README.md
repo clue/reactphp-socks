@@ -797,6 +797,13 @@ To run the test suite, go to the project root and run:
 $ php vendor/bin/phpunit
 ```
 
+The test suite contains a number of tests that rely on a working internet
+connection, alternatively you can also run it like this:
+
+```bash
+$ php vendor/bin/phpunit --exclude-group internet
+```
+
 ## License
 
 MIT, see LICENSE
