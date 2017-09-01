@@ -349,15 +349,15 @@ class Client implements ConnectorInterface
             if ($data['type'] === 0x01) {
                 // IPv4 address => skip IP and port
                 return $reader->readLength(6);
-            } else if ($data['type'] === 0x03) {
+            } elseif ($data['type'] === 0x03) {
                 // domain name => read domain name length
                 return $reader->readBinary(array(
                     'length' => 'C'
-                ))->then(function ($data) use ($that) {
+                ))->then(function ($data) use ($reader) {
                     // skip domain name and port
-                    return $that->readLength($data['length'] + 2);
+                    return $reader->readLength($data['length'] + 2);
                 });
-            } else if ($data['type'] === 0x04) {
+            } elseif ($data['type'] === 0x04) {
                 // IPv6 address => skip IP and port
                 return $reader->readLength(18);
             } else {
