@@ -1,5 +1,31 @@
 # Changelog
 
+## 0.8.5 (2017-09-01)
+
+*   Feature: Use socket error codes for connection rejections
+    (#63 by @clue)
+    
+    ```php
+    $promise = $proxy->connect('imap.example.com:143');
+    $promise->then(null, function (Exeption $e) {
+        if ($e->getCode() === SOCKET_EACCES) {
+            echo 'Failed to authenticate with proxy!';
+        }
+        throw $e;
+    });
+    ```
+
+*   Feature: Report matching SOCKS5 error codes for server side connection errors
+    (#62 by @clue)
+
+*   Fix: Fix SOCKS5 client receiving destination hostnames and
+    fix IPv6 addresses as hostnames for TLS certificates
+    (#64 and #65 by @clue)
+
+*   Improve test suite by locking Travis distro so new defaults will not break the build and
+    optionally exclude tests that rely on working internet connection
+    (#61 and #66 by @clue)
+
 ## 0.8.4 (2017-07-27)
 
 *   Feature: Server now passes client source address to Connector

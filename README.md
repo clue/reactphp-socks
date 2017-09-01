@@ -1,6 +1,6 @@
 # clue/socks-react [![Build Status](https://travis-ci.org/clue/php-socks-react.svg?branch=master)](https://travis-ci.org/clue/php-socks-react)
 
-Async SOCKS4, SOCKS4a and SOCKS5 proxy client and server implementation, built on top of ReactPHP.
+Async SOCKS4, SOCKS4a and SOCKS5 proxy client and server implementation, built on top of [ReactPHP](http://reactphp.org).
 
 The SOCKS protocol family can be used to easily tunnel TCP connections independent
 of the actual application level protocol, such as HTTP, SMTP, IMAP, Telnet etc.
@@ -771,13 +771,13 @@ $client = new Client('127.0.0.1:9050', $connector);
 
 ## Install
 
-The recommended way to install this library is [through Composer](http://getcomposer.org).
-[New to Composer?](http://getcomposer.org/doc/00-intro.md)
+The recommended way to install this library is [through Composer](https://getcomposer.org).
+[New to Composer?](https://getcomposer.org/doc/00-intro.md)
 
 This will install the latest supported version:
 
 ```bash
-$ composer require clue/socks-react:^0.8.4
+$ composer require clue/socks-react:^0.8.5
 ```
 
 See also the [CHANGELOG](CHANGELOG.md) for details about version upgrades.
@@ -785,7 +785,7 @@ See also the [CHANGELOG](CHANGELOG.md) for details about version upgrades.
 ## Tests
 
 To run the test suite, you first need to clone this repo and then install all
-dependencies [through Composer](http://getcomposer.org):
+dependencies [through Composer](https://getcomposer.org):
 
 ```bash
 $ composer install
