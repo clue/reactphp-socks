@@ -777,7 +777,7 @@ The recommended way to install this library is [through Composer](https://getcom
 This will install the latest supported version:
 
 ```bash
-$ composer require clue/socks-react:^0.8.5
+$ composer require clue/socks-react:^0.8.6
 ```
 
 See also the [CHANGELOG](CHANGELOG.md) for details about version upgrades.

@@ -1,5 +1,10 @@
 # Changelog
 
+## 0.8.6 (2017-09-17)
+
+*   Feature: Forward compatibility with Evenement v3.0
+    (#67 by @WyriHaximus)
+
 ## 0.8.5 (2017-09-01)
 
 *   Feature: Use socket error codes for connection rejections
