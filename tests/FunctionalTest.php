@@ -181,7 +181,7 @@ class FunctionalTest extends TestCase
         $this->server->setProtocolVersion(5);
         $this->client = new Client('socks4a://127.0.0.1:' . $this->port, $this->connector);
 
-        $this->assertRejectPromise($this->client->connect('www.google.com:80'), '', SOCKET_ECONNRESET);
+        $this->assertRejectPromise($this->client->connect('www.google.com:80'), null, SOCKET_ECONNRESET);
     }
 
     public function testConnectionInvalidProtocolDoesNotMatchSocks4()
@@ -189,7 +189,7 @@ class FunctionalTest extends TestCase
         $this->server->setProtocolVersion(4);
         $this->client = new Client('socks5://127.0.0.1:' . $this->port, $this->connector);
 
-        $this->assertRejectPromise($this->client->connect('www.google.com:80'), '', SOCKET_ECONNRESET);
+        $this->assertRejectPromise($this->client->connect('www.google.com:80'), null, SOCKET_ECONNRESET);
     }
 
     public function testConnectionInvalidNoAuthentication()
@@ -198,7 +198,7 @@ class FunctionalTest extends TestCase
 
         $this->client = new Client('socks5://127.0.0.1:' . $this->port, $this->connector);
 
-        $this->assertRejectPromise($this->client->connect('www.google.com:80'), '', SOCKET_EACCES);
+        $this->assertRejectPromise($this->client->connect('www.google.com:80'), null, SOCKET_EACCES);
     }
 
     public function testConnectionInvalidAuthenticationMismatch()
@@ -207,7 +207,7 @@ class FunctionalTest extends TestCase
 
         $this->client = new Client('user:pass@127.0.0.1:' . $this->port, $this->connector);
 
-        $this->assertRejectPromise($this->client->connect('www.google.com:80'), '', SOCKET_EACCES);
+        $this->assertRejectPromise($this->client->connect('www.google.com:80'), null, SOCKET_EACCES);
     }
 
     /** @group internet */
@@ -310,11 +310,21 @@ class FunctionalTest extends TestCase
         Block\await($promise, $this->loop, 2.0);
     }
 
-    private function assertRejectPromise($promise, $message = '', $code = null)
+    private function assertRejectPromise($promise, $message = null, $code = null)
     {
         $this->expectPromiseReject($promise);
 
-        $this->setExpectedException('Exception', $message, $code);
+        if (method_exists($this, 'expectException')) {
+            $this->expectException('Exception');
+            if ($message !== null) {
+                $this->expectExceptionMessage($message);
+            }
+            if ($code !== null) {
+                $this->expectExceptionCode($code);
+            }
+        } else {
+            $this->setExpectedException('Exception', $message, $code);
+        }
 
         Block\await($promise, $this->loop, 2.0);
     }

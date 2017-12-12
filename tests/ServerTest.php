@@ -30,6 +30,8 @@ class ServerTest extends TestCase
         $this->server->setProtocolVersion('4a');
         $this->server->setProtocolVersion(5);
         $this->server->setProtocolVersion(null);
+
+        $this->assertTrue(true);
     }
 
     /**
@@ -48,6 +50,8 @@ class ServerTest extends TestCase
             'name1' => 'password1',
             'name2' => 'password2'
         ));
+
+        $this->assertTrue(true);
     }
 
     /**
@@ -390,5 +394,7 @@ class ServerTest extends TestCase
     {
         $this->server->unsetAuth();
         $this->server->unsetAuth();
+
+        $this->assertTrue(true);
     }
 }
