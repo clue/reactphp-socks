@@ -23,16 +23,22 @@ class ClientTest extends TestCase
     public function testCtorAcceptsUriWithHostAndPort()
     {
         $client = new Client('127.0.0.1:9050', $this->connector);
+
+        $this->assertTrue(true);
     }
 
     public function testCtorAcceptsUriWithScheme()
     {
         $client = new Client('socks://127.0.0.1:9050', $this->connector);
+
+        $this->assertTrue(true);
     }
 
     public function testCtorAcceptsUriWithHostOnlyAssumesDefaultPort()
     {
         $client = new Client('127.0.0.1', $this->connector);
+
+        $this->assertTrue(true);
     }
 
     /**
@@ -46,6 +52,8 @@ class ClientTest extends TestCase
     public function testValidAuthFromUri()
     {
         $this->client = new Client('username:password@127.0.0.1', $this->connector);
+
+        $this->assertTrue(true);
     }
 
     /**
@@ -59,6 +67,8 @@ class ClientTest extends TestCase
     public function testValidAuthAndVersionFromUri()
     {
         $this->client = new Client('socks5://username:password@127.0.0.1:9050', $this->connector);
+
+        $this->assertTrue(true);
     }
 
     /**
