@@ -15,7 +15,7 @@
     },
     "require": {
         "php": ">=5.3",
-        "react/socket": "^1.0 || ^0.8 || ^0.7",
+        "react/socket": "^1.0 || ^0.8.6",
         "react/promise": "^2.1 || ^1.2",
         "evenement/evenement": "~3.0|~1.0|~2.0"
     },

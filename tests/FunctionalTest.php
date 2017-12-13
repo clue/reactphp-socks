@@ -6,6 +6,8 @@ use Clue\React\Block;
 use React\Socket\TimeoutConnector;
 use React\Socket\SecureConnector;
 use React\Socket\TcpConnector;
+use React\Socket\UnixServer;
+use React\Socket\Connector;
 
 class FunctionalTest extends TestCase
 {
@@ -91,6 +93,65 @@ class FunctionalTest extends TestCase
         $this->client = new Client('socks5://127.0.0.1:' . $this->port, $this->connector);
 
         $this->assertResolveStream($this->client->connect('www.google.com:80'));
+    }
+
+    /** @group internet */
+    public function testConnectionSocksOverUnix()
+    {
+        if (!in_array('unix', stream_get_transports())) {
+            $this->markTestSkipped('System does not support unix:// scheme');
+        }
+
+        $path = sys_get_temp_dir() . '/test' . mt_rand(1000, 9999) . '.sock';
+        $socket = new UnixServer($path, $this->loop);
+        $this->server = new Server($this->loop, $socket);
+
+        $this->connector = new Connector($this->loop);
+        $this->client = new Client('socks+unix://' . $path, $this->connector);
+
+        $this->assertResolveStream($this->client->connect('www.google.com:80'));
+
+        unlink($path);
+    }
+
+    /** @group internet */
+    public function testConnectionSocks5OverUnix()
+    {
+        if (!in_array('unix', stream_get_transports())) {
+            $this->markTestSkipped('System does not support unix:// scheme');
+        }
+
+        $path = sys_get_temp_dir() . '/test' . mt_rand(1000, 9999) . '.sock';
+        $socket = new UnixServer($path, $this->loop);
+        $this->server = new Server($this->loop, $socket);
+        $this->server->setProtocolVersion(5);
+
+        $this->connector = new Connector($this->loop);
+        $this->client = new Client('socks5+unix://' . $path, $this->connector);
+
+        $this->assertResolveStream($this->client->connect('www.google.com:80'));
+
+        unlink($path);
+    }
+
+    /** @group internet */
+    public function testConnectionSocksWithAuthenticationOverUnix()
+    {
+        if (!in_array('unix', stream_get_transports())) {
+            $this->markTestSkipped('System does not support unix:// scheme');
+        }
+
+        $path = sys_get_temp_dir() . '/test' . mt_rand(1000, 9999) . '.sock';
+        $socket = new UnixServer($path, $this->loop);
+        $this->server = new Server($this->loop, $socket);
+        $this->server->setAuthArray(array('name' => 'pass'));
+
+        $this->connector = new Connector($this->loop);
+        $this->client = new Client('socks+unix://name:pass@' . $path, $this->connector);
+
+        $this->assertResolveStream($this->client->connect('www.google.com:80'));
+
+        unlink($path);
     }
 
     /** @group internet */

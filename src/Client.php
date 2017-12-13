@@ -7,6 +7,7 @@ use React\Promise\PromiseInterface;
 use React\Promise\Deferred;
 use React\Socket\ConnectionInterface;
 use React\Socket\ConnectorInterface;
+use React\Socket\FixedUriConnector;
 use \Exception;
 use \InvalidArgumentException;
 use RuntimeException;
@@ -27,6 +28,15 @@ class Client implements ConnectorInterface
 
     public function __construct($socksUri, ConnectorInterface $connector)
     {
+        // support `socks+unix://` scheme for Unix domain socket (UDS) paths
+        if (preg_match('/^(socks(?:5|4|4a)?)\+?unix:\/\/(.*?@)?(.+?$)/', $socksUri, $match)) {
+            $socksUri = ($match[1] !== '' ? ($match[1] . '://') : '') . $match[2] . 'localhost';
+            $connector = new FixedUriConnector(
+                'unix://' . $match[3],
+                $connector
+            );
+        }
+
         // assume default scheme if none is given
         if (strpos($socksUri, '://') === false) {
             $socksUri = 'socks://' . $socksUri;
