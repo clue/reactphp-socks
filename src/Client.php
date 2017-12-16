@@ -28,11 +28,15 @@ class Client implements ConnectorInterface
 
     public function __construct($socksUri, ConnectorInterface $connector)
     {
+        // support `sockss://` scheme for SOCKS over TLS
         // support `socks+unix://` scheme for Unix domain socket (UDS) paths
-        if (preg_match('/^(socks(?:5|4|4a)?)\+?unix:\/\/(.*?@)?(.+?$)/', $socksUri, $match)) {
-            $socksUri = ($match[1] !== '' ? ($match[1] . '://') : '') . $match[2] . 'localhost';
+        if (preg_match('/^(socks(?:5|4|4a)?)(s|\+unix):\/\/(.*?@)?(.+?)$/', $socksUri, $match)) {
+            // rewrite URI to parse SOCKS scheme, authentication and dummy host
+            $socksUri = $match[1] . '://' . $match[3] . 'localhost';
+
+            // connector uses appropriate transport scheme and explicit host given
             $connector = new FixedUriConnector(
-                'unix://' . $match[3],
+                ($match[2] === 's' ? 'tls://' : 'unix://') . $match[4],
                 $connector
             );
         }
@@ -53,10 +57,6 @@ class Client implements ConnectorInterface
             $parts['port'] = 1080;
         }
 
-        // check scheme for secure TLS (trailing s)
-        $secure = false;
-        $parts['scheme'] = preg_replace('/^(socks(?:5|4|4a)?)s$/', '$1', $parts['scheme'], -1, $secure);
-
         // user or password in URI => SOCKS5 authentication
         if (isset($parts['user']) || isset($parts['pass'])) {
             if ($parts['scheme'] === 'socks') {
@@ -73,7 +73,7 @@ class Client implements ConnectorInterface
         // check for valid protocol version from URI scheme
         $this->setProtocolVersionFromScheme($parts['scheme']);
 
-        $this->socksUri = ($secure ? 'tls://' : '') . $parts['host'] . ':' . $parts['port'];
+        $this->socksUri = $parts['host'] . ':' . $parts['port'];
         $this->connector = $connector;
     }
 

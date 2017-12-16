@@ -116,6 +116,30 @@ class FunctionalTest extends TestCase
         $this->assertResolveStream($this->client->connect('www.google.com:80'));
     }
 
+    /**
+     * @group internet
+     * @requires PHP 5.6
+     */
+    public function testConnectionSocksOverTlsUsesPeerNameFromSocksUri()
+    {
+        if (!function_exists('stream_socket_enable_crypto')) {
+            $this->markTestSkipped('Required function does not exist in your environment (HHVM?)');
+        }
+
+        $socket = new \React\Socket\Server('tls://127.0.0.1:0', $this->loop, array('tls' => array(
+            'local_cert' => __DIR__ . '/../examples/localhost.pem',
+        )));
+        $this->server = new Server($this->loop, $socket);
+
+        $this->connector = new Connector($this->loop, array('tls' => array(
+            'verify_peer' => false,
+            'verify_peer_name' => true
+        )));
+        $this->client = new Client(str_replace('tls:', 'sockss:', $socket->getAddress()), $this->connector);
+
+        $this->assertResolveStream($this->client->connect('www.google.com:80'));
+    }
+
     /** @group internet */
     public function testConnectionSocksOverUnix()
     {
