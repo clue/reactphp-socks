@@ -9,7 +9,7 @@ use \UnexpectedValueException;
 /**
  * @internal
  */
-class StreamReader
+final class StreamReader
 {
     const RET_DONE = true;
     const RET_INCOMPLETE = null;

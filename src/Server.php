@@ -15,7 +15,7 @@ use \InvalidArgumentException;
 use \Exception;
 use React\Promise\Timer\TimeoutException;
 
-class Server
+final class Server
 {
     // the following error codes are only used for SOCKS5 only
     /** @internal */
