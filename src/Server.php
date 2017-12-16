@@ -2,7 +2,6 @@
 
 namespace Clue\React\Socks;
 
-use Evenement\EventEmitter;
 use React\Socket\ServerInterface;
 use React\Promise;
 use React\Promise\Deferred;
@@ -16,7 +15,7 @@ use \InvalidArgumentException;
 use \Exception;
 use React\Promise\Timer\TimeoutException;
 
-class Server extends EventEmitter
+class Server
 {
     // the following error codes are only used for SOCKS5 only
     /** @internal */
@@ -55,7 +54,6 @@ class Server extends EventEmitter
 
         $that = $this;
         $serverInterface->on('connection', function ($connection) use ($that) {
-            $that->emit('connection', array($connection));
             $that->onConnection($connection);
         });
     }
