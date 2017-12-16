@@ -28,11 +28,15 @@ class Client implements ConnectorInterface
 
     public function __construct($socksUri, ConnectorInterface $connector)
     {
+        // support `sockss://` scheme for SOCKS over TLS
         // support `socks+unix://` scheme for Unix domain socket (UDS) paths
-        if (preg_match('/^(socks(?:5|4|4a)?)\+?unix:\/\/(.*?@)?(.+?$)/', $socksUri, $match)) {
-            $socksUri = ($match[1] !== '' ? ($match[1] . '://') : '') . $match[2] . 'localhost';
+        if (preg_match('/^(socks(?:5|4|4a)?)(s|\+unix):\/\/(.*?@)?(.+?)$/', $socksUri, $match)) {
+            // rewrite URI to parse SOCKS scheme, authentication and dummy host
+            $socksUri = $match[1] . '://' . $match[3] . 'localhost';
+
+            // connector uses appropriate transport scheme and explicit host given
             $connector = new FixedUriConnector(
-                'unix://' . $match[3],
+                ($match[2] === 's' ? 'tls://' : 'unix://') . $match[4],
                 $connector
             );
         }
@@ -82,7 +86,7 @@ class Client implements ConnectorInterface
         } elseif ($scheme === 'socks4') {
             $this->protocolVersion = '4';
         } else {
-            throw new InvalidArgumentException('Invalid protocol version given');
+            throw new InvalidArgumentException('Invalid protocol version given "' . $scheme . '://"');
         }
     }
 

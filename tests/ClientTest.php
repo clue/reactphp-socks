@@ -41,6 +41,20 @@ class ClientTest extends TestCase
         $this->assertTrue(true);
     }
 
+    public function testCtorAcceptsUriWithSecureScheme()
+    {
+        $client = new Client('sockss://127.0.0.1:9050', $this->connector);
+
+        $this->assertTrue(true);
+    }
+
+    public function testCtorAcceptsUriWithSecureVersionScheme()
+    {
+        $client = new Client('socks5s://127.0.0.1:9050', $this->connector);
+
+        $this->assertTrue(true);
+    }
+
     public function testCtorAcceptsUriWithSocksUnixScheme()
     {
         $client = new Client('socks+unix:///tmp/socks.socket', $this->connector);
