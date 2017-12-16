@@ -20,11 +20,13 @@ of the actual application level protocol, such as HTTP, SMTP, IMAP, Telnet etc.
     * [Authentication](#authentication)
     * [Proxy chaining](#proxy-chaining)
     * [Connection timeout](#connection-timeout)
+    * [Unix domain sockets](#unix-domain-sockets)
   * [Server](#server)
     * [Server connector](#server-connector)
     * [Protocol version](#server-protocol-version)
     * [Authentication](#server-authentication)
     * [Proxy chaining](#server-proxy-chaining)
+    * [Unix domain sockets](#server-unix-domain-sockets)
 * [Servers](#servers)
   * [Using a PHP SOCKS server](#using-a-php-socks-server)
   * [Using SSH as a SOCKS server](#using-ssh-as-a-socks-server)
@@ -553,6 +555,42 @@ as usual.
 > Also note how connection timeout is in fact entirely handled outside of this
   SOCKS client implementation.
 
+#### Unix domain sockets
+
+All [SOCKS protocol versions](#protocol-version) support forwarding TCP/IP
+based connections and higher level protocols.
+In some advanced cases, it may be useful to let your SOCKS server listen on a
+Unix domain socket (UDS) path instead of a IP:port combination.
+For example, this allows you to rely on file system permissions instead of
+having to rely on explicit [authentication](#authentication).
+
+You can use the `socks+unix://` URI scheme or use an explicit
+[SOCKS protocol version](#protocol-version) like this:
+
+```php
+$client = new Client('socks+unix:///tmp/proxy.sock', new Connector($loop));
+
+$client = new Client('socks5+unix:///tmp/proxy.sock', new Connector($loop));
+```
+
+Simiarly, you can also combine this with [authentication](#authentication)
+like this:
+
+```php
+$client = new Client('socks+unix://user:pass@/tmp/proxy.sock', new Connector($loop));
+```
+
+> Note that Unix domain sockets (UDS) are considered advanced usage and PHP only
+  has limited support for this.
+  In particular, enabling [secure TLS](#secure-tls-connections) may not be
+  supported.
+
+> Note that SOCKS protocol does not support the notion of UDS paths. The above
+  works reasonably well because UDS is only used for the connection between
+  client and proxy server and the path will not actually passed over the protocol.
+  This implies that this does also not support [proxy chaining](#proxy-chaining)
+  over multiple UDS paths.
+
 ### Server
 
 The `Server` is responsible for accepting incoming communication from SOCKS clients
@@ -718,6 +756,32 @@ Proxy chaining can happen on the server side and/or the client side:
   not really know anything about chaining at all.
   This means that this is a server-only property and can be implemented as above.
 
+#### Server Unix domain sockets
+
+All [SOCKS protocol versions](#server-protocol-version) support forwarding TCP/IP
+based connections and higher level protocols.
+In some advanced cases, it may be useful to let your SOCKS server listen on a
+Unix domain socket (UDS) path instead of a IP:port combination.
+For example, this allows you to rely on file system permissions instead of
+having to rely on explicit [authentication](#server-authentication).
+
+You can simply start your listening socket on the `unix://` URI scheme like this:
+
+```php
+$loop = \React\EventLoop\Factory::create();
+
+// listen on /tmp/proxy.sock
+$socket = new React\Socket\Server('unix:///tmp/proxy.sock', $loop);
+$server = new Server($loop, $socket);
+```
+
+> Note that Unix domain sockets (UDS) are considered advanced usage and that
+  the SOCKS protocol does not support the notion of UDS paths. The above
+  works reasonably well because UDS is only used for the connection between
+  client and proxy server and the path will not actually passed over the protocol.
+  This implies that this does also not support [proxy chaining](#server-proxy-chaining)
+  over multiple UDS paths.
+
 ## Servers
 
 ### Using a PHP SOCKS server
@@ -752,6 +816,22 @@ Now you can simply use this SSH SOCKS server like this:
 
 ```PHP
 $client = new Client('127.0.0.1:1080', $connector);
+```
+
+Note that the above will allow all users on the local system to connect over
+your SOCKS server without authentication which may or may not be what you need.
+As an alternative, recent OpenSSH client versions also support
+[Unix domain sockets](#unix-domain-sockets) (UDS) paths so that you can rely
+on Unix file system permissions instead:
+
+```bash
+$ ssh -D/tmp/proxy.sock example.com
+```
+
+Now you can simply use this SSH SOCKS server like this:
+
+```PHP
+$client = new Client('socks+unix:///tmp/proxy.sock', $connector);
 ```
 
 ### Using the Tor (anonymity network) to tunnel SOCKS connections

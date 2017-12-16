@@ -41,6 +41,20 @@ class ClientTest extends TestCase
         $this->assertTrue(true);
     }
 
+    public function testCtorAcceptsUriWithSocksUnixScheme()
+    {
+        $client = new Client('socks+unix:///tmp/socks.socket', $this->connector);
+
+        $this->assertTrue(true);
+    }
+
+    public function testCtorAcceptsUriWithSocks5UnixScheme()
+    {
+        $client = new Client('socks5+unix:///tmp/socks.socket', $this->connector);
+
+        $this->assertTrue(true);
+    }
+
     /**
      * @expectedException InvalidArgumentException
      */
