@@ -738,6 +738,7 @@ $server->setAuth(function ($username, $password, $remote) {
     // or use promises for delayed authentication
 
     // $remote is a full URI à la socks5://user:pass@192.168.1.1:1234
+    // or socks5s://user:pass@192.168.1.1:1234 for SOCKS over TLS
     // useful for logging or extracting parts, such as the remote IP
     $ip = parse_url($remote, PHP_URL_HOST);
 

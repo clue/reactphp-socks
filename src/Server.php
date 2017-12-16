@@ -194,10 +194,11 @@ class Server extends EventEmitter
         $remote = $stream->getRemoteAddress();
         if ($remote !== null) {
             // remove transport scheme and prefix socks4:// instead
+            $secure = strpos($remote, 'tls://') === 0;
             if (($pos = strpos($remote, '://')) !== false) {
                 $remote = substr($remote, $pos + 3);
             }
-            $remote = 'socks4://' . $remote;
+            $remote = 'socks4' . ($secure ? 's' : '') . '://' . $remote;
         }
 
         $that = $this;
@@ -246,10 +247,11 @@ class Server extends EventEmitter
         $remote = $stream->getRemoteAddress();
         if ($remote !== null) {
             // remove transport scheme and prefix socks5:// instead
+            $secure = strpos($remote, 'tls://') === 0;
             if (($pos = strpos($remote, '://')) !== false) {
                 $remote = substr($remote, $pos + 3);
             }
-            $remote = 'socks5://' . $remote;
+            $remote = 'socks5' . ($secure ? 's' : '') . '://' . $remote;
         }
 
         $that = $this;

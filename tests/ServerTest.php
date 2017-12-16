@@ -271,6 +271,20 @@ class ServerTest extends TestCase
         $connection->emit('data', array("\x04\x01" . "\x00\x50" . "\x00\x00\x00\x01" . "\x00" . "example.com" . "\x00"));
     }
 
+    public function testHandleSocks4aConnectionWithSecureTlsSourceAddressWillEstablishOutgoingConnection()
+    {
+        $connection = $this->getMockBuilder('React\Socket\Connection')->disableOriginalConstructor()->setMethods(array('pause', 'end', 'getRemoteAddress'))->getMock();
+        $connection->expects($this->once())->method('getRemoteAddress')->willReturn('tls://10.20.30.40:5060');
+
+        $promise = new Promise(function () { });
+
+        $this->connector->expects($this->once())->method('connect')->with('example.com:80?source=socks4s%3A%2F%2F10.20.30.40%3A5060')->willReturn($promise);
+
+        $this->server->onConnection($connection);
+
+        $connection->emit('data', array("\x04\x01" . "\x00\x50" . "\x00\x00\x00\x01" . "\x00" . "example.com" . "\x00"));
+    }
+
     public function testHandleSocks4aConnectionWithInvalidHostnameWillNotEstablishOutgoingConnection()
     {
         $connection = $this->getMockBuilder('React\Socket\Connection')->disableOriginalConstructor()->setMethods(array('pause', 'end'))->getMock();
@@ -303,6 +317,20 @@ class ServerTest extends TestCase
         $promise = new Promise(function () { });
 
         $this->connector->expects($this->once())->method('connect')->with('127.0.0.1:80?source=socks5%3A%2F%2F10.20.30.40%3A5060')->willReturn($promise);
+
+        $this->server->onConnection($connection);
+
+        $connection->emit('data', array("\x05\x01\x00" . "\x05\x01\x00\x01" . pack('N', ip2long('127.0.0.1')) . "\x00\x50"));
+    }
+
+    public function testHandleSocks5ConnectionWithSecureTlsIpv4AndSourceAddressWillEstablishOutgoingConnection()
+    {
+        $connection = $this->getMockBuilder('React\Socket\Connection')->disableOriginalConstructor()->setMethods(array('pause', 'end', 'write', 'getRemoteAddress'))->getMock();
+        $connection->expects($this->once())->method('getRemoteAddress')->willReturn('tls://10.20.30.40:5060');
+
+        $promise = new Promise(function () { });
+
+        $this->connector->expects($this->once())->method('connect')->with('127.0.0.1:80?source=socks5s%3A%2F%2F10.20.30.40%3A5060')->willReturn($promise);
 
         $this->server->onConnection($connection);
 
