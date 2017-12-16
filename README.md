@@ -20,12 +20,14 @@ of the actual application level protocol, such as HTTP, SMTP, IMAP, Telnet etc.
     * [Authentication](#authentication)
     * [Proxy chaining](#proxy-chaining)
     * [Connection timeout](#connection-timeout)
+    * [SOCKS over TLS](#socks-over-tls)
     * [Unix domain sockets](#unix-domain-sockets)
   * [Server](#server)
     * [Server connector](#server-connector)
     * [Protocol version](#server-protocol-version)
     * [Authentication](#server-authentication)
     * [Proxy chaining](#server-proxy-chaining)
+    * [SOCKS over TLS](#server-socks-over-tls)
     * [Unix domain sockets](#server-unix-domain-sockets)
 * [Servers](#servers)
   * [Using a PHP SOCKS server](#using-a-php-socks-server)
@@ -555,6 +557,60 @@ as usual.
 > Also note how connection timeout is in fact entirely handled outside of this
   SOCKS client implementation.
 
+#### SOCKS over TLS
+
+All [SOCKS protocol versions](#protocol-version) support forwarding TCP/IP
+based connections and higher level protocols.
+This implies that you can also use [secure TLS connections](#secure-tls-connections)
+to transfer sensitive data across SOCKS proxy servers.
+This means that no eavesdropper nor the proxy server will be able to decrypt
+your data.
+
+However, the initial SOCKS communication between the client and the proxy is
+usually via an unencrypted, plain TCP/IP connection.
+This means that an eavesdropper may be able to see *where* you connect to and
+may also be able to see your [SOCKS authentication](#authentication) details
+in cleartext.
+
+As an alternative, you may establish a secure TLS connection to your SOCKS
+proxy before starting the initial SOCKS communication.
+This means that no eavesdroppper will be able to see the destination address
+you want to connect to or your [SOCKS authentication](#authentication) details.
+
+You can use the `sockss://` URI scheme or use an explicit
+[SOCKS protocol version](#protocol-version) like this:
+
+```php
+$client = new Client('sockss://127.0.0.1:1080', new Connector($loop));
+
+$client = new Client('socks5s://127.0.0.1:1080', new Connector($loop));
+```
+
+See also [example 32](examples).
+
+Simiarly, you can also combine this with [authentication](#authentication)
+like this:
+
+```php
+$client = new Client('sockss://user:pass@127.0.0.1:1080', new Connector($loop));
+```
+
+> Note that for most use cases, [secure TLS connections](#secure-tls-connections)
+  should be used instead. SOCKS over TLS is considered advanced usage and is
+  used very rarely in practice.
+  In particular, the SOCKS server has to accept secure TLS connections, see
+  also [Server SOCKS over TLS](#server-socks-over-tls) for more details.
+  Also, PHP does not support "double encryption" over a single connection.
+  This means that enabling [secure TLS connections](#secure-tls-connections)
+  over a communication channel that has been opened with SOCKS over TLS
+  may not be supported.
+
+> Note that the SOCKS protocol does not support the notion of TLS. The above
+  works reasonably well because TLS is only used for the connection between
+  client and proxy server and the SOCKS protocol data is otherwise identical.
+  This implies that this may also have only limited support for
+  [proxy chaining](#proxy-chaining) over multiple TLS paths.
+
 #### Unix domain sockets
 
 All [SOCKS protocol versions](#protocol-version) support forwarding TCP/IP
@@ -755,6 +811,54 @@ Proxy chaining can happen on the server side and/or the client side:
 * If you ask your server to chain through another proxy, then your client does
   not really know anything about chaining at all.
   This means that this is a server-only property and can be implemented as above.
+
+#### Server SOCKS over TLS
+
+All [SOCKS protocol versions](#server-protocol-version) support forwarding TCP/IP
+based connections and higher level protocols.
+This implies that you can also use [secure TLS connections](#secure-tls-connections)
+to transfer sensitive data across SOCKS proxy servers.
+This means that no eavesdropper nor the proxy server will be able to decrypt
+your data.
+
+However, the initial SOCKS communication between the client and the proxy is
+usually via an unencrypted, plain TCP/IP connection.
+This means that an eavesdropper may be able to see *where* the client connects
+to and may also be able to see the [SOCKS authentication](#authentication)
+details in cleartext.
+
+As an alternative, you may listen for SOCKS over TLS connections so
+that the client has to establish a secure TLS connection to your SOCKS
+proxy before starting the initial SOCKS communication.
+This means that no eavesdroppper will be able to see the destination address
+the client wants to connect to or their [SOCKS authentication](#authentication)
+details.
+
+You can simply start your listening socket on the `tls://` URI scheme like this:
+
+```php
+$loop = \React\EventLoop\Factory::create();
+
+// listen on tls://127.0.0.1:1080 with the given server certificate
+$socket = new React\Socket\Server('tls://127.0.0.1:1080', $loop, array(
+    'tls' => array(
+        'local_cert' => __DIR__ . '/localhost.pem',
+    )
+));
+$server = new Server($loop, $socket);
+```
+
+See also [example 31](examples).
+
+> Note that for most use cases, [secure TLS connections](#secure-tls-connections)
+  should be used instead. SOCKS over TLS is considered advanced usage and is
+  used very rarely in practice.
+
+> Note that the SOCKS protocol does not support the notion of TLS. The above
+  works reasonably well because TLS is only used for the connection between
+  client and proxy server and the SOCKS protocol data is otherwise identical.
+  This implies that this does also not support [proxy chaining](#server-proxy-chaining)
+  over multiple TLS paths.
 
 #### Server Unix domain sockets
 

@@ -53,6 +53,10 @@ class Client implements ConnectorInterface
             $parts['port'] = 1080;
         }
 
+        // check scheme for secure TLS (trailing s)
+        $secure = false;
+        $parts['scheme'] = preg_replace('/^(socks(?:5|4|4a)?)s$/', '$1', $parts['scheme'], -1, $secure);
+
         // user or password in URI => SOCKS5 authentication
         if (isset($parts['user']) || isset($parts['pass'])) {
             if ($parts['scheme'] === 'socks') {
@@ -69,7 +73,7 @@ class Client implements ConnectorInterface
         // check for valid protocol version from URI scheme
         $this->setProtocolVersionFromScheme($parts['scheme']);
 
-        $this->socksUri = $parts['host'] . ':' . $parts['port'];
+        $this->socksUri = ($secure ? 'tls://' : '') . $parts['host'] . ':' . $parts['port'];
         $this->connector = $connector;
     }
 
@@ -82,7 +86,7 @@ class Client implements ConnectorInterface
         } elseif ($scheme === 'socks4') {
             $this->protocolVersion = '4';
         } else {
-            throw new InvalidArgumentException('Invalid protocol version given');
+            throw new InvalidArgumentException('Invalid protocol version given "' . $scheme . '://"');
         }
     }
 
