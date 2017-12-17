@@ -891,8 +891,8 @@ $server = new Server($loop, $socket);
 
 ### Using a PHP SOCKS server
 
-* If you're looking for an end-user SOCKS server daemon, you may want to
-  use [clue/psocksd](https://github.com/clue/psocksd).
+* If you're looking for an end-user SOCKS server daemon, you may want to use
+  [LeProxy](https://leproxy.org/) or [clue/psocksd](https://github.com/clue/psocksd).
 * If you're looking for a SOCKS server implementation, consider using
   the above [`Server`](#server) class.
 
@@ -962,7 +962,7 @@ The recommended way to install this library is [through Composer](https://getcom
 This will install the latest supported version:
 
 ```bash
-$ composer require clue/socks-react:^0.8.6
+$ composer require clue/socks-react:^0.8.7
 ```
 
 See also the [CHANGELOG](CHANGELOG.md) for details about version upgrades.
@@ -1013,5 +1013,5 @@ MIT, see LICENSE
   [clue/connection-manager-extra](https://github.com/clue/php-connection-manager-extra)
   which allows retrying unreliable ones, implying connection timeouts,
   concurrently working with multiple connectors and more.
-* If you're looking for an end-user SOCKS server daemon, you may want to
-  use [clue/psocksd](https://github.com/clue/psocksd).
+* If you're looking for an end-user SOCKS server daemon, you may want to use
+  [LeProxy](https://leproxy.org/) or [clue/psocksd](https://github.com/clue/psocksd).

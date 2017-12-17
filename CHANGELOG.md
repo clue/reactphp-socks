@@ -1,5 +1,26 @@
 # Changelog
 
+## 0.8.7 (2017-12-17)
+
+*   Feature: Support SOCKS over TLS (`sockss://` URI scheme)
+    (#70 and #71 by @clue)
+
+    ```php
+    // new: now supports SOCKS over TLS
+    $client = new Client('socks5s://localhost', $connector);
+    ```
+
+*   Feature: Support communication over Unix domain sockets (UDS)
+    (#69 by @clue)
+
+    ```php
+    // new: now supports SOCKS over Unix domain sockets (UDS)
+    $client = new Client('socks5+unix:///tmp/proxy.sock', $connector);
+    ```
+
+*   Improve test suite by adding forward compatibility with PHPUnit 6
+    (#68 by @clue)
+
 ## 0.8.6 (2017-09-17)
 
 *   Feature: Forward compatibility with Evenement v3.0
