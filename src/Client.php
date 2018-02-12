@@ -110,7 +110,7 @@ class Client implements ConnectorInterface
      *
      * Many higher-level networking protocols build on top of TCP. It you're dealing
      * with one such client implementation,  it probably uses/accepts an instance
-     * implementing React's `ConnectorInterface` (and usually its default `Connector`
+     * implementing ReactPHP's `ConnectorInterface` (and usually its default `Connector`
      * instance). In this case you can also pass this `Connector` instance instead
      * to make this client implementation SOCKS-aware. That's it.
      *
