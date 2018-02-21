@@ -304,17 +304,15 @@ application protocols to work through it.
 Note, this is __not__ a full SOCKS5 implementation due to missing GSSAPI
 authentication (but it's unlikely you're going to miss it anyway).
 
-By default, the `Client` communicates via SOCKS4a with the SOCKS server
-– unless you enable [authentication](#authentication), in which case it will
-default to SOCKS5.
-This is done because SOCKS4a incurs less overhead than SOCKS5 (see above) and
-is equivalent with SOCKS4 if you use [local DNS resolution](#dns-resolution).
+By default, the `Client` communicates via SOCKS5 with the SOCKS server.
+This is done because SOCKS5 is the latest version from the SOCKS protocol family
+and generally has best support across other vendors.
 
 If want to explicitly set the protocol version, use the supported values URI
-schemes `socks4`, `socks4a` or `socks5` as part of the SOCKS URI:
+schemes `socks4://` or `socks4a://`as part of the SOCKS URI:
 
 ```php
-$client = new Client('socks5://127.0.0.1', $connector);
+$client = new Client('socks4a://127.0.0.1', $connector);
 ```
 
 As seen above, both SOCKS5 and SOCKS4a support remote and local DNS resolution.
