@@ -96,6 +96,14 @@ class FunctionalTest extends TestCase
     }
 
     /** @group internet */
+    public function testConnectionDefaultsToSocks5()
+    {
+        $this->server->setProtocolVersion(5);
+
+        $this->assertResolveStream($this->client->connect('www.google.com:80'));
+    }
+
+    /** @group internet */
     public function testConnectionSocksOverTls()
     {
         if (!function_exists('stream_socket_enable_crypto')) {

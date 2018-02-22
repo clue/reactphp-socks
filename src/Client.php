@@ -22,7 +22,7 @@ class Client implements ConnectorInterface
 
     private $socksUri;
 
-    private $protocolVersion = null;
+    private $protocolVersion = '5';
 
     private $auth = null;
 
@@ -59,10 +59,7 @@ class Client implements ConnectorInterface
 
         // user or password in URI => SOCKS5 authentication
         if (isset($parts['user']) || isset($parts['pass'])) {
-            if ($parts['scheme'] === 'socks') {
-                // default to using SOCKS5 if not given explicitly
-                $parts['scheme'] = 'socks5';
-            } elseif ($parts['scheme'] !== 'socks5') {
+            if ($parts['scheme'] !== 'socks' && $parts['scheme'] !== 'socks5') {
                 // fail if any other protocol version given explicitly
                 throw new InvalidArgumentException('Authentication requires SOCKS5. Consider using protocol version 5 or waive authentication');
             }
@@ -79,10 +76,10 @@ class Client implements ConnectorInterface
 
     private function setProtocolVersionFromScheme($scheme)
     {
-        if ($scheme === 'socks' || $scheme === 'socks4a') {
-            $this->protocolVersion = '4a';
-        } elseif ($scheme === 'socks5') {
+        if ($scheme === 'socks' || $scheme === 'socks5') {
             $this->protocolVersion = '5';
+        } elseif ($scheme === 'socks4a') {
+            $this->protocolVersion = '4a';
         } elseif ($scheme === 'socks4') {
             $this->protocolVersion = '4';
         } else {
