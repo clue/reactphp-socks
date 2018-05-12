@@ -1,4 +1,4 @@
-# clue/socks-react [![Build Status](https://travis-ci.org/clue/php-socks-react.svg?branch=master)](https://travis-ci.org/clue/php-socks-react)
+# clue/reactphp-socks [![Build Status](https://travis-ci.org/clue/reactphp-socks.svg?branch=master)](https://travis-ci.org/clue/reactphp-socks)
 
 Async SOCKS4, SOCKS4a and SOCKS5 proxy client and server implementation, built on top of [ReactPHP](http://reactphp.org).
 
@@ -235,9 +235,9 @@ $connector = new React\Socket\Connector($loop, array(
 
 HTTP operates on a higher layer than this low-level SOCKS implementation.
 If you want to issue HTTP requests, you can add a dependency for
-[clue/buzz-react](https://github.com/clue/php-buzz-react).
+[clue/reactphp-buzz](https://github.com/clue/reactphp-buzz).
 It can interact with this library by issuing all
-[http requests through a SOCKS server](https://github.com/clue/php-buzz-react#socks-proxy).
+[http requests through a SOCKS server](https://github.com/clue/reactphp-buzz#socks-proxy).
 This works for both plain HTTP and SSL encrypted HTTPS requests.
 
 #### Protocol version
@@ -973,13 +973,13 @@ MIT, see LICENSE
   [react/stream](https://github.com/reactphp/stream) component.
 * As an alternative to a SOCKS (SOCKS4/SOCKS5) proxy, you may also want to look into
   using an HTTP CONNECT proxy instead.
-  You may want to use [clue/http-proxy-react](https://github.com/clue/php-http-proxy-react)
+  You may want to use [clue/reactphp-http-proxy](https://github.com/clue/reactphp-http-proxy)
   which also provides an implementation of the same
   [`ConnectorInterface`](https://github.com/reactphp/socket#connectorinterface)
   so that supporting either proxy protocol should be fairly trivial.
 * If you're dealing with public proxies, you'll likely have to work with mixed
   quality and unreliable proxies. You may want to look into using
-  [clue/connection-manager-extra](https://github.com/clue/php-connection-manager-extra)
+  [clue/reactphp-connection-manager-extra](https://github.com/clue/reactphp-connection-manager-extra)
   which allows retrying unreliable ones, implying connection timeouts,
   concurrently working with multiple connectors and more.
 * If you're looking for an end-user SOCKS server daemon, you may want to use
