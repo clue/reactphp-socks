@@ -43,7 +43,8 @@ to google.com via a local SOCKS proxy server:
 
 ```php
 $loop = React\EventLoop\Factory::create();
-$client = new Client('127.0.0.1:1080', new Connector($loop));
+$connector = new React\Socket\Connector($loop);
+$client = new Clue\React\Socks\Client('127.0.0.1:1080', $connector);
 
 $client->connect('tcp://www.google.com:80')->then(function (ConnectionInterface $stream) {
     $stream->write("GET / HTTP/1.0\r\n\r\n");
@@ -59,11 +60,12 @@ proxy server listening for connections on `localhost:1080`:
 ```php
 $loop = React\EventLoop\Factory::create();
 
-// listen on localhost:1080
-$socket = new Socket('127.0.0.1:1080', $loop);
+// start a new SOCKS proxy server
+$server = new Clue\React\Socks\Server($loop);
 
-// start a new server listening for incoming connection on the given socket
-$server = new Server($loop, $socket);
+// listen on localhost:1080
+$socket = new React\Socket\Server('127.0.0.1:1080', $loop);
+$server->listen($socket);
 
 $loop->run();
 ```
@@ -93,20 +95,17 @@ You can omit the port if you're using the default SOCKS port 1080:
 $client = new Client('127.0.0.1', $connector);
 ```
 
-If you need custom connector settings (DNS resolution, timeouts etc.), you can explicitly pass a
-custom instance of the [`ConnectorInterface`](https://github.com/reactphp/socket#connectorinterface):
+If you need custom connector settings (DNS resolution, TLS parameters, timeouts,
+proxy servers etc.), you can explicitly pass a custom instance of the
+[`ConnectorInterface`](https://github.com/reactphp/socket#connectorinterface):
 
 ```php
-// use local DNS server
-$dnsResolverFactory = new DnsFactory();
-$resolver = $dnsResolverFactory->createCached('127.0.0.1', $loop);
-
-// outgoing connections to SOCKS server via interface 192.168.10.1
-// this is not to be confused with local DNS resolution (see further below)
-$connector = new DnsConnector(
-    new TcpConnector($loop, array('bindto' => '192.168.10.1:0')),
-    $resolver
-);
+$connector = new React\Socket\Connector($loop, array(
+    'dns' => '127.0.0.1',
+    'tcp' => array(
+        'bindto' => '192.168.10.1:0'
+    )
+));
 
 $client = new Client('my-socks-server.local:1080', $connector);
 ```
@@ -622,12 +621,15 @@ It also registers everything with the main [`EventLoop`](https://github.com/reac
 and an underlying TCP/IP socket server like this:
 
 ```php
-$loop = \React\EventLoop\Factory::create();
+$loop = React\EventLoop\Factory::create();
+
+$server = new Clue\React\Socks\Server($loop);
 
 // listen on localhost:$port
-$socket = new Socket($port, $loop);
+$socket = new React\Socket\Server($port, $loop);
+$server->listen($socket);
 
-$server = new Server($loop, $socket);
+$loop->run();
 ```
 
 #### Server connector
@@ -636,21 +638,19 @@ The `Server` uses an instance of ReactPHP's
 [`ConnectorInterface`](https://github.com/reactphp/socket#connectorinterface)
 to establish outgoing connections for each incoming connection request.
 
-If you need custom connector settings (DNS resolution, timeouts etc.), you can explicitly pass a
-custom instance of the [`ConnectorInterface`](https://github.com/reactphp/socket#connectorinterface):
+If you need custom connector settings (DNS resolution, TLS parameters, timeouts,
+proxy servers etc.), you can explicitly pass a custom instance of the
+[`ConnectorInterface`](https://github.com/reactphp/socket#connectorinterface):
 
 ```php
-// use local DNS server
-$dnsResolverFactory = new DnsFactory();
-$resolver = $dnsResolverFactory->createCached('127.0.0.1', $loop);
+$connector = new React\Socket\Connector($loop, array(
+    'dns' => '127.0.0.1',
+    'tcp' => array(
+        'bindto' => '192.168.10.1:0'
+    )
+));
 
-// outgoing connections to target host via interface 192.168.10.1
-$connector = new DnsConnector(
-    new TcpConnector($loop, array('bindto' => '192.168.10.1:0')),
-    $resolver
-);
-
-$server = new Server($loop, $socket, $connector);
+$server = new Clue\React\Socks\Server($loop, $connector);
 ```
 
 If you want to forward the outgoing connection through another SOCKS proxy, you
@@ -758,15 +758,20 @@ In order to connect through another SOCKS server, you can simply use the
 You can create a SOCKS `Client` instance like this: 
 
 ```php
+$loop = React\EventLoop\Factory::create();
+
 // set next SOCKS server example.com:1080 as target
 $connector = new React\Socket\Connector($loop);
-$client = new Client('user:pass@example.com:1080', $connector);
-
-// listen on localhost:1080
-$socket = new Socket('127.0.0.1:1080', $loop);
+$client = new Clue\React\Socks\Client('user:pass@example.com:1080', $connector);
 
 // start a new server which forwards all connections to the other SOCKS server
-$server = new Server($loop, $socket, $client);
+$server = new Clue\React\Socks\Server($loop, $client);
+
+// listen on localhost:1080
+$socket = new React\Socket\Server('127.0.0.1:1080', $loop);
+$server->listen($socket);
+
+$loop->run();
 ```
 
 See also [example #21](examples).
@@ -807,7 +812,9 @@ details.
 You can simply start your listening socket on the `tls://` URI scheme like this:
 
 ```php
-$loop = \React\EventLoop\Factory::create();
+$loop = React\EventLoop\Factory::create();
+
+$server = new Clue\React\Socks\Server($loop);
 
 // listen on tls://127.0.0.1:1080 with the given server certificate
 $socket = new React\Socket\Server('tls://127.0.0.1:1080', $loop, array(
@@ -815,7 +822,9 @@ $socket = new React\Socket\Server('tls://127.0.0.1:1080', $loop, array(
         'local_cert' => __DIR__ . '/localhost.pem',
     )
 ));
-$server = new Server($loop, $socket);
+$server->listen($socket);
+
+$loop->run();
 ```
 
 See also [example 31](examples).
@@ -842,11 +851,15 @@ having to rely on explicit [authentication](#server-authentication).
 You can simply start your listening socket on the `unix://` URI scheme like this:
 
 ```php
-$loop = \React\EventLoop\Factory::create();
+$loop = React\EventLoop\Factory::create();
+
+$server = new Clue\React\Socks\Server($loop);
 
 // listen on /tmp/proxy.sock
 $socket = new React\Socket\Server('unix:///tmp/proxy.sock', $loop);
-$server = new Server($loop, $socket);
+$server->listen($socket);
+
+$loop->run();
 ```
 
 > Note that Unix domain sockets (UDS) are considered advanced usage and that

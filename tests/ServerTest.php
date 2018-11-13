@@ -12,16 +12,23 @@ class ServerTest extends TestCase
 
     public function setUp()
     {
-        $socket = $this->getMockBuilder('React\Socket\ServerInterface')
-            ->getMock();
-
         $loop = $this->getMockBuilder('React\EventLoop\LoopInterface')
             ->getMock();
 
         $this->connector = $this->getMockBuilder('React\Socket\ConnectorInterface')
             ->getMock();
 
-        $this->server = new Server($loop, $socket, $this->connector);
+        $this->server = new Server($loop, $this->connector);
+    }
+
+    /**
+     * @doesNotPerformAssertions
+     */
+    public function testListen()
+    {
+        $socket = $this->getMockBuilder('React\Socket\ServerInterface')->getMock();
+
+        $this->server->listen($socket);
     }
 
     public function testSetProtocolVersion()

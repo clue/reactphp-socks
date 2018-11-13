@@ -35,10 +35,12 @@ foreach ($pool as $proxy) {
 }
 $connector = new ConnectionManagerRandom($clients);
 
-$socket = new Socket($listen, $loop);
-
-// start the actual socks server on the given server socket and using our connection manager for outgoing connections
+// start the SOCKS proxy server using our connection manager for outgoing connections
 $server = new Server($loop, $socket, $connector);
+
+// listen on 127.0.0.1:1080 or first argument
+$socket = new Socket($listen, $loop);
+$server->listen($socket);
 
 echo 'SOCKS server listening on ' . $socket->getAddress() . PHP_EOL;
 echo 'Randomly picking from: ' . implode(', ', $pool) . PHP_EOL;

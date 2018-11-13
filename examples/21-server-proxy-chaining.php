@@ -30,11 +30,12 @@ foreach ($path as $proxy) {
     $connector = new Client($proxy, $connector);
 }
 
+// start a new SOCKS proxy server which forwards all connections to the other SOCKS server
+$server = new Server($loop, $connector);
+
 // listen on 127.0.0.1:1080 or first argument
 $socket = new Socket($listen, $loop);
-
-// start a new server which forwards all connections to the other SOCKS server
-$server = new Server($loop, $socket, $connector);
+$server->listen($socket);
 
 echo 'SOCKS server listening on ' . $socket->getAddress() . PHP_EOL;
 echo 'Forwarding via: ' . implode(' -> ', $path) . PHP_EOL;
