@@ -28,12 +28,12 @@ $connector = new ConnectionManagerSelective(array(
     '*' => $permit
 ));
 
-// listen on 127.0.0.1:1080 or first argument
-$listen = isset($argv[1]) ? $argv[1] : '127.0.0.1:1080';
-$socket = new Socket($listen, $loop);
+// start a new SOCKS proxy server using our connection manager for outgoing connections
+$server = new Server($loop, $connector);
 
-// start the actual socks server on the given server socket and using our connection manager for outgoing connections
-$server = new Server($loop, $socket, $connector);
+// listen on 127.0.0.1:1080 or first argument
+$socket = new Socket(isset($argv[1]) ? $argv[1] : '127.0.0.1:1080', $loop);
+$server->listen($socket);
 
 echo 'SOCKS server listening on ' . $socket->getAddress() . PHP_EOL;
 

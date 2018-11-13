@@ -43,7 +43,7 @@ final class Server
 
     private $protocolVersion = null;
 
-    public function __construct(LoopInterface $loop, ServerInterface $serverInterface, ConnectorInterface $connector = null)
+    public function __construct(LoopInterface $loop, ConnectorInterface $connector = null)
     {
         if ($connector === null) {
             $connector = new Connector($loop);
@@ -51,9 +51,16 @@ final class Server
 
         $this->loop = $loop;
         $this->connector = $connector;
+    }
 
+    /**
+     * @param ServerInterface $socket
+     * @return void
+     */
+    public function listen(ServerInterface $socket)
+    {
         $that = $this;
-        $serverInterface->on('connection', function ($connection) use ($that) {
+        $socket->on('connection', function ($connection) use ($that) {
             $that->onConnection($connection);
         });
     }

@@ -30,7 +30,8 @@ class FunctionalTest extends TestCase
         $this->port = parse_url($address, PHP_URL_PORT);
         $this->assertNotEquals(0, $this->port);
 
-        $this->server = new Server($this->loop, $socket);
+        $this->server = new Server($this->loop);
+        $this->server->listen($socket);
         $this->connector = new TcpConnector($this->loop);
         $this->client = new Client('127.0.0.1:' . $this->port, $this->connector);
     }
@@ -113,7 +114,8 @@ class FunctionalTest extends TestCase
         $socket = new \React\Socket\Server('tls://127.0.0.1:0', $this->loop, array('tls' => array(
             'local_cert' => __DIR__ . '/../examples/localhost.pem',
         )));
-        $this->server = new Server($this->loop, $socket);
+        $this->server = new Server($this->loop);
+        $this->server->listen($socket);
 
         $this->connector = new Connector($this->loop, array('tls' => array(
             'verify_peer' => false,
@@ -137,7 +139,8 @@ class FunctionalTest extends TestCase
         $socket = new \React\Socket\Server('tls://127.0.0.1:0', $this->loop, array('tls' => array(
             'local_cert' => __DIR__ . '/../examples/localhost.pem',
         )));
-        $this->server = new Server($this->loop, $socket);
+        $this->server = new Server($this->loop);
+        $this->server->listen($socket);
 
         $this->connector = new Connector($this->loop, array('tls' => array(
             'verify_peer' => false,
@@ -157,7 +160,8 @@ class FunctionalTest extends TestCase
 
         $path = sys_get_temp_dir() . '/test' . mt_rand(1000, 9999) . '.sock';
         $socket = new UnixServer($path, $this->loop);
-        $this->server = new Server($this->loop, $socket);
+        $this->server = new Server($this->loop);
+        $this->server->listen($socket);
 
         $this->connector = new Connector($this->loop);
         $this->client = new Client('socks+unix://' . $path, $this->connector);
@@ -176,7 +180,8 @@ class FunctionalTest extends TestCase
 
         $path = sys_get_temp_dir() . '/test' . mt_rand(1000, 9999) . '.sock';
         $socket = new UnixServer($path, $this->loop);
-        $this->server = new Server($this->loop, $socket);
+        $this->server = new Server($this->loop);
+        $this->server->listen($socket);
         $this->server->setProtocolVersion(5);
 
         $this->connector = new Connector($this->loop);
@@ -196,7 +201,8 @@ class FunctionalTest extends TestCase
 
         $path = sys_get_temp_dir() . '/test' . mt_rand(1000, 9999) . '.sock';
         $socket = new UnixServer($path, $this->loop);
-        $this->server = new Server($this->loop, $socket);
+        $this->server = new Server($this->loop);
+        $this->server->listen($socket);
         $this->server->setAuthArray(array('name' => 'pass'));
 
         $this->connector = new Connector($this->loop);
