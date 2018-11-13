@@ -2,7 +2,6 @@
 
 namespace Clue\React\Socks;
 
-use Evenement\EventEmitter;
 use React\Socket\ServerInterface;
 use React\Promise;
 use React\Promise\Deferred;
@@ -16,7 +15,7 @@ use \InvalidArgumentException;
 use \Exception;
 use React\Promise\Timer\TimeoutException;
 
-class Server extends EventEmitter
+class Server
 {
     // the following error codes are only used for SOCKS5 only
     /** @internal */
@@ -55,7 +54,6 @@ class Server extends EventEmitter
 
         $that = $this;
         $serverInterface->on('connection', function ($connection) use ($that) {
-            $that->emit('connection', array($connection));
             $that->onConnection($connection);
         });
     }
@@ -109,13 +107,8 @@ class Server extends EventEmitter
     public function onConnection(ConnectionInterface $connection)
     {
         $that = $this;
-        $handling = $this->handleSocks($connection)->then(function($remote) use ($connection){
-            $connection->emit('ready',array($remote));
-        }, function ($error) use ($connection, $that) {
-            if (!($error instanceof \Exception)) {
-                $error = new \Exception($error);
-            }
-            $connection->emit('error', array($error));
+        $handling = $this->handleSocks($connection)->then(null, function () use ($connection, $that) {
+            // SOCKS failed => close connection
             $that->endConnection($connection);
         });
 
@@ -282,9 +275,8 @@ class Server extends EventEmitter
                             $remote = str_replace('://', '://' . rawurlencode($username) . ':' . rawurlencode($password) . '@', $remote);
                         }
 
-                        return $auth($username, $password, $remote)->then(function () use ($stream, $username) {
+                        return $auth($username, $password, $remote)->then(function () use ($stream) {
                             // accept
-                            $stream->emit('auth', array($username));
                             $stream->write(pack('C2', 0x01, 0x00));
                         }, function() use ($stream) {
                             // reject => send any code but 0x00
@@ -298,7 +290,7 @@ class Server extends EventEmitter
                 $stream->write(pack('C2', 0x05, 0xFF));
                 throw new UnexpectedValueException('No acceptable authentication mechanism found');
             }
-        })->then(function ($method) use ($reader, $stream) {
+        })->then(function ($method) use ($reader) {
             return $reader->readBinary(array(
                 'version' => 'C',
                 'command' => 'C',
@@ -370,7 +362,6 @@ class Server extends EventEmitter
             $uri .= '?source=' . rawurlencode($target[2]);
         }
 
-        $stream->emit('target', $target);
         $that = $this;
         $connecting = $this->connector->connect($uri);
 
@@ -384,7 +375,6 @@ class Server extends EventEmitter
 
             // remote end closes connection => stop reading from local end, try to flush buffer to local and disconnect local
             $remote->on('end', function() use ($stream, $that) {
-                $stream->emit('shutdown', array('remote', null));
                 $that->endConnection($stream);
             });
 
