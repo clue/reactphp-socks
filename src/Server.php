@@ -15,7 +15,7 @@ use \InvalidArgumentException;
 use \Exception;
 use React\Promise\Timer\TimeoutException;
 
-class Server
+final class Server
 {
     // the following error codes are only used for SOCKS5 only
     /** @internal */
@@ -35,7 +35,7 @@ class Server
     /** @internal */
     const ERROR_ADDRESS_UNSUPPORTED = 0x08;
 
-    protected $loop;
+    private $loop;
 
     private $connector;
 
@@ -104,6 +104,7 @@ class Server
         $this->auth = null;
     }
 
+    /** @internal */
     public function onConnection(ConnectionInterface $connection)
     {
         $that = $this;
@@ -118,7 +119,9 @@ class Server
     }
 
     /**
-     * gracefully shutdown connection by flushing all remaining data and closing stream
+     * [internal] gracefully shutdown connection by flushing all remaining data and closing stream
+     *
+     * @internal
      */
     public function endConnection(ConnectionInterface $stream)
     {
@@ -179,6 +182,7 @@ class Server
         });
     }
 
+    /** @internal */
     public function handleSocks4(ConnectionInterface $stream, $protocolVersion, StreamReader $reader)
     {
         // suppliying hostnames is only allowed for SOCKS4a (or automatically detected version)
@@ -235,6 +239,7 @@ class Server
         });
     }
 
+    /** @internal */
     public function handleSocks5(ConnectionInterface $stream, $auth=null, StreamReader $reader)
     {
         $remote = $stream->getRemoteAddress();
@@ -344,6 +349,7 @@ class Server
         });
     }
 
+    /** @internal */
     public function connectTarget(ConnectionInterface $stream, array $target)
     {
         $uri = $target[0];
