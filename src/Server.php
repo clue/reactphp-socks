@@ -69,7 +69,7 @@ final class Server
     {
         if ($version !== null) {
             $version = (string)$version;
-            if (!in_array($version, array('4', '4a', '5'), true)) {
+            if (!in_array($version, array('4', '5'), true)) {
                 throw new InvalidArgumentException('Invalid protocol version given');
             }
             if ($version !== '5' && $this->auth !== null){
@@ -178,7 +178,7 @@ final class Server
                 if ($protocolVersion === '5') {
                     throw new UnexpectedValueException('SOCKS4 not allowed due to configuration');
                 }
-                return $that->handleSocks4($stream, $protocolVersion, $reader);
+                return $that->handleSocks4($stream, $reader);
             } else if ($version === 0x05) {
                 if ($protocolVersion !== null && $protocolVersion !== '5') {
                     throw new UnexpectedValueException('SOCKS5 not allowed due to configuration');
@@ -190,11 +190,8 @@ final class Server
     }
 
     /** @internal */
-    public function handleSocks4(ConnectionInterface $stream, $protocolVersion, StreamReader $reader)
+    public function handleSocks4(ConnectionInterface $stream, StreamReader $reader)
     {
-        // suppliying hostnames is only allowed for SOCKS4a (or automatically detected version)
-        $supportsHostname = ($protocolVersion === null || $protocolVersion === '4a');
-
         $remote = $stream->getRemoteAddress();
         if ($remote !== null) {
             // remove transport scheme and prefix socks4:// instead
@@ -212,7 +209,7 @@ final class Server
                 'ipLong' => 'N',
                 'null'   => 'C'
             ));
-        })->then(function ($data) use ($reader, $supportsHostname, $remote) {
+        })->then(function ($data) use ($reader, $remote) {
             if ($data['null'] !== 0x00) {
                 throw new Exception('Not a null byte');
             }
@@ -222,7 +219,7 @@ final class Server
             if ($data['port'] === 0) {
                 throw new Exception('Invalid port');
             }
-            if ($data['ipLong'] < 256 && $supportsHostname) {
+            if ($data['ipLong'] < 256) {
                 // invalid IP => probably a SOCKS4a request which appends the hostname
                 return $reader->readStringNull()->then(function ($string) use ($data, $remote){
                     return array($string, $data['port'], $remote);

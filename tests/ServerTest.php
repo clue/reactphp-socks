@@ -34,7 +34,6 @@ class ServerTest extends TestCase
     public function testSetProtocolVersion()
     {
         $this->server->setProtocolVersion(4);
-        $this->server->setProtocolVersion('4a');
         $this->server->setProtocolVersion(5);
         $this->server->setProtocolVersion(null);
 

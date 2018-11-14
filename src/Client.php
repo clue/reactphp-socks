@@ -22,7 +22,7 @@ final class Client implements ConnectorInterface
 
     private $socksUri;
 
-    private $protocolVersion = '5';
+    private $protocolVersion = 5;
 
     private $auth = null;
 
@@ -30,7 +30,7 @@ final class Client implements ConnectorInterface
     {
         // support `sockss://` scheme for SOCKS over TLS
         // support `socks+unix://` scheme for Unix domain socket (UDS) paths
-        if (preg_match('/^(socks(?:5|4|4a)?)(s|\+unix):\/\/(.*?@)?(.+?)$/', $socksUri, $match)) {
+        if (preg_match('/^(socks(?:5|4)?)(s|\+unix):\/\/(.*?@)?(.+?)$/', $socksUri, $match)) {
             // rewrite URI to parse SOCKS scheme, authentication and dummy host
             $socksUri = $match[1] . '://' . $match[3] . 'localhost';
 
@@ -77,11 +77,9 @@ final class Client implements ConnectorInterface
     private function setProtocolVersionFromScheme($scheme)
     {
         if ($scheme === 'socks' || $scheme === 'socks5') {
-            $this->protocolVersion = '5';
-        } elseif ($scheme === 'socks4a') {
-            $this->protocolVersion = '4a';
+            $this->protocolVersion = 5;
         } elseif ($scheme === 'socks4') {
-            $this->protocolVersion = '4';
+            $this->protocolVersion = 4;
         } else {
             throw new InvalidArgumentException('Invalid protocol version given "' . $scheme . '://"');
         }
@@ -127,10 +125,6 @@ final class Client implements ConnectorInterface
 
         $host = trim($parts['host'], '[]');
         $port = $parts['port'];
-
-        if ($this->protocolVersion === '4' && false === filter_var($host, FILTER_VALIDATE_IP, FILTER_FLAG_IPV4)) {
-            return Promise\reject(new InvalidArgumentException('Requires an IPv4 address for SOCKS4'));
-        }
 
         if (strlen($host) > 255 || $port > 65535 || $port < 0 || (string)$port !== (string)(int)$port) {
             return Promise\reject(new InvalidArgumentException('Invalid target specified'));
@@ -204,7 +198,7 @@ final class Client implements ConnectorInterface
             $deferred->reject(new RuntimeException('Connection to proxy lost while waiting for response (ECONNRESET)', defined('SOCKET_ECONNRESET') ? SOCKET_ECONNRESET : 104));
         });
 
-        if ($this->protocolVersion === '5') {
+        if ($this->protocolVersion === 5) {
             $promise = $this->handleSocks5($stream, $host, $port, $reader);
         } else {
             $promise = $this->handleSocks4($stream, $host, $port, $reader);

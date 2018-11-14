@@ -58,11 +58,11 @@ class FunctionalTest extends TestCase
     }
 
     /** @group internet */
-    public function testConnectionWithHostnameViaSocks4Fails()
+    public function testConnectionWithHostnameViaSocks4a()
     {
         $this->client = new Client('socks4://127.0.0.1:' . $this->port, $this->connector);
 
-        $this->assertRejectPromise($this->client->connect('www.google.com:80'));
+        $this->assertResolveStream($this->client->connect('www.google.com:80'));
     }
 
     /** @group internet */
@@ -76,15 +76,6 @@ class FunctionalTest extends TestCase
         $this->client = new Client('socks4://127.0.0.1:' . $this->port, $this->connector);
 
         $this->assertRejectPromise($this->client->connect('[::1]:80'));
-    }
-
-    /** @group internet */
-    public function testConnectionSocks4a()
-    {
-        $this->server->setProtocolVersion('4a');
-        $this->client = new Client('socks4a://127.0.0.1:' . $this->port, $this->connector);
-
-        $this->assertResolveStream($this->client->connect('www.google.com:80'));
     }
 
     /** @group internet */
@@ -299,7 +290,7 @@ class FunctionalTest extends TestCase
     public function testConnectionInvalidProtocolDoesNotMatchSocks5()
     {
         $this->server->setProtocolVersion(5);
-        $this->client = new Client('socks4a://127.0.0.1:' . $this->port, $this->connector);
+        $this->client = new Client('socks4://127.0.0.1:' . $this->port, $this->connector);
 
         $this->assertRejectPromise($this->client->connect('www.google.com:80'), null, SOCKET_ECONNRESET);
     }
