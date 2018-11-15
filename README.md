@@ -24,7 +24,6 @@ of the actual application level protocol, such as HTTP, SMTP, IMAP, Telnet etc.
     * [Unix domain sockets](#unix-domain-sockets)
   * [Server](#server)
     * [Server connector](#server-connector)
-    * [Protocol version](#server-protocol-version)
     * [Authentication](#server-authentication)
     * [Proxy chaining](#server-proxy-chaining)
     * [SOCKS over TLS](#server-socks-over-tls)
@@ -613,6 +612,7 @@ $client = new Client('socks+unix://user:pass@/tmp/proxy.sock', new Connector($lo
 
 The `Server` is responsible for accepting incoming communication from SOCKS clients
 and forwarding the requested connection to the target host.
+It supports the SOCKS5 and SOCKS4(a) protocol versions by default.
 It also registers everything with the main [`EventLoop`](https://github.com/reactphp/event-loop#usage)
 and an underlying TCP/IP socket server like this:
 
@@ -661,23 +661,6 @@ and any authentication details, for example `socks5://user:pass@1.2.3.4:5678`.
 You can use this parameter for logging purposes or to restrict connection
 requests for certain clients by providing a custom implementation of the
 [`ConnectorInterface`](https://github.com/reactphp/socket#connectorinterface).
-
-#### Server protocol version
-
-The `Server` supports the SOCKS5 and SOCKS4(a) protocol versions by default.
-
-If want to explicitly set the protocol version, use the supported values `4`, or `5`:
-
-```PHP
-$server->setProtocolVersion(5);
-```
-
-In order to reset the protocol version to its default (i.e. automatic detection),
-use `null` as protocol version.
-
-```PHP
-$server->setProtocolVersion(null);
-```
 
 #### Server authentication
 
@@ -785,8 +768,8 @@ Proxy chaining can happen on the server side and/or the client side:
 
 #### Server SOCKS over TLS
 
-All [SOCKS protocol versions](#server-protocol-version) support forwarding TCP/IP
-based connections and higher level protocols.
+Both SOCKS5 and SOCKS4(a) protocol versions support forwarding TCP/IP based
+connections and higher level protocols.
 This implies that you can also use [secure TLS connections](#secure-tls-connections)
 to transfer sensitive data across SOCKS proxy servers.
 This means that no eavesdropper nor the proxy server will be able to decrypt
@@ -837,8 +820,8 @@ See also [example 31](examples).
 
 #### Server Unix domain sockets
 
-All [SOCKS protocol versions](#server-protocol-version) support forwarding TCP/IP
-based connections and higher level protocols.
+Both SOCKS5 and SOCKS4(a) protocol versions support forwarding TCP/IP based
+connections and higher level protocols.
 In some advanced cases, it may be useful to let your SOCKS server listen on a
 Unix domain socket (UDS) path instead of a IP:port combination.
 For example, this allows you to rely on file system permissions instead of

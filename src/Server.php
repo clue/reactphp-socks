@@ -41,8 +41,6 @@ final class Server
 
     private $auth = null;
 
-    private $protocolVersion = null;
-
     public function __construct(LoopInterface $loop, ConnectorInterface $connector = null)
     {
         if ($connector === null) {
@@ -65,28 +63,12 @@ final class Server
         });
     }
 
-    public function setProtocolVersion($version)
-    {
-        if ($version !== null) {
-            $version = (string)$version;
-            if (!in_array($version, array('4', '5'), true)) {
-                throw new InvalidArgumentException('Invalid protocol version given');
-            }
-            if ($version !== '5' && $this->auth !== null){
-                throw new UnexpectedValueException('Unable to change protocol version to anything but SOCKS5 while authentication is used. Consider removing authentication info or sticking to SOCKS5');
-            }
-        }
-        $this->protocolVersion = $version;
-    }
-
     public function setAuth($auth)
     {
         if (!is_callable($auth)) {
             throw new InvalidArgumentException('Given authenticator is not a valid callable');
         }
-        if ($this->protocolVersion !== null && $this->protocolVersion !== '5') {
-            throw new UnexpectedValueException('Authentication requires SOCKS5. Consider using protocol version 5 or waive authentication');
-        }
+
         // wrap authentication callback in order to cast its return value to a promise
         $this->auth = function($username, $password, $remote) use ($auth) {
             $ret = call_user_func($auth, $username, $password, $remote);
@@ -163,26 +145,15 @@ final class Server
         $stream->on('data', array($reader, 'write'));
 
         $that = $this;
-        $that = $this;
-
         $auth = $this->auth;
-        $protocolVersion = $this->protocolVersion;
 
-        // authentication requires SOCKS5
-        if ($auth !== null) {
-        	$protocolVersion = '5';
-        }
-
-        return $reader->readByte()->then(function ($version) use ($stream, $that, $protocolVersion, $auth, $reader){
+        return $reader->readByte()->then(function ($version) use ($stream, $that, $auth, $reader){
             if ($version === 0x04) {
-                if ($protocolVersion === '5') {
-                    throw new UnexpectedValueException('SOCKS4 not allowed due to configuration');
+                if ($auth !== null) {
+                    throw new UnexpectedValueException('SOCKS4 not allowed because authentication is required');
                 }
                 return $that->handleSocks4($stream, $reader);
             } else if ($version === 0x05) {
-                if ($protocolVersion !== null && $protocolVersion !== '5') {
-                    throw new UnexpectedValueException('SOCKS5 not allowed due to configuration');
-                }
                 return $that->handleSocks5($stream, $auth, $reader);
             }
             throw new UnexpectedValueException('Unexpected/unknown version number');
