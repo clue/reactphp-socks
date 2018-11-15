@@ -3,8 +3,6 @@
 namespace Clue\React\Socks;
 
 use React\Socket\ServerInterface;
-use React\Promise;
-use React\Promise\Deferred;
 use React\Promise\PromiseInterface;
 use React\Socket\ConnectorInterface;
 use React\Socket\Connector;
@@ -71,13 +69,9 @@ final class Server
 
         // wrap authentication callback in order to cast its return value to a promise
         $this->auth = function($username, $password, $remote) use ($auth) {
-            $ret = call_user_func($auth, $username, $password, $remote);
-            if ($ret instanceof PromiseInterface) {
-                return $ret;
-            }
-            $deferred = new Deferred();
-            $ret ? $deferred->resolve() : $deferred->reject();
-            return $deferred->promise();
+            return  \React\Promise\resolve(
+                call_user_func($auth, $username, $password, $remote)
+            );
         };
     }
 
@@ -215,7 +209,7 @@ final class Server
     }
 
     /** @internal */
-    public function handleSocks5(ConnectionInterface $stream, $auth=null, StreamReader $reader)
+    public function handleSocks5(ConnectionInterface $stream, $auth, StreamReader $reader)
     {
         $remote = $stream->getRemoteAddress();
         if ($remote !== null) {
@@ -255,13 +249,19 @@ final class Server
                             $remote = str_replace('://', '://' . rawurlencode($username) . ':' . rawurlencode($password) . '@', $remote);
                         }
 
-                        return $auth($username, $password, $remote)->then(function () use ($stream) {
-                            // accept
-                            $stream->write(pack('C2', 0x01, 0x00));
-                        }, function() use ($stream) {
-                            // reject => send any code but 0x00
+                        return $auth($username, $password, $remote)->then(function ($authenticated) use ($stream) {
+                            if ($authenticated) {
+                                // accept auth
+                                $stream->write(pack('C2', 0x01, 0x00));
+                            } else {
+                                // reject auth => send any code but 0x00
+                                $stream->end(pack('C2', 0x01, 0xFF));
+                                throw new UnexpectedValueException('Authentication denied');
+                            }
+                        }, function ($e) use ($stream) {
+                            // reject failed authentication => send any code but 0x00
                             $stream->end(pack('C2', 0x01, 0xFF));
-                            throw new UnexpectedValueException('Unable to authenticate');
+                            throw new UnexpectedValueException('Authentication error', 0, $e);
                         });
                     });
                 });
@@ -336,7 +336,7 @@ final class Server
         // validate URI so a string hostname can not pass excessive URI parts
         $parts = parse_url('tcp://' . $uri);
         if (!$parts || !isset($parts['scheme'], $parts['host'], $parts['port']) || count($parts) !== 3) {
-            return Promise\reject(new InvalidArgumentException('Invalid target URI given'));
+            return \React\Promise\reject(new InvalidArgumentException('Invalid target URI given'));
         }
 
         if (isset($target[2])) {

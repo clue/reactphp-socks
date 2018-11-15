@@ -676,21 +676,38 @@ the connection will be rejected.
 
 Because your authentication mechanism might take some time to actually check
 the provided authentication credentials (like querying a remote database or webservice),
-the server side uses a [Promise](https://github.com/reactphp/promise) based interface.
+the server side uses a [Promise](https://github.com/reactphp/promise)-based interface.
 While this might seem complex at first, it actually provides a very simple way
 to handle simultanous connections in a non-blocking fashion and increases overall performance.
 
-```PHP
-$server->setAuth(function ($username, $password, $remote) {
-    // either return a boolean success value right away
-    // or use promises for delayed authentication
+You can use the `setAuth(callable $authenticator)` method to configure a callable
+function that should return a `bool` value like this synchronous example:
 
+```php
+$server->setAuth(function ($username, $password, $remote) {
     // $remote is a full URI à la socks5://user:pass@192.168.1.1:1234
     // or socks5s://user:pass@192.168.1.1:1234 for SOCKS over TLS
     // useful for logging or extracting parts, such as the remote IP
     $ip = parse_url($remote, PHP_URL_HOST);
 
-    return ($username === 'root' && $ip === '127.0.0.1');
+    return ($username === 'root' && $password === 'secret' && $ip === '127.0.0.1');
+});
+```
+
+Similarly, you can return a [Promise](https://github.com/reactphp/promise) from
+the authenticator function that will fulfill with a `bool` value like this async
+example:
+
+```php
+$server->setAuth(function ($username, $password) use ($db) {
+    // pseudo-code: query database for given authentication details
+    return $db->query(
+        'SELECT 1 FROM users WHERE name = ? AND password = ?',
+        array($username, $password)
+    )->then(function (QueryResult $result) {
+        // ensure we find exactly one match in the database
+        return count($result->resultRows) === 1;
+    });
 });
 ```
 

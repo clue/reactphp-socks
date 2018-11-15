@@ -302,6 +302,39 @@ class FunctionalTest extends TestCase
         $this->assertRejectPromise($this->client->connect('www.google.com:80'), null, SOCKET_EACCES);
     }
 
+    public function testConnectionInvalidAuthenticatorReturnsFalse()
+    {
+        $this->server->setAuth(function () {
+            return false;
+        });
+
+        $this->client = new Client('user:pass@127.0.0.1:' . $this->port, $this->connector);
+
+        $this->assertRejectPromise($this->client->connect('www.google.com:80'), null, SOCKET_EACCES);
+    }
+
+    public function testConnectionInvalidAuthenticatorReturnsPromiseFulfilledWithFalse()
+    {
+        $this->server->setAuth(function () {
+            return \React\Promise\resolve(false);
+        });
+
+        $this->client = new Client('user:pass@127.0.0.1:' . $this->port, $this->connector);
+
+        $this->assertRejectPromise($this->client->connect('www.google.com:80'), null, SOCKET_EACCES);
+    }
+
+    public function testConnectionInvalidAuthenticatorReturnsPromiseRejected()
+    {
+        $this->server->setAuth(function () {
+            return \React\Promise\reject();
+        });
+
+        $this->client = new Client('user:pass@127.0.0.1:' . $this->port, $this->connector);
+
+        $this->assertRejectPromise($this->client->connect('www.google.com:80'), null, SOCKET_EACCES);
+    }
+
     /** @group internet */
     public function testConnectorOkay()
     {
