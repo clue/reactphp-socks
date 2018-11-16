@@ -180,9 +180,8 @@ class FunctionalTest extends TestCase
 
         $path = sys_get_temp_dir() . '/test' . mt_rand(1000, 9999) . '.sock';
         $socket = new UnixServer($path, $this->loop);
-        $this->server = new Server($this->loop);
+        $this->server = new Server($this->loop, null, array('name' => 'pass'));
         $this->server->listen($socket);
-        $this->server->setAuthArray(array('name' => 'pass'));
 
         $this->connector = new Connector($this->loop);
         $this->client = new Client('socks+unix://name:pass@' . $path, $this->connector);
@@ -195,7 +194,11 @@ class FunctionalTest extends TestCase
     /** @group internet */
     public function testConnectionAuthenticationFromUri()
     {
-        $this->server->setAuthArray(array('name' => 'pass'));
+        $this->server = new Server($this->loop, null, array('name' => 'pass'));
+
+        $socket = new React\Socket\Server(0, $this->loop);
+        $this->server->listen($socket);
+        $this->port = parse_url($socket->getAddress(), PHP_URL_PORT);
 
         $this->client = new Client('name:pass@127.0.0.1:' . $this->port, $this->connector);
 
@@ -207,7 +210,7 @@ class FunctionalTest extends TestCase
     {
         $called = 0;
         $that = $this;
-        $this->server->setAuth(function ($name, $pass, $remote) use ($that, &$called) {
+        $this->server = new Server($this->loop, null, function ($name, $pass, $remote) use ($that, &$called) {
             ++$called;
             $that->assertEquals('name', $name);
             $that->assertEquals('pass', $pass);
@@ -215,6 +218,10 @@ class FunctionalTest extends TestCase
 
             return true;
         });
+
+        $socket = new React\Socket\Server(0, $this->loop);
+        $this->server->listen($socket);
+        $this->port = parse_url($socket->getAddress(), PHP_URL_PORT);
 
         $this->client = new Client('name:pass@127.0.0.1:' . $this->port, $this->connector);
 
@@ -226,11 +233,15 @@ class FunctionalTest extends TestCase
     public function testConnectionAuthenticationCallbackWillNotBeInvokedIfClientsSendsNoAuth()
     {
         $called = 0;
-        $this->server->setAuth(function () use (&$called) {
+        $this->server = new Server($this->loop, null, function () use (&$called) {
             ++$called;
 
             return true;
         });
+
+        $socket = new React\Socket\Server(0, $this->loop);
+        $this->server->listen($socket);
+        $this->port = parse_url($socket->getAddress(), PHP_URL_PORT);
 
         $this->client = new Client('127.0.0.1:' . $this->port, $this->connector);
 
@@ -241,7 +252,11 @@ class FunctionalTest extends TestCase
     /** @group internet */
     public function testConnectionAuthenticationFromUriEncoded()
     {
-        $this->server->setAuthArray(array('name' => 'p@ss:w0rd'));
+        $this->server = new Server($this->loop, null, array('name' => 'p@ss:w0rd'));
+
+        $socket = new React\Socket\Server(0, $this->loop);
+        $this->server->listen($socket);
+        $this->port = parse_url($socket->getAddress(), PHP_URL_PORT);
 
         $this->client = new Client(rawurlencode('name') . ':' . rawurlencode('p@ss:w0rd') . '@127.0.0.1:' . $this->port, $this->connector);
 
@@ -251,7 +266,11 @@ class FunctionalTest extends TestCase
     /** @group internet */
     public function testConnectionAuthenticationFromUriWithOnlyUserAndNoPassword()
     {
-        $this->server->setAuthArray(array('empty' => ''));
+        $this->server = new Server($this->loop, null, array('empty' => ''));
+
+        $socket = new React\Socket\Server(0, $this->loop);
+        $this->server->listen($socket);
+        $this->port = parse_url($socket->getAddress(), PHP_URL_PORT);
 
         $this->client = new Client('empty@127.0.0.1:' . $this->port, $this->connector);
 
@@ -261,7 +280,12 @@ class FunctionalTest extends TestCase
     /** @group internet */
     public function testConnectionAuthenticationEmptyPassword()
     {
-        $this->server->setAuthArray(array('user' => ''));
+        $this->server = new Server($this->loop, null, array('user' => ''));
+
+        $socket = new React\Socket\Server(0, $this->loop);
+        $this->server->listen($socket);
+        $this->port = parse_url($socket->getAddress(), PHP_URL_PORT);
+
         $this->client = new Client('user@127.0.0.1:' . $this->port, $this->connector);
 
         $this->assertResolveStream($this->client->connect('www.google.com:80'));
@@ -277,7 +301,11 @@ class FunctionalTest extends TestCase
 
     public function testConnectionInvalidNoAuthenticationOverLegacySocks4()
     {
-        $this->server->setAuthArray(array('name' => 'pass'));
+        $this->server = new Server($this->loop, null, array('name' => 'pass'));
+
+        $socket = new React\Socket\Server(0, $this->loop);
+        $this->server->listen($socket);
+        $this->port = parse_url($socket->getAddress(), PHP_URL_PORT);
 
         $this->client = new Client('socks4://127.0.0.1:' . $this->port, $this->connector);
 
@@ -286,7 +314,11 @@ class FunctionalTest extends TestCase
 
     public function testConnectionInvalidNoAuthentication()
     {
-        $this->server->setAuthArray(array('name' => 'pass'));
+        $this->server = new Server($this->loop, null, array('name' => 'pass'));
+
+        $socket = new React\Socket\Server(0, $this->loop);
+        $this->server->listen($socket);
+        $this->port = parse_url($socket->getAddress(), PHP_URL_PORT);
 
         $this->client = new Client('socks5://127.0.0.1:' . $this->port, $this->connector);
 
@@ -295,7 +327,11 @@ class FunctionalTest extends TestCase
 
     public function testConnectionInvalidAuthenticationMismatch()
     {
-        $this->server->setAuthArray(array('name' => 'pass'));
+        $this->server = new Server($this->loop, null, array('name' => 'pass'));
+
+        $socket = new React\Socket\Server(0, $this->loop);
+        $this->server->listen($socket);
+        $this->port = parse_url($socket->getAddress(), PHP_URL_PORT);
 
         $this->client = new Client('user:pass@127.0.0.1:' . $this->port, $this->connector);
 
@@ -304,9 +340,13 @@ class FunctionalTest extends TestCase
 
     public function testConnectionInvalidAuthenticatorReturnsFalse()
     {
-        $this->server->setAuth(function () {
+        $this->server = new Server($this->loop, null, function () {
             return false;
         });
+
+        $socket = new React\Socket\Server(0, $this->loop);
+        $this->server->listen($socket);
+        $this->port = parse_url($socket->getAddress(), PHP_URL_PORT);
 
         $this->client = new Client('user:pass@127.0.0.1:' . $this->port, $this->connector);
 
@@ -315,9 +355,13 @@ class FunctionalTest extends TestCase
 
     public function testConnectionInvalidAuthenticatorReturnsPromiseFulfilledWithFalse()
     {
-        $this->server->setAuth(function () {
+        $this->server = new Server($this->loop, null, function () {
             return \React\Promise\resolve(false);
         });
+
+        $socket = new React\Socket\Server(0, $this->loop);
+        $this->server->listen($socket);
+        $this->port = parse_url($socket->getAddress(), PHP_URL_PORT);
 
         $this->client = new Client('user:pass@127.0.0.1:' . $this->port, $this->connector);
 
@@ -326,9 +370,13 @@ class FunctionalTest extends TestCase
 
     public function testConnectionInvalidAuthenticatorReturnsPromiseRejected()
     {
-        $this->server->setAuth(function () {
+        $this->server = new Server($this->loop, null, function () {
             return \React\Promise\reject();
         });
+
+        $socket = new React\Socket\Server(0, $this->loop);
+        $this->server->listen($socket);
+        $this->port = parse_url($socket->getAddress(), PHP_URL_PORT);
 
         $this->client = new Client('user:pass@127.0.0.1:' . $this->port, $this->connector);
 

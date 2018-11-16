@@ -37,12 +37,38 @@ final class Server
 
     private $connector;
 
-    private $auth = null;
+    /**
+     * @var null|callable
+     */
+    private $auth;
 
-    public function __construct(LoopInterface $loop, ConnectorInterface $connector = null)
+    /**
+     * @param LoopInterface           $loop
+     * @param null|ConnectorInterface $connector
+     * @param null|array|callable     $auth
+     */
+    public function __construct(LoopInterface $loop, ConnectorInterface $connector = null, $auth = null)
     {
         if ($connector === null) {
             $connector = new Connector($loop);
+        }
+
+        if (\is_array($auth)) {
+            // wrap authentication array in authentication callback
+            $this->auth = function ($username, $password) use ($auth) {
+                return \React\Promise\resolve(
+                    isset($auth[$username]) && (string)$auth[$username] === $password
+                );
+            };
+        } elseif (\is_callable($auth)) {
+            // wrap authentication callback in order to cast its return value to a promise
+            $this->auth = function($username, $password, $remote) use ($auth) {
+                return  \React\Promise\resolve(
+                    \call_user_func($auth, $username, $password, $remote)
+                );
+            };
+        } elseif ($auth !== null) {
+            throw new \InvalidArgumentException('Invalid authenticator given');
         }
 
         $this->loop = $loop;
@@ -59,32 +85,6 @@ final class Server
         $socket->on('connection', function ($connection) use ($that) {
             $that->onConnection($connection);
         });
-    }
-
-    public function setAuth($auth)
-    {
-        if (!is_callable($auth)) {
-            throw new InvalidArgumentException('Given authenticator is not a valid callable');
-        }
-
-        // wrap authentication callback in order to cast its return value to a promise
-        $this->auth = function($username, $password, $remote) use ($auth) {
-            return  \React\Promise\resolve(
-                call_user_func($auth, $username, $password, $remote)
-            );
-        };
-    }
-
-    public function setAuthArray(array $login)
-    {
-        $this->setAuth(function ($username, $password) use ($login) {
-            return (isset($login[$username]) && (string)$login[$username] === $password);
-        });
-    }
-
-    public function unsetAuth()
-    {
-        $this->auth = null;
     }
 
     /** @internal */

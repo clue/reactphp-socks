@@ -9,8 +9,7 @@ $loop = React\EventLoop\Factory::create();
 
 // start a new SOCKS proxy server
 // require authentication and hence make this a SOCKS5-only server
-$server = new Server($loop);
-$server->setAuthArray(array(
+$server = new Server($loop, null, array(
     'tom' => 'god',
     'user' => 'p@ssw0rd'
 ));

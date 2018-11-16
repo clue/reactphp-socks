@@ -6,19 +6,21 @@ use React\Promise\Timer\TimeoutException;
 
 class ServerTest extends TestCase
 {
+    private $loop;
+    private $connector;
+
     /** @var Server */
     private $server;
-    private $connector;
 
     public function setUp()
     {
-        $loop = $this->getMockBuilder('React\EventLoop\LoopInterface')
+        $this->loop = $this->getMockBuilder('React\EventLoop\LoopInterface')
             ->getMock();
 
         $this->connector = $this->getMockBuilder('React\Socket\ConnectorInterface')
             ->getMock();
 
-        $this->server = new Server($loop, $this->connector);
+        $this->server = new Server($this->loop, $this->connector);
     }
 
     /**
@@ -31,24 +33,31 @@ class ServerTest extends TestCase
         $this->server->listen($socket);
     }
 
-    public function testSetAuthArray()
+    /**
+     * @doesNotPerformAssertions
+     */
+    public function testConstructorWithEmptyAuthArray()
     {
-        $this->server->setAuthArray(array());
+        $this->server = new Server($this->loop, $this->connector, array());
+    }
 
-        $this->server->setAuthArray(array(
+    /**
+     * @doesNotPerformAssertions
+     */
+    public function testConstructorWithStaticAuthArray()
+    {
+        $this->server = new Server($this->loop, $this->connector, array(
             'name1' => 'password1',
             'name2' => 'password2'
         ));
-
-        $this->assertTrue(true);
     }
 
     /**
      * @expectedException InvalidArgumentException
      */
-    public function testSetAuthInvalid()
+    public function testConstructorWithInvalidAuthenticatorThrows()
     {
-        $this->server->setAuth(true);
+        new Server($this->loop, $this->connector, true);
     }
 
     public function testConnectWillCreateConnection()
@@ -382,13 +391,5 @@ class ServerTest extends TestCase
 
         $connection->emit('data', array("\x04\x01" . "\x00\x50" . pack('N', ip2long('127.0.0.1')) . "\x00"));
         $connection->emit('close');
-    }
-
-    public function testUnsetAuth()
-    {
-        $this->server->unsetAuth();
-        $this->server->unsetAuth();
-
-        $this->assertTrue(true);
     }
 }
