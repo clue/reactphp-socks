@@ -157,19 +157,53 @@ final class Client implements ConnectorInterface
             $socksUri .= '#' . $parts['fragment'];
         }
 
-        $that = $this;
+        // start TCP/IP connection to SOCKS server
+        $connecting = $this->connector->connect($socksUri);
 
-        // start TCP/IP connection to SOCKS server and then
+        $deferred = new Deferred(function ($_, $reject) use ($connecting) {
+            $reject(new RuntimeException(
+                'Connection cancelled while waiting for proxy (ECONNABORTED)',
+                defined('SOCKET_ECONNABORTED') ? SOCKET_ECONNABORTED : 103
+            ));
+
+            // either close active connection or cancel pending connection attempt
+            $connecting->then(function (ConnectionInterface $stream) {
+                $stream->close();
+            });
+            $connecting->cancel();
+        });
+
         // handle SOCKS protocol once connection is ready
         // resolve plain connection once SOCKS protocol is completed
-        return $this->connector->connect($socksUri)->then(
-            function (ConnectionInterface $stream) use ($that, $host, $port) {
-                return $that->handleConnectedSocks($stream, $host, $port);
+        $that = $this;
+        $connecting->then(
+            function (ConnectionInterface $stream) use ($that, $host, $port, $deferred) {
+                $that->handleConnectedSocks($stream, $host, $port, $deferred);
             },
-            function (Exception $e) {
-                throw new RuntimeException('Unable to connect to proxy (ECONNREFUSED)', defined('SOCKET_ECONNREFUSED') ? SOCKET_ECONNREFUSED : 111, $e);
+            function (Exception $e) use ($deferred) {
+                $deferred->reject($e = new RuntimeException(
+                    'Connection failed because connection to proxy failed (ECONNREFUSED)',
+                    defined('SOCKET_ECONNREFUSED') ? SOCKET_ECONNREFUSED : 111,
+                    $e
+                ));
+
+                // avoid garbage references by replacing all closures in call stack.
+                // what a lovely piece of code!
+                $r = new \ReflectionProperty('Exception', 'trace');
+                $r->setAccessible(true);
+                $trace = $r->getValue($e);
+                foreach ($trace as &$one) {
+                    foreach ($one['args'] as &$arg) {
+                        if ($arg instanceof \Closure) {
+                            $arg = 'Object(' . get_class($arg) . ')';
+                        }
+                    }
+                }
+                $r->setValue($e, $trace);
             }
         );
+
+        return $deferred->promise();
     }
 
     /**
@@ -178,15 +212,12 @@ final class Client implements ConnectorInterface
      * @param ConnectionInterface $stream
      * @param string              $host
      * @param int                 $port
-     * @return Promise Promise<ConnectionInterface, Exception>
+     * @param Deferred            $deferred
+     * @return void
      * @internal
      */
-    public function handleConnectedSocks(ConnectionInterface $stream, $host, $port)
+    public function handleConnectedSocks(ConnectionInterface $stream, $host, $port, Deferred $deferred)
     {
-        $deferred = new Deferred(function ($_, $reject) {
-            $reject(new RuntimeException('Connection canceled while establishing SOCKS session (ECONNABORTED)', defined('SOCKET_ECONNABORTED') ? SOCKET_ECONNABORTED : 103));
-        });
-
         $reader = new StreamReader();
         $stream->on('data', array($reader, 'write'));
 
@@ -203,32 +234,22 @@ final class Client implements ConnectorInterface
         } else {
             $promise = $this->handleSocks4($stream, $host, $port, $reader);
         }
-        $promise->then(function () use ($deferred, $stream) {
+
+        $promise->then(function () use ($deferred, $stream, $reader, $onError, $onClose) {
+            $stream->removeListener('data', array($reader, 'write'));
+            $stream->removeListener('error', $onError);
+            $stream->removeListener('close', $onClose);
+
             $deferred->resolve($stream);
-        }, function (Exception $error) use ($deferred) {
+        }, function (Exception $error) use ($deferred, $stream) {
             // pass custom RuntimeException through as-is, otherwise wrap in protocol error
             if (!$error instanceof RuntimeException) {
                 $error = new RuntimeException('Invalid response received from proxy (EBADMSG)', defined('SOCKET_EBADMSG') ? SOCKET_EBADMSG: 71, $error);
             }
 
             $deferred->reject($error);
+            $stream->close();
         });
-
-        return $deferred->promise()->then(
-            function (ConnectionInterface $stream) use ($reader, $onError, $onClose) {
-                $stream->removeListener('data', array($reader, 'write'));
-                $stream->removeListener('error', $onError);
-                $stream->removeListener('close', $onClose);
-
-                return $stream;
-            },
-            function ($error) use ($stream, $onClose) {
-                $stream->removeListener('close', $onClose);
-                $stream->close();
-
-                throw $error;
-            }
-        );
     }
 
     private function handleSocks4(ConnectionInterface $stream, $host, $port, StreamReader $reader)
