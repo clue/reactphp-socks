@@ -50,19 +50,17 @@ class FunctionalTest extends TestCase
 
     public function testConnectionWithIpViaSocks4()
     {
-        $this->server->setProtocolVersion('4');
-
         $this->client = new Client('socks4://127.0.0.1:' . $this->port, $this->connector);
 
         $this->assertResolveStream($this->client->connect('127.0.0.1:' . $this->port));
     }
 
     /** @group internet */
-    public function testConnectionWithHostnameViaSocks4Fails()
+    public function testConnectionWithHostnameViaSocks4a()
     {
         $this->client = new Client('socks4://127.0.0.1:' . $this->port, $this->connector);
 
-        $this->assertRejectPromise($this->client->connect('www.google.com:80'));
+        $this->assertResolveStream($this->client->connect('www.google.com:80'));
     }
 
     /** @group internet */
@@ -79,27 +77,9 @@ class FunctionalTest extends TestCase
     }
 
     /** @group internet */
-    public function testConnectionSocks4a()
-    {
-        $this->server->setProtocolVersion('4a');
-        $this->client = new Client('socks4a://127.0.0.1:' . $this->port, $this->connector);
-
-        $this->assertResolveStream($this->client->connect('www.google.com:80'));
-    }
-
-    /** @group internet */
     public function testConnectionSocks5()
     {
-        $this->server->setProtocolVersion(5);
         $this->client = new Client('socks5://127.0.0.1:' . $this->port, $this->connector);
-
-        $this->assertResolveStream($this->client->connect('www.google.com:80'));
-    }
-
-    /** @group internet */
-    public function testConnectionDefaultsToSocks5()
-    {
-        $this->server->setProtocolVersion(5);
 
         $this->assertResolveStream($this->client->connect('www.google.com:80'));
     }
@@ -182,7 +162,6 @@ class FunctionalTest extends TestCase
         $socket = new UnixServer($path, $this->loop);
         $this->server = new Server($this->loop);
         $this->server->listen($socket);
-        $this->server->setProtocolVersion(5);
 
         $this->connector = new Connector($this->loop);
         $this->client = new Client('socks5+unix://' . $path, $this->connector);
@@ -296,20 +275,13 @@ class FunctionalTest extends TestCase
         $this->assertResolveStream($this->client->connect('www.google.com:80'));
     }
 
-    public function testConnectionInvalidProtocolDoesNotMatchSocks5()
+    public function testConnectionInvalidNoAuthenticationOverLegacySocks4()
     {
-        $this->server->setProtocolVersion(5);
-        $this->client = new Client('socks4a://127.0.0.1:' . $this->port, $this->connector);
+        $this->server->setAuthArray(array('name' => 'pass'));
 
-        $this->assertRejectPromise($this->client->connect('www.google.com:80'), null, SOCKET_ECONNRESET);
-    }
+        $this->client = new Client('socks4://127.0.0.1:' . $this->port, $this->connector);
 
-    public function testConnectionInvalidProtocolDoesNotMatchSocks4()
-    {
-        $this->server->setProtocolVersion(4);
-        $this->client = new Client('socks5://127.0.0.1:' . $this->port, $this->connector);
-
-        $this->assertRejectPromise($this->client->connect('www.google.com:80'), null, SOCKET_ECONNRESET);
+        $this->assertRejectPromise($this->client->connect('www.google.com:80'));
     }
 
     public function testConnectionInvalidNoAuthentication()

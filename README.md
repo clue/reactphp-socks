@@ -1,6 +1,8 @@
 # clue/reactphp-socks [![Build Status](https://travis-ci.org/clue/reactphp-socks.svg?branch=master)](https://travis-ci.org/clue/reactphp-socks)
 
-Async SOCKS4, SOCKS4a and SOCKS5 proxy client and server implementation, built on top of [ReactPHP](http://reactphp.org).
+Async SOCKS proxy connector client and server implementation, use any TCP/IP-based
+protocol through a SOCKS5 or SOCKS4(a) proxy server, built on top of
+[ReactPHP](https://reactphp.org).
 
 The SOCKS protocol family can be used to easily tunnel TCP connections independent
 of the actual application level protocol, such as HTTP, SMTP, IMAP, Telnet etc.
@@ -22,7 +24,6 @@ of the actual application level protocol, such as HTTP, SMTP, IMAP, Telnet etc.
     * [Unix domain sockets](#unix-domain-sockets)
   * [Server](#server)
     * [Server connector](#server-connector)
-    * [Protocol version](#server-protocol-version)
     * [Authentication](#server-authentication)
     * [Proxy chaining](#server-proxy-chaining)
     * [SOCKS over TLS](#server-socks-over-tls)
@@ -241,82 +242,82 @@ This works for both plain HTTP and SSL encrypted HTTPS requests.
 
 #### Protocol version
 
-This library supports the SOCKS4, SOCKS4a and SOCKS5 protocol versions.
-
-While SOCKS4 already had (a somewhat limited) support for `SOCKS BIND` requests
-and SOCKS5 added generic UDP support (`SOCKS UDPASSOCIATE`), this library
-focuses on the most commonly used core feature of `SOCKS CONNECT`.
-In this mode, a SOCKS server acts as a generic proxy allowing higher level
-application protocols to work through it.
+This library supports the SOCKS5 and SOCKS4(a) protocol versions.
+It focuses on the most commonly used core feature of connecting to a destination
+host through the SOCKS proxy server. In this mode, a SOCKS proxy server acts as
+a generic proxy allowing higher level application protocols to work through it.
 
 <table>
   <tr>
     <th></th>
-    <th>SOCKS4</th>
-    <th>SOCKS4a</th>
     <th>SOCKS5</th>
+    <th>SOCKS4(a)</th>
   </tr>
   <tr>
     <th>Protocol specification</th>
-    <td><a href="http://ftp.icm.edu.pl/packages/socks/socks4/SOCKS4.protocol">SOCKS4.protocol</a></td>
-    <td><a href="http://ftp.icm.edu.pl/packages/socks/socks4/SOCKS4A.protocol">SOCKS4A.protocol</a></td>
     <td><a href="http://tools.ietf.org/html/rfc1928">RFC 1928</a></td>
+    <td>
+      <a href="http://ftp.icm.edu.pl/packages/socks/socks4/SOCKS4.protocol">SOCKS4.protocol</a> /
+      <a href="http://ftp.icm.edu.pl/packages/socks/socks4/SOCKS4A.protocol">SOCKS4A.protocol</a>
+    </td>
   </tr>
   <tr>
-    <th>Tunnel outgoing TCP connections</th>
-    <td>✓</td>
+    <th>Tunnel outgoing TCP/IP connections</th>
     <td>✓</td>
     <td>✓</td>
   </tr>
   <tr>
-    <th><a href="#dns-resolution">Remote DNS resolving</a></th>
-    <td>✗</td>
+    <th><a href="#dns-resolution">Remote DNS resolution</a></th>
     <td>✓</td>
-    <td>✓</td>
+    <td>✗ / ✓</td>
   </tr>
   <tr>
     <th>IPv6 addresses</th>
-    <td>✗</td>
-    <td>✗</td>
     <td>✓</td>
+    <td>✗</td>
   </tr>
   <tr>
     <th><a href="#authentication">Username/Password authentication</a></th>
-    <td>✗</td>
-    <td>✗</td>
     <td>✓ (as per <a href="http://tools.ietf.org/html/rfc1929">RFC 1929</a>)</td>
+    <td>✗</td>
   </tr>
   <tr>
     <th>Handshake # roundtrips</th>
-    <td>1</td>
-    <td>1</td>
     <td>2 (3 with authentication)</td>
+    <td>1</td>
   </tr>
   <tr>
     <th>Handshake traffic<br />+ remote DNS</th>
-    <td>17 bytes<br />✗</td>
-    <td>17 bytes<br />+ hostname + 1</td>
     <td><em>variable</em> (+ auth + IPv6)<br />+ hostname - 3</td>
+    <td>17 bytes<br />+ hostname + 1</td>
+  </tr>
+  <tr>
+    <th>Incoming BIND requests</th>
+    <td><em>not implemented</em></td>
+    <td><em>not implemented</em></td>
+  </tr>
+  <tr>
+    <th>UDP datagrams</th>
+    <td><em>not implemented</em></td>
+    <td>✗</td>
+  </tr>
+  <tr>
+    <th>GSSAPI authentication</th>
+    <td><em>not implemented</em></td>
+    <td>✗</td>
   </tr>
 </table>
-
-Note, this is __not__ a full SOCKS5 implementation due to missing GSSAPI
-authentication (but it's unlikely you're going to miss it anyway).
 
 By default, the `Client` communicates via SOCKS5 with the SOCKS server.
 This is done because SOCKS5 is the latest version from the SOCKS protocol family
 and generally has best support across other vendors.
 
-If want to explicitly set the protocol version, use the supported values URI
-schemes `socks4://` or `socks4a://`as part of the SOCKS URI:
+If want to explicitly set the protocol version to SOCKS4(a), you can use the URI
+scheme `socks4://` as part of the SOCKS URI:
 
 ```php
-$client = new Client('socks4a://127.0.0.1', $connector);
+$client = new Client('socks4://127.0.0.1', $connector);
 ```
-
-As seen above, both SOCKS5 and SOCKS4a support remote and local DNS resolution.
-If you've explicitly set this to SOCKS4, then you may want to check the following
-chapter about local DNS resolution or you may only connect to IPv4 addresses.
 
 #### DNS resolution
 
@@ -325,7 +326,7 @@ forwards any hostname you're trying to connect to to the SOCKS server.
 The remote SOCKS server is thus responsible for looking up any hostnames via DNS
 (this default mode is thus called *remote DNS resolution*).
 As seen above, this mode is supported by the SOCKS5 and SOCKS4a protocols, but
-not the SOCKS4 protocol, as the protocol lacks a way to communicate hostnames.
+not the original SOCKS4 protocol, as the protocol lacks a way to communicate hostnames.
 
 On the other hand, all SOCKS protocol versions support sending destination IP
 addresses to the SOCKS server.
@@ -371,12 +372,6 @@ as usual.
 
 > Note how local DNS resolution is in fact entirely handled outside of this
   SOCKS client implementation.
-
-If you've explicitly set the client to SOCKS4 and stick to the default
-*remote DNS resolution*, then you may only connect to IPv4 addresses because
-the protocol lacks a way to communicate hostnames.
-If you try to connect to a hostname despite, the resulting promise will be
-rejected right away.
 
 #### Authentication
 
@@ -617,6 +612,7 @@ $client = new Client('socks+unix://user:pass@/tmp/proxy.sock', new Connector($lo
 
 The `Server` is responsible for accepting incoming communication from SOCKS clients
 and forwarding the requested connection to the target host.
+It supports the SOCKS5 and SOCKS4(a) protocol versions by default.
 It also registers everything with the main [`EventLoop`](https://github.com/reactphp/event-loop#usage)
 and an underlying TCP/IP socket server like this:
 
@@ -665,23 +661,6 @@ and any authentication details, for example `socks5://user:pass@1.2.3.4:5678`.
 You can use this parameter for logging purposes or to restrict connection
 requests for certain clients by providing a custom implementation of the
 [`ConnectorInterface`](https://github.com/reactphp/socket#connectorinterface).
-
-#### Server protocol version
-
-The `Server` supports all protocol versions (SOCKS4, SOCKS4a and SOCKS5) by default.
-
-If want to explicitly set the protocol version, use the supported values `4`, `4a` or `5`:
-
-```PHP
-$server->setProtocolVersion(5);
-```
-
-In order to reset the protocol version to its default (i.e. automatic detection),
-use `null` as protocol version.
-
-```PHP
-$server->setProtocolVersion(null);
-```
 
 #### Server authentication
 
@@ -789,8 +768,8 @@ Proxy chaining can happen on the server side and/or the client side:
 
 #### Server SOCKS over TLS
 
-All [SOCKS protocol versions](#server-protocol-version) support forwarding TCP/IP
-based connections and higher level protocols.
+Both SOCKS5 and SOCKS4(a) protocol versions support forwarding TCP/IP based
+connections and higher level protocols.
 This implies that you can also use [secure TLS connections](#secure-tls-connections)
 to transfer sensitive data across SOCKS proxy servers.
 This means that no eavesdropper nor the proxy server will be able to decrypt
@@ -841,8 +820,8 @@ See also [example 31](examples).
 
 #### Server Unix domain sockets
 
-All [SOCKS protocol versions](#server-protocol-version) support forwarding TCP/IP
-based connections and higher level protocols.
+Both SOCKS5 and SOCKS4(a) protocol versions support forwarding TCP/IP based
+connections and higher level protocols.
 In some advanced cases, it may be useful to let your SOCKS server listen on a
 Unix domain socket (UDS) path instead of a IP:port combination.
 For example, this allows you to rely on file system permissions instead of
@@ -925,7 +904,7 @@ $client = new Client('socks+unix:///tmp/proxy.sock', $connector);
 
 The [Tor anonymity network](http://www.torproject.org) client software is designed
 to encrypt your traffic and route it over a network of several nodes to conceal its origin.
-It presents a SOCKS4 and SOCKS5 interface on TCP port 9050 by default
+It presents a SOCKS5 and SOCKS4(a) interface on TCP port 9050 by default
 which allows you to tunnel any traffic through the anonymity network.
 In most scenarios you probably don't want your client to resolve the target hostnames,
 because you would leak DNS information to anybody observing your local traffic.
@@ -984,7 +963,7 @@ MIT, see LICENSE
 * If you want to learn more about processing streams of data, refer to the
   documentation of the underlying
   [react/stream](https://github.com/reactphp/stream) component.
-* As an alternative to a SOCKS (SOCKS4/SOCKS5) proxy, you may also want to look into
+* As an alternative to a SOCKS5 / SOCKS4(a) proxy, you may also want to look into
   using an HTTP CONNECT proxy instead.
   You may want to use [clue/reactphp-http-proxy](https://github.com/clue/reactphp-http-proxy)
   which also provides an implementation of the same

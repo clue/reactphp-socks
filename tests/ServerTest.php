@@ -31,24 +31,6 @@ class ServerTest extends TestCase
         $this->server->listen($socket);
     }
 
-    public function testSetProtocolVersion()
-    {
-        $this->server->setProtocolVersion(4);
-        $this->server->setProtocolVersion('4a');
-        $this->server->setProtocolVersion(5);
-        $this->server->setProtocolVersion(null);
-
-        $this->assertTrue(true);
-    }
-
-    /**
-     * @expectedException InvalidArgumentException
-     */
-    public function testSetInvalidProtocolVersion()
-    {
-        $this->server->setProtocolVersion(6);
-    }
-
     public function testSetAuthArray()
     {
         $this->server->setAuthArray(array());
@@ -67,29 +49,6 @@ class ServerTest extends TestCase
     public function testSetAuthInvalid()
     {
         $this->server->setAuth(true);
-    }
-
-    /**
-     * @expectedException UnexpectedValueException
-     */
-    public function testUnableToSetAuthIfProtocolDoesNotSupportAuth()
-    {
-        $this->server->setProtocolVersion(4);
-
-        $this->server->setAuthArray(array());
-    }
-
-    /**
-     * @expectedException UnexpectedValueException
-     */
-    public function testUnableToSetProtocolWhichDoesNotSupportAuth()
-    {
-        $this->server->setAuthArray(array());
-
-        // this is okay
-        $this->server->setProtocolVersion(5);
-
-        $this->server->setProtocolVersion(4);
     }
 
     public function testConnectWillCreateConnection()
