@@ -3,6 +3,7 @@
 use Clue\React\Socks\Client;
 use React\Promise\Promise;
 use Clue\React\Socks\Server;
+use React\Promise\Deferred;
 
 class ClientTest extends TestCase
 {
@@ -199,6 +200,22 @@ class ClientTest extends TestCase
         $promise->then(null, $this->expectCallableOnceWithExceptionCode(SOCKET_ECONNABORTED));
     }
 
+    public function testCancelConnectionDuringDeferredSessionWillCloseStream()
+    {
+        $stream = $this->getMockBuilder('React\Socket\Connection')->disableOriginalConstructor()->getMock();
+        $stream->expects($this->once())->method('close');
+
+        $deferred = new Deferred();
+
+        $this->connector->expects($this->once())->method('connect')->with('127.0.0.1:1080?hostname=google.com')->willReturn($deferred->promise());
+
+        $promise = $this->client->connect('google.com:80');
+        $deferred->resolve($stream);
+        $promise->cancel();
+
+        $promise->then(null, $this->expectCallableOnceWithExceptionCode(SOCKET_ECONNABORTED));
+    }
+
     public function testEmitConnectionCloseDuringSessionWillRejectConnection()
     {
         $stream = $this->getMockBuilder('React\Socket\Connection')->disableOriginalConstructor()->setMethods(array('write', 'close'))->getMock();
@@ -217,7 +234,6 @@ class ClientTest extends TestCase
     public function testEmitConnectionErrorDuringSessionWillRejectConnection()
     {
         $stream = $this->getMockBuilder('React\Socket\Connection')->disableOriginalConstructor()->setMethods(array('write', 'close'))->getMock();
-        $stream->expects($this->once())->method('close');
 
         $promise = \React\Promise\resolve($stream);
 
@@ -399,5 +415,64 @@ class ClientTest extends TestCase
         $stream->emit('data', array("\x05\x00" . "\x05" . chr($error) . "\x00\x00"));
 
         $promise->then(null, $this->expectCallableOnceWithExceptionCode($expectedCode));
+    }
+
+    public function testConnectionErrorShouldNotCreateGarbageCycles()
+    {
+        if (class_exists('React\Promise\When')) {
+            $this->markTestSkipped('Not supported on legacy Promise v1 API');
+        }
+
+        $deferred = new Deferred();
+        $this->connector->expects($this->once())->method('connect')->willReturn($deferred->promise());
+
+        gc_collect_cycles();
+
+        $promise = $this->client->connect('google.com:80');
+        $deferred->reject(new RuntimeException());
+        unset($deferred, $promise);
+
+        $this->assertEquals(0, gc_collect_cycles());
+    }
+
+    public function testCancelConnectionDuringConnectionShouldNotCreateGarbageCycles()
+    {
+        if (class_exists('React\Promise\When')) {
+            $this->markTestSkipped('Not supported on legacy Promise v1 API');
+        }
+
+        $promise = new Promise(function () { }, function () {
+            throw new \RuntimeException();
+        });
+        $this->connector->expects($this->once())->method('connect')->willReturn($promise);
+
+        gc_collect_cycles();
+
+        $promise = $this->client->connect('google.com:80');
+        $promise->cancel();
+        unset($promise);
+
+        $this->assertEquals(0, gc_collect_cycles());
+    }
+
+    public function testCancelConnectionDuringSessionShouldNotCreateGarbageCycles()
+    {
+        if (class_exists('React\Promise\When')) {
+            $this->markTestSkipped('Not supported on legacy Promise v1 API');
+        }
+
+        $stream = $this->getMockBuilder('React\Socket\Connection')->disableOriginalConstructor()->setMethods(array('write', 'close'))->getMock();
+        $stream->expects($this->once())->method('close');
+
+        $promise = new Promise(function ($resolve) use ($stream) { $resolve($stream); });
+        $this->connector->expects($this->once())->method('connect')->willReturn($promise);
+
+        gc_collect_cycles();
+
+        $promise = $this->client->connect('google.com:80');
+        $promise->cancel();
+        unset($promise);
+
+        $this->assertEquals(0, gc_collect_cycles());
     }
 }
