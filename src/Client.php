@@ -160,9 +160,9 @@ final class Client implements ConnectorInterface
         // start TCP/IP connection to SOCKS server
         $connecting = $this->connector->connect($socksUri);
 
-        $deferred = new Deferred(function ($_, $reject) use ($connecting) {
+        $deferred = new Deferred(function ($_, $reject) use ($uri, $connecting) {
             $reject(new RuntimeException(
-                'Connection cancelled while waiting for proxy (ECONNABORTED)',
+                'Connection to ' . $uri . ' cancelled while waiting for proxy (ECONNABORTED)',
                 defined('SOCKET_ECONNABORTED') ? SOCKET_ECONNABORTED : 103
             ));
 
@@ -177,12 +177,12 @@ final class Client implements ConnectorInterface
         // resolve plain connection once SOCKS protocol is completed
         $that = $this;
         $connecting->then(
-            function (ConnectionInterface $stream) use ($that, $host, $port, $deferred) {
-                $that->handleConnectedSocks($stream, $host, $port, $deferred);
+            function (ConnectionInterface $stream) use ($that, $host, $port, $deferred, $uri) {
+                $that->handleConnectedSocks($stream, $host, $port, $deferred, $uri);
             },
-            function (Exception $e) use ($deferred) {
+            function (Exception $e) use ($uri, $deferred) {
                 $deferred->reject($e = new RuntimeException(
-                    'Connection failed because connection to proxy failed (ECONNREFUSED)',
+                    'Connection to ' . $uri . ' failed because connection to proxy failed (ECONNREFUSED)',
                     defined('SOCKET_ECONNREFUSED') ? SOCKET_ECONNREFUSED : 111,
                     $e
                 ));
@@ -213,26 +213,33 @@ final class Client implements ConnectorInterface
      * @param string              $host
      * @param int                 $port
      * @param Deferred            $deferred
+     * @param string              $uri
      * @return void
      * @internal
      */
-    public function handleConnectedSocks(ConnectionInterface $stream, $host, $port, Deferred $deferred)
+    public function handleConnectedSocks(ConnectionInterface $stream, $host, $port, Deferred $deferred, $uri)
     {
         $reader = new StreamReader();
         $stream->on('data', array($reader, 'write'));
 
-        $stream->on('error', $onError = function (Exception $e) use ($deferred) {
-            $deferred->reject(new RuntimeException('Stream error while waiting for response from proxy (EIO)', defined('SOCKET_EIO') ? SOCKET_EIO : 5, $e));
+        $stream->on('error', $onError = function (Exception $e) use ($deferred, $uri) {
+            $deferred->reject(new RuntimeException(
+                'Connection to ' . $uri . ' failed because connection to proxy caused a stream error (EIO)',
+                defined('SOCKET_EIO') ? SOCKET_EIO : 5, $e)
+            );
         });
 
-        $stream->on('close', $onClose = function () use ($deferred) {
-            $deferred->reject(new RuntimeException('Connection to proxy lost while waiting for response (ECONNRESET)', defined('SOCKET_ECONNRESET') ? SOCKET_ECONNRESET : 104));
+        $stream->on('close', $onClose = function () use ($deferred, $uri) {
+            $deferred->reject(new RuntimeException(
+                'Connection to ' . $uri . ' failed because connection to proxy was lost while waiting for response from proxy (ECONNRESET)',
+                defined('SOCKET_ECONNRESET') ? SOCKET_ECONNRESET : 104)
+            );
         });
 
         if ($this->protocolVersion === 5) {
-            $promise = $this->handleSocks5($stream, $host, $port, $reader);
+            $promise = $this->handleSocks5($stream, $host, $port, $reader, $uri);
         } else {
-            $promise = $this->handleSocks4($stream, $host, $port, $reader);
+            $promise = $this->handleSocks4($stream, $host, $port, $reader, $uri);
         }
 
         $promise->then(function () use ($deferred, $stream, $reader, $onError, $onClose) {
@@ -241,10 +248,14 @@ final class Client implements ConnectorInterface
             $stream->removeListener('close', $onClose);
 
             $deferred->resolve($stream);
-        }, function (Exception $error) use ($deferred, $stream) {
+        }, function (Exception $error) use ($deferred, $stream, $uri) {
             // pass custom RuntimeException through as-is, otherwise wrap in protocol error
             if (!$error instanceof RuntimeException) {
-                $error = new RuntimeException('Invalid response received from proxy (EBADMSG)', defined('SOCKET_EBADMSG') ? SOCKET_EBADMSG: 71, $error);
+                $error = new RuntimeException(
+                    'Connection to ' . $uri . ' failed because proxy returned invalid response (EBADMSG)',
+                    defined('SOCKET_EBADMSG') ? SOCKET_EBADMSG: 71,
+                    $error
+                );
             }
 
             $deferred->reject($error);
@@ -252,7 +263,7 @@ final class Client implements ConnectorInterface
         });
     }
 
-    private function handleSocks4(ConnectionInterface $stream, $host, $port, StreamReader $reader)
+    private function handleSocks4(ConnectionInterface $stream, $host, $port, StreamReader $reader, $uri)
     {
         // do not resolve hostname. only try to convert to IP
         $ip = ip2long($host);
@@ -272,17 +283,20 @@ final class Client implements ConnectorInterface
             'status' => 'C',
             'port'   => 'n',
             'ip'     => 'N'
-        ))->then(function ($data) {
+        ))->then(function ($data) use ($uri) {
             if ($data['null'] !== 0x00) {
                 throw new Exception('Invalid SOCKS response');
             }
             if ($data['status'] !== 0x5a) {
-                throw new RuntimeException('Proxy refused connection with SOCKS error code ' . sprintf('0x%02X', $data['status']) . ' (ECONNREFUSED)', defined('SOCKET_ECONNREFUSED') ? SOCKET_ECONNREFUSED : 111);
+                throw new RuntimeException(
+                    'Connection to ' . $uri . ' failed because proxy refused connection with error code ' . sprintf('0x%02X', $data['status']) . ' (ECONNREFUSED)',
+                    defined('SOCKET_ECONNREFUSED') ? SOCKET_ECONNREFUSED : 111
+                );
             }
         });
     }
 
-    private function handleSocks5(ConnectionInterface $stream, $host, $port, StreamReader $reader)
+    private function handleSocks5(ConnectionInterface $stream, $host, $port, StreamReader $reader, $uri)
     {
         // protocol version 5
         $data = pack('C', 0x05);
@@ -302,7 +316,7 @@ final class Client implements ConnectorInterface
         return $reader->readBinary(array(
             'version' => 'C',
             'method'  => 'C'
-        ))->then(function ($data) use ($auth, $stream, $reader) {
+        ))->then(function ($data) use ($auth, $stream, $reader, $uri) {
             if ($data['version'] !== 0x05) {
                 throw new Exception('Version/Protocol mismatch');
             }
@@ -314,14 +328,20 @@ final class Client implements ConnectorInterface
                 return $reader->readBinary(array(
                     'version' => 'C',
                     'status'  => 'C'
-                ))->then(function ($data) {
+                ))->then(function ($data) use ($uri) {
                     if ($data['version'] !== 0x01 || $data['status'] !== 0x00) {
-                        throw new RuntimeException('Username/Password authentication failed (EACCES)', defined('SOCKET_EACCES') ? SOCKET_EACCES : 13);
+                        throw new RuntimeException(
+                            'Connection to ' . $uri . ' failed because proxy denied access with given authentication details (EACCES)',
+                            defined('SOCKET_EACCES') ? SOCKET_EACCES : 13
+                        );
                     }
                 });
             } else if ($data['method'] !== 0x00) {
                 // any other method than "no authentication"
-                throw new RuntimeException('No acceptable authentication method found (EACCES)', defined('SOCKET_EACCES') ? SOCKET_EACCES : 13);
+                throw new RuntimeException(
+                    'Connection to ' . $uri . ' failed because proxy denied access due to unsupported authentication method (EACCES)',
+                    defined('SOCKET_EACCES') ? SOCKET_EACCES : 13
+                );
             }
         })->then(function () use ($stream, $reader, $host, $port) {
             // do not resolve hostname. only try to convert to (binary/packed) IP
@@ -345,7 +365,7 @@ final class Client implements ConnectorInterface
                 'null'    => 'C',
                 'type'    => 'C'
             ));
-        })->then(function ($data) use ($reader) {
+        })->then(function ($data) use ($reader, $uri) {
             if ($data['version'] !== 0x05 || $data['null'] !== 0x00) {
                 throw new Exception('Invalid SOCKS response');
             }
@@ -353,24 +373,51 @@ final class Client implements ConnectorInterface
                 // map limited list of SOCKS error codes to common socket error conditions
                 // @link https://tools.ietf.org/html/rfc1928#section-6
                 if ($data['status'] === Server::ERROR_GENERAL) {
-                    throw new RuntimeException('SOCKS server reported a general server failure (ECONNREFUSED)', defined('SOCKET_ECONNREFUSED') ? SOCKET_ECONNREFUSED : 111);
+                    throw new RuntimeException(
+                        'Connection to ' . $uri . ' failed because proxy refused connection with general server failure (ECONNREFUSED)',
+                        defined('SOCKET_ECONNREFUSED') ? SOCKET_ECONNREFUSED : 111
+                    );
                 } elseif ($data['status'] === Server::ERROR_NOT_ALLOWED_BY_RULESET) {
-                    throw new RuntimeException('SOCKS server reported connection is not allowed by ruleset (EACCES)', defined('SOCKET_EACCES') ? SOCKET_EACCES : 13);
+                    throw new RuntimeException(
+                        'Connection to ' . $uri . ' failed because proxy denied access due to ruleset (EACCES)',
+                        defined('SOCKET_EACCES') ? SOCKET_EACCES : 13
+                    );
                 } elseif ($data['status'] === Server::ERROR_NETWORK_UNREACHABLE) {
-                    throw new RuntimeException('SOCKS server reported network unreachable (ENETUNREACH)', defined('SOCKET_ENETUNREACH') ? SOCKET_ENETUNREACH : 101);
+                    throw new RuntimeException(
+                        'Connection to ' . $uri . ' failed because proxy reported network unreachable (ENETUNREACH)',
+                        defined('SOCKET_ENETUNREACH') ? SOCKET_ENETUNREACH : 101
+                    );
                 } elseif ($data['status'] === Server::ERROR_HOST_UNREACHABLE) {
-                    throw new RuntimeException('SOCKS server reported host unreachable (EHOSTUNREACH)', defined('SOCKET_EHOSTUNREACH') ? SOCKET_EHOSTUNREACH : 113);
+                    throw new RuntimeException(
+                        'Connection to ' . $uri . ' failed because proxy reported host unreachable (EHOSTUNREACH)',
+                        defined('SOCKET_EHOSTUNREACH') ? SOCKET_EHOSTUNREACH : 113
+                    );
                 } elseif ($data['status'] === Server::ERROR_CONNECTION_REFUSED) {
-                    throw new RuntimeException('SOCKS server reported connection refused (ECONNREFUSED)', defined('SOCKET_ECONNREFUSED') ? SOCKET_ECONNREFUSED : 111);
+                    throw new RuntimeException(
+                        'Connection to ' . $uri . ' failed because proxy reported connection refused (ECONNREFUSED)',
+                        defined('SOCKET_ECONNREFUSED') ? SOCKET_ECONNREFUSED : 111
+                    );
                 } elseif ($data['status'] === Server::ERROR_TTL) {
-                    throw new RuntimeException('SOCKS server reported TTL/timeout expired (ETIMEDOUT)', defined('SOCKET_ETIMEDOUT') ? SOCKET_ETIMEDOUT : 110);
+                    throw new RuntimeException(
+                        'Connection to ' . $uri . ' failed because proxy reported TTL/timeout expired (ETIMEDOUT)',
+                        defined('SOCKET_ETIMEDOUT') ? SOCKET_ETIMEDOUT : 110
+                    );
                 } elseif ($data['status'] === Server::ERROR_COMMAND_UNSUPPORTED) {
-                    throw new RuntimeException('SOCKS server does not support the CONNECT command (EPROTO)', defined('SOCKET_EPROTO') ? SOCKET_EPROTO : 71);
+                    throw new RuntimeException(
+                        'Connection to ' . $uri . ' failed because proxy does not support the CONNECT command (EPROTO)',
+                        defined('SOCKET_EPROTO') ? SOCKET_EPROTO : 71
+                    );
                 } elseif ($data['status'] === Server::ERROR_ADDRESS_UNSUPPORTED) {
-                    throw new RuntimeException('SOCKS server does not support this address type (EPROTO)', defined('SOCKET_EPROTO') ? SOCKET_EPROTO : 71);
+                    throw new RuntimeException(
+                        'Connection to ' . $uri . ' failed because proxy does not support this address type (EPROTO)',
+                        defined('SOCKET_EPROTO') ? SOCKET_EPROTO : 71
+                    );
                 }
 
-                throw new RuntimeException('SOCKS server reported an unassigned error code ' . sprintf('0x%02X', $data['status']) . ' (ECONNREFUSED)', defined('SOCKET_ECONNREFUSED') ? SOCKET_ECONNREFUSED : 111);
+                throw new RuntimeException(
+                    'Connection to ' . $uri . ' failed because proxy server refused connection with unknown error code ' . sprintf('0x%02X', $data['status']) . ' (ECONNREFUSED)',
+                    defined('SOCKET_ECONNREFUSED') ? SOCKET_ECONNREFUSED : 111
+                );
             }
             if ($data['type'] === 0x01) {
                 // IPv4 address => skip IP and port
