@@ -1,6 +1,11 @@
 <?php
 
-// A SOCKS server that randomly forwards (proxy chaining) to a pool of SOCKS servers
+// A more advanced example which runs a SOCKS proxy server that randomly forwards
+// to a pool of SOCKS servers (random proxy chaining).
+// The listen address can be given as first argument.
+// The upstream proxy servers can be given as additional arguments.
+//
+// See also examples #01 and #02 for the client side.
 
 use React\EventLoop\Factory as LoopFactory;
 use ConnectionManager\Extra\Multiple\ConnectionManagerRandom;

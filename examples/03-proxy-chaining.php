@@ -1,5 +1,13 @@
 <?php
 
+// A more advanced example which requests http://www.google.com/ through a chain of SOCKS proxy servers.
+// The proxy servers can be given as arguments.
+//
+// Not already running a SOCKS proxy server? See also example #11 or try this: `ssh -D 1080 localhost`
+//
+// For illustration purposes only. If you want to send HTTP requests in a real
+// world project, take a look at https://github.com/clue/reactphp-buzz#socks-proxy
+
 use Clue\React\Socks\Client;
 use React\Socket\Connector;
 use React\Socket\ConnectionInterface;

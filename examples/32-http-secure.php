@@ -1,5 +1,13 @@
 <?php
 
+// A more advanced example which requests http://google.com/ through a secure SOCKS over TLS proxy.
+// The proxy can be given as first argument and defaults to localhost:1080 otherwise.
+//
+// See also example #31 for the server side.
+//
+// For illustration purposes only. If you want to send HTTP requests in a real
+// world project, take a look at https://github.com/clue/reactphp-buzz#socks-proxy
+
 use Clue\React\Socks\Client;
 use React\Socket\Connector;
 use React\Socket\ConnectionInterface;
