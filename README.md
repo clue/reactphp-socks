@@ -628,6 +628,10 @@ $server->listen($socket);
 $loop->run();
 ```
 
+Additionally, the `Server` constructor accepts optional parameters to explicitly
+configure the [connector](#server-connector) to use and to require
+[authentication](#server-authentication). For more details, read on...
+
 #### Server connector
 
 The `Server` uses an instance of ReactPHP's
@@ -674,31 +678,11 @@ If a client tries to use any other protocol version, does not send along
 authentication details or if authentication details can not be verified,
 the connection will be rejected.
 
-Because your authentication mechanism might take some time to actually check
-the provided authentication credentials (like querying a remote database or webservice),
-the server side uses a [Promise](https://github.com/reactphp/promise) based interface.
-While this might seem complex at first, it actually provides a very simple way
-to handle simultanous connections in a non-blocking fashion and increases overall performance.
+If you only want to accept static authentication details, you can simply pass an
+additional assoc array with your authentication details to the `Server` like this:
 
-```PHP
-$server->setAuth(function ($username, $password, $remote) {
-    // either return a boolean success value right away
-    // or use promises for delayed authentication
-
-    // $remote is a full URI à la socks5://user:pass@192.168.1.1:1234
-    // or socks5s://user:pass@192.168.1.1:1234 for SOCKS over TLS
-    // useful for logging or extracting parts, such as the remote IP
-    $ip = parse_url($remote, PHP_URL_HOST);
-
-    return ($username === 'root' && $ip === '127.0.0.1');
-});
-```
-
-Or if you only accept static authentication details, you can use the simple
-array-based authentication method as a shortcut:
-
-```PHP
-$server->setAuthArray(array(
+```php
+$server = new Clue\React\Socks\Server($loop, null, array(
     'tom' => 'password',
     'admin' => 'root'
 ));
@@ -706,10 +690,40 @@ $server->setAuthArray(array(
 
 See also [example #12](examples).
 
-If you do not want to use authentication anymore:
+If you want more control over authentication, you can pass an authenticator
+function that should return a `bool` value like this synchronous example:
 
-```PHP
-$server->unsetAuth();
+```php
+$server = new Clue\React\Socks\Server($loop, null, function ($user, $pass, $remote) {
+    // $remote is a full URI à la socks5://user:pass@192.168.1.1:1234
+    // or socks5s://user:pass@192.168.1.1:1234 for SOCKS over TLS
+    // useful for logging or extracting parts, such as the remote IP
+    $ip = parse_url($remote, PHP_URL_HOST);
+
+    return ($user === 'root' && $pass === 'secret' && $ip === '127.0.0.1');
+});
+```
+
+Because your authentication mechanism might take some time to actually check the
+provided authentication credentials (like querying a remote database or webservice),
+the server also supports a [Promise](https://github.com/reactphp/promise)-based
+interface. While this might seem more complex at first, it actually provides a
+very powerful way of handling a large number of connections concurrently without
+ever blocking any connections. You can return a [Promise](https://github.com/reactphp/promise)
+from the authenticator function that will fulfill with a `bool` value like this
+async example:
+
+```php
+$server = new Clue\React\Socks\Server($loop, null, function ($user, $pass) use ($db) {
+    // pseudo-code: query database for given authentication details
+    return $db->query(
+        'SELECT 1 FROM users WHERE name = ? AND password = ?',
+        array($username, $password)
+    )->then(function (QueryResult $result) {
+        // ensure we find exactly one match in the database
+        return count($result->resultRows) === 1;
+    });
+});
 ```
 
 #### Server proxy chaining
