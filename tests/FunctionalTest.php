@@ -214,7 +214,7 @@ class FunctionalTest extends TestCase
             ++$called;
             $that->assertEquals('name', $name);
             $that->assertEquals('pass', $pass);
-            $that->assertStringStartsWith('socks5://name:pass@127.0.0.1:', $remote);
+            $that->assertStringStartsWith('socks://name:pass@127.0.0.1:', $remote);
 
             return true;
         });

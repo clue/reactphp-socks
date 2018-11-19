@@ -79,9 +79,9 @@ class ServerTest extends TestCase
 
         $promise = new Promise(function () { });
 
-        $this->connector->expects($this->once())->method('connect')->with('google.com:80?source=socks5%3A%2F%2F10.20.30.40%3A5060')->willReturn($promise);
+        $this->connector->expects($this->once())->method('connect')->with('google.com:80?source=socks%3A%2F%2F10.20.30.40%3A5060')->willReturn($promise);
 
-        $promise = $this->server->connectTarget($stream, array('google.com', 80, 'socks5://10.20.30.40:5060'));
+        $promise = $this->server->connectTarget($stream, array('google.com', 80, 'socks://10.20.30.40:5060'));
 
         $this->assertInstanceOf('React\Promise\PromiseInterface', $promise);
     }
@@ -291,7 +291,7 @@ class ServerTest extends TestCase
 
         $promise = new Promise(function () { });
 
-        $this->connector->expects($this->once())->method('connect')->with('127.0.0.1:80?source=socks5%3A%2F%2F10.20.30.40%3A5060')->willReturn($promise);
+        $this->connector->expects($this->once())->method('connect')->with('127.0.0.1:80?source=socks%3A%2F%2F10.20.30.40%3A5060')->willReturn($promise);
 
         $this->server->onConnection($connection);
 
@@ -305,7 +305,7 @@ class ServerTest extends TestCase
 
         $promise = new Promise(function () { });
 
-        $this->connector->expects($this->once())->method('connect')->with('127.0.0.1:80?source=socks5s%3A%2F%2F10.20.30.40%3A5060')->willReturn($promise);
+        $this->connector->expects($this->once())->method('connect')->with('127.0.0.1:80?source=sockss%3A%2F%2F10.20.30.40%3A5060')->willReturn($promise);
 
         $this->server->onConnection($connection);
 
