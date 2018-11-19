@@ -1,6 +1,12 @@
 <?php
 
-// A SOCKS server that rejects connections to some domains (blacklist / filtering)
+// A more advanced example which runs a SOCKS proxy server that rejects connections
+// to some domains (blacklist /filtering).
+// The listen address can be given as first argument and defaults to localhost:1080 otherwise.
+//
+// See also examples #01 and #02 for the client side.
+// Client example #01 is expected to fail because port 80 is blocked in this server example.
+// Client example #02 is expected to succceed because it is not blacklisted.
 
 use React\EventLoop\Factory as LoopFactory;
 use ConnectionManager\Extra\Multiple\ConnectionManagerSelective;

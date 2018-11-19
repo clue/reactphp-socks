@@ -1,6 +1,11 @@
 <?php
 
-// A SOCKS server that forwards (proxy chaining) to other SOCKS servers
+// A more advanced example which runs a SOCKS proxy server that forwards to
+// other SOCKS servers (proxy chaining).
+// The listen address can be given as first argument.
+// The upstream proxy servers can be given as additional arguments.
+//
+// See also examples #01 and #02 for the client side.
 
 use Clue\React\Socks\Client;
 use Clue\React\Socks\Server;

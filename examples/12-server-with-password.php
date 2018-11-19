@@ -1,5 +1,16 @@
 <?php
 
+// A simple example which runs a SOCKS proxy server with hard-coded authentication details.
+// The listen address can be given as first argument and defaults to localhost:1080 otherwise.
+//
+// See also examples #01 and #02 for the client side.
+//
+// Note that the client examples do not pass any authentication details by default
+// and as such will fail to authenticate against this example server. You can
+// explicitly pass authentication details to the client example like this:
+//
+// $ php examples/01-http.php tom:god@localhost:1080
+
 use Clue\React\Socks\Server;
 use React\Socket\Server as Socket;
 

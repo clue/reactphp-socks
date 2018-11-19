@@ -1,5 +1,10 @@
 <?php
 
+// A more advanced example which runs a secure SOCKS over TLS proxy server.
+// The listen address can be given as first argument and defaults to localhost:1080 otherwise.
+//
+// See also example #32 for the client side.
+
 use Clue\React\Socks\Server;
 use React\Socket\Server as Socket;
 

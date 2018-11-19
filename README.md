@@ -237,8 +237,8 @@ HTTP operates on a higher layer than this low-level SOCKS implementation.
 If you want to issue HTTP requests, you can add a dependency for
 [clue/reactphp-buzz](https://github.com/clue/reactphp-buzz).
 It can interact with this library by issuing all
-[http requests through a SOCKS server](https://github.com/clue/reactphp-buzz#socks-proxy).
-This works for both plain HTTP and SSL encrypted HTTPS requests.
+[HTTP requests through a SOCKS proxy server](https://github.com/clue/reactphp-buzz#socks-proxy).
+This works for both plain HTTP and TLS-encrypted HTTPS requests.
 
 #### Protocol version
 
