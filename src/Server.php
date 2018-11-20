@@ -218,7 +218,7 @@ final class Server
             if (($pos = strpos($remote, '://')) !== false) {
                 $remote = substr($remote, $pos + 3);
             }
-            $remote = 'socks5' . ($secure ? 's' : '') . '://' . $remote;
+            $remote = 'socks' . ($secure ? 's' : '') . '://' . $remote;
         }
 
         $that = $this;

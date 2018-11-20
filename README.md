@@ -311,6 +311,15 @@ a generic proxy allowing higher level application protocols to work through it.
 By default, the `Client` communicates via SOCKS5 with the SOCKS server.
 This is done because SOCKS5 is the latest version from the SOCKS protocol family
 and generally has best support across other vendors.
+You can also omit the default `socks://` URI scheme. Similarly, the `socks5://`
+URI scheme acts as an alias for the default `socks://` URI scheme.
+
+```php
+// all three forms are equivalent
+$client = new Client('127.0.0.1', $connector);
+$client = new Client('socks://127.0.0.1', $connector);
+$client = new Client('socks5://127.0.0.1', $connector);
+```
 
 If want to explicitly set the protocol version to SOCKS4(a), you can use the URI
 scheme `socks4://` as part of the SOCKS URI:
@@ -544,7 +553,7 @@ You can use the `sockss://` URI scheme or use an explicit
 ```php
 $client = new Client('sockss://127.0.0.1:1080', new Connector($loop));
 
-$client = new Client('socks5s://127.0.0.1:1080', new Connector($loop));
+$client = new Client('socks4s://127.0.0.1:1080', new Connector($loop));
 ```
 
 See also [example 32](examples).
@@ -587,7 +596,7 @@ You can use the `socks+unix://` URI scheme or use an explicit
 ```php
 $client = new Client('socks+unix:///tmp/proxy.sock', new Connector($loop));
 
-$client = new Client('socks5+unix:///tmp/proxy.sock', new Connector($loop));
+$client = new Client('socks4+unix:///tmp/proxy.sock', new Connector($loop));
 ```
 
 Similarly, you can also combine this with [authentication](#authentication)
@@ -661,7 +670,8 @@ Internally, the `Server` uses ReactPHP's normal
 [`connect()`](https://github.com/reactphp/socket#connect) method, but
 it also passes the original client IP as the `?source={remote}` parameter.
 The `source` parameter contains the full remote URI, including the protocol
-and any authentication details, for example `socks5://user:pass@1.2.3.4:5678`.
+and any authentication details, for example `socks://user:pass@1.2.3.4:5678`
+or `socks4://1.2.3.4:5678` for legacy SOCKS4(a).
 You can use this parameter for logging purposes or to restrict connection
 requests for certain clients by providing a custom implementation of the
 [`ConnectorInterface`](https://github.com/reactphp/socket#connectorinterface).
@@ -695,8 +705,9 @@ function that should return a `bool` value like this synchronous example:
 
 ```php
 $server = new Clue\React\Socks\Server($loop, null, function ($user, $pass, $remote) {
-    // $remote is a full URI à la socks5://user:pass@192.168.1.1:1234
-    // or socks5s://user:pass@192.168.1.1:1234 for SOCKS over TLS
+    // $remote is a full URI à la socks://user:pass@192.168.1.1:1234
+    // or sockss://user:pass@192.168.1.1:1234 for SOCKS over TLS
+    // or may be null when remote is unknown (SOCKS over Unix Domain Sockets)
     // useful for logging or extracting parts, such as the remote IP
     $ip = parse_url($remote, PHP_URL_HOST);
 
