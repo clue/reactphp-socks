@@ -1,11 +1,39 @@
 # clue/reactphp-socks [![Build Status](https://travis-ci.org/clue/reactphp-socks.svg?branch=master)](https://travis-ci.org/clue/reactphp-socks)
 
-Async SOCKS proxy connector client and server implementation, use any TCP/IP-based
+Async SOCKS proxy connector client and server implementation, tunnel any TCP/IP-based
 protocol through a SOCKS5 or SOCKS4(a) proxy server, built on top of
 [ReactPHP](https://reactphp.org).
 
-The SOCKS protocol family can be used to easily tunnel TCP connections independent
-of the actual application level protocol, such as HTTP, SMTP, IMAP, Telnet etc.
+The SOCKS proxy protocol family (SOCKS5, SOCKS4 and SOCKS4a) is commonly used to
+tunnel HTTP(S) traffic through an intermediary ("proxy"), to conceal the origin
+address (anonymity) or to circumvent address blocking (geoblocking). While many
+(public) SOCKS proxy servers often limit this to HTTP(S) port `80` and `443`
+only, this can technically be used to tunnel any TCP/IP-based protocol (HTTP,
+SMTP, IMAP etc.).
+This library provides a simple API to create these tunneled connections for you.
+Because it implements ReactPHP's standard
+[`ConnectorInterface`](https://github.com/reactphp/socket#connectorinterface),
+it can simply be used in place of a normal connector.
+This makes it fairly simple to add SOCKS proxy support to pretty much any
+existing higher-level protocol implementation.
+Besides the client side, it also provides a simple SOCKS server implementation
+which allows you to build your own SOCKS proxy servers with custom business logic.
+
+* **Async execution of connections** -
+  Send any number of SOCKS requests in parallel and process their
+  responses as soon as results come in.
+  The Promise-based design provides a *sane* interface to working with out of
+  bound responses and possible connection errors.
+* **Standard interfaces** -
+  Allows easy integration with existing higher-level components by implementing
+  ReactPHP's standard
+  [`ConnectorInterface`](https://github.com/reactphp/socket#connectorinterface).
+* **Lightweight, SOLID design** -
+  Provides a thin abstraction that is [*just good enough*](https://en.wikipedia.org/wiki/Principle_of_good_enough)
+  and does not get in your way.
+  Builds on top of well-tested components and well-established concepts instead of reinventing the wheel.
+* **Good test coverage** -
+  Comes with an automated tests suite and is regularly tested against actual proxy servers in the wild.
 
 **Table of contents**
 
@@ -255,10 +283,10 @@ a generic proxy allowing higher level application protocols to work through it.
   </tr>
   <tr>
     <th>Protocol specification</th>
-    <td><a href="http://tools.ietf.org/html/rfc1928">RFC 1928</a></td>
+    <td><a href="https://tools.ietf.org/html/rfc1928">RFC 1928</a></td>
     <td>
-      <a href="http://ftp.icm.edu.pl/packages/socks/socks4/SOCKS4.protocol">SOCKS4.protocol</a> /
-      <a href="http://ftp.icm.edu.pl/packages/socks/socks4/SOCKS4A.protocol">SOCKS4A.protocol</a>
+      <a href="https://ftp.icm.edu.pl/packages/socks/socks4/SOCKS4.protocol">SOCKS4.protocol</a> /
+      <a href="https://ftp.icm.edu.pl/packages/socks/socks4/SOCKS4A.protocol">SOCKS4A.protocol</a>
     </td>
   </tr>
   <tr>
@@ -278,7 +306,7 @@ a generic proxy allowing higher level application protocols to work through it.
   </tr>
   <tr>
     <th><a href="#authentication">Username/Password authentication</a></th>
-    <td>✓ (as per <a href="http://tools.ietf.org/html/rfc1929">RFC 1929</a>)</td>
+    <td>✓ (as per <a href="https://tools.ietf.org/html/rfc1929">RFC 1929</a>)</td>
     <td>✗</td>
   </tr>
   <tr>
@@ -385,7 +413,7 @@ as usual.
 #### Authentication
 
 This library supports username/password authentication for SOCKS5 servers as
-defined in [RFC 1929](http://tools.ietf.org/html/rfc1929).
+defined in [RFC 1929](https://tools.ietf.org/html/rfc1929).
 
 On the client side, simply pass your username and password to use for
 authentication (see below).
@@ -927,31 +955,39 @@ $client = new Client('socks+unix:///tmp/proxy.sock', $connector);
 
 ### Using the Tor (anonymity network) to tunnel SOCKS connections
 
-The [Tor anonymity network](http://www.torproject.org) client software is designed
+The [Tor anonymity network](https://www.torproject.org) client software is designed
 to encrypt your traffic and route it over a network of several nodes to conceal its origin.
 It presents a SOCKS5 and SOCKS4(a) interface on TCP port 9050 by default
-which allows you to tunnel any traffic through the anonymity network.
-In most scenarios you probably don't want your client to resolve the target hostnames,
+which allows you to tunnel any traffic through the anonymity network:
+
+```php
+$client = new Client('127.0.0.1:9050', $connector);
+```
+
+In most common scenarios you probably want to stick to default
+[remote DNS resolution](#dns-resolution) and don't want your client to resolve the target hostnames,
 because you would leak DNS information to anybody observing your local traffic.
 Also, Tor provides hidden services through an `.onion` pseudo top-level domain
 which have to be resolved by Tor.
-
-```PHP
-$client = new Client('127.0.0.1:9050', $connector);
-```
 
 ## Install
 
 The recommended way to install this library is [through Composer](https://getcomposer.org).
 [New to Composer?](https://getcomposer.org/doc/00-intro.md)
 
+This project follows [SemVer](https://semver.org/).
 This will install the latest supported version:
 
 ```bash
-$ composer require clue/socks-react:^0.8.7
+$ composer require clue/socks-react:^1.0
 ```
 
 See also the [CHANGELOG](CHANGELOG.md) for details about version upgrades.
+
+This project aims to run on any platform and thus does not require any PHP
+extensions and supports running on legacy PHP 5.3 through current PHP 7+ and
+HHVM.
+It's *highly recommended to use PHP 7+* for this project.
 
 ## Tests
 
@@ -977,7 +1013,10 @@ $ php vendor/bin/phpunit --exclude-group internet
 
 ## License
 
-MIT, see LICENSE
+This project is released under the permissive [MIT license](LICENSE).
+
+> Did you know that I offer custom development services and issuing invoices for
+  sponsorships of releases and for contributions? Contact me (@clue) for details.
 
 ## More
 

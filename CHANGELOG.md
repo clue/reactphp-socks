@@ -1,5 +1,87 @@
 # Changelog
 
+## 1.0.0 (2018-11-20)
+
+*   First stable release, now following SemVer!
+
+*   Feature / BC break: Unify SOCKS5 and SOCKS4(a) protocol version handling,
+    the `Client` now defaults to SOCKS5 instead of SOCKS4a,
+    remove explicit SOCKS4a handling and merge into SOCKS4 protocol handling and
+    URI scheme `socks5://` now only acts as an alias for default `socks://` scheme.
+    (#74, #81 and #87 by @clue)
+
+    ```php
+    // old: defaults to SOCKS4a
+    $client = new Client('127.0.0.1:1080', $connector);
+    $client = new Client('socks://127.0.0.1:1080', $connector);
+
+    // new: defaults to SOCKS5
+    $client = new Client('127.0.0.1:1080', $connector);
+    $client = new Client('socks://127.0.0.1:1080', $connector);
+
+    // new: explicitly use legacy SOCKS4(a)
+    $client = new Client('socks4://127.0.0.1:1080', $connector);
+
+    // unchanged: explicitly use SOCKS5
+    $client = new Client('socks5://127.0.0.1:1080', $connector);
+    ```
+
+*   Feature / BC break: Clean up `Server` interface,
+    add `Server::listen()` method instead of accepting socket in constructor,
+    replace `Server::setAuth()` with optional constructor parameter,
+    remove undocumented "connection" event from Server and drop explicit Evenement dependency and
+    mark all classes as `final` and all internal APIs as `@internal`
+    (#78, #79, #80 and #84 by @clue)
+
+    ```php
+    // old: socket passed to server constructor
+    $socket = new React\Socket\Server(1080, $loop);
+    $server = new Clue\React\Socks\Server($loop, $socket);
+
+    // old: authentication via setAuthArray()/setAuth() methods
+    $server = new Clue\React\Socks\Server($loop, $socket);
+    $server->setAuthArray(array(
+        'tom' => 'password',
+        'admin' => 'root'
+    ));
+
+    // new: socket passed to listen() method
+    $server = new Clue\React\Socks\Server($loop);
+    $socket = new React\Socket\Server(1080, $loop);
+    $server->listen($socket);
+
+    // new: authentication passed to server constructor
+    $server = new Clue\React\Socks\Server($loop, null, array(
+        'tom' => 'password',
+        'admin' => 'root'
+    ));
+    $server->listen($socket);
+    ```
+
+*   Feature: Improve error reporting for failed connections attempts by always including target URI in exceptions and
+    improve promise cancellation and clean up any garbage references.
+    (#82 and #83 by @clue)
+
+    All error messages now always contain a reference to the remote URI to give
+    more details which connection actually failed and the reason for this error.
+    Similarly, any underlying connection issues to the proxy server will now be
+    reported as part of the previous exception.
+
+    For most common use cases this means that simply reporting the `Exception`
+    message should give the most relevant details for any connection issues:
+
+    ```php
+    $promise = $proxy->connect('tcp://example.com:80');
+    $promise->then(function (ConnectionInterface $connection) {
+        // …
+    }, function (Exception $e) {
+        echo $e->getMessage();
+    });
+    ```
+
+*   Improve documentation and examples, link to other projects and update project homepage.
+    (#73, #75 and #85 by @clue)
+
 ## 0.8.7 (2017-12-17)
 
 *   Feature: Support SOCKS over TLS (`sockss://` URI scheme)

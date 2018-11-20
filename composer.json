@@ -1,6 +1,6 @@
 {
     "name": "clue/socks-react",
-    "description": "Async SOCKS proxy connector client and server implementation, use any TCP/IP-based protocol through a SOCKS5 or SOCKS4(a) proxy server, built on top of ReactPHP.",
+    "description": "Async SOCKS proxy connector client and server implementation, tunnel any TCP/IP-based protocol through a SOCKS5 or SOCKS4(a) proxy server, built on top of ReactPHP.",
     "keywords": ["socks client", "socks server", "socks5", "socks4a", "proxy server", "tcp tunnel", "async", "ReactPHP"],
     "homepage": "https://github.com/clue/reactphp-socks",
     "license": "MIT",
