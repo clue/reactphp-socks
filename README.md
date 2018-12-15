@@ -953,6 +953,12 @@ Now you can simply use this SSH SOCKS server like this:
 $client = new Client('socks+unix:///tmp/proxy.sock', $connector);
 ```
 
+> As an alternative to requiring this manual setup, you may also want to look
+  into using [clue/reactphp-ssh-proxy](https://github.com/clue/reactphp-ssh-proxy)
+  which automatically creates this SSH tunnel for you. It provides an implementation of the same
+  [`ConnectorInterface`](https://github.com/reactphp/socket#connectorinterface)
+  so that supporting either proxy protocol should be fairly trivial.
+
 ### Using the Tor (anonymity network) to tunnel SOCKS connections
 
 The [Tor anonymity network](https://www.torproject.org) client software is designed
@@ -1030,6 +1036,12 @@ This project is released under the permissive [MIT license](LICENSE).
 * As an alternative to a SOCKS5 / SOCKS4(a) proxy, you may also want to look into
   using an HTTP CONNECT proxy instead.
   You may want to use [clue/reactphp-http-proxy](https://github.com/clue/reactphp-http-proxy)
+  which also provides an implementation of the same
+  [`ConnectorInterface`](https://github.com/reactphp/socket#connectorinterface)
+  so that supporting either proxy protocol should be fairly trivial.
+* As an alternative to a SOCKS5 / SOCKS4(a) proxy, you may also want to look into
+  using an SSH proxy (SSH tunnel) instead.
+  You may want to use [clue/reactphp-ssh-proxy](https://github.com/clue/reactphp-ssh-proxy)
   which also provides an implementation of the same
   [`ConnectorInterface`](https://github.com/reactphp/socket#connectorinterface)
   so that supporting either proxy protocol should be fairly trivial.
