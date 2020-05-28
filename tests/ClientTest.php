@@ -1,5 +1,7 @@
 <?php
 
+namespace Clue\Tests\React\Socks;
+
 use Clue\React\Socks\Client;
 use React\Promise\Promise;
 use Clue\React\Socks\Server;
@@ -16,7 +18,7 @@ class ClientTest extends TestCase
 
     public function setUp()
     {
-        $this->loop = React\EventLoop\Factory::create();
+        $this->loop = \React\EventLoop\Factory::create();
         $this->connector = $this->getMockBuilder('React\Socket\ConnectorInterface')->getMock();
         $this->client = new Client('127.0.0.1:1080', $this->connector);
     }
@@ -162,7 +164,7 @@ class ClientTest extends TestCase
 
     public function testConnectorRejectsWillRejectConnection()
     {
-        $promise = \React\Promise\reject(new RuntimeException());
+        $promise = \React\Promise\reject(new \RuntimeException());
 
         $this->connector->expects($this->once())->method('connect')->with('127.0.0.1:1080?hostname=google.com')->willReturn($promise);
 
@@ -261,7 +263,7 @@ class ClientTest extends TestCase
 
         $promise = $this->client->connect('google.com:80');
 
-        $stream->emit('error', array(new RuntimeException()));
+        $stream->emit('error', array(new \RuntimeException()));
 
         $promise->then(null, $this->expectCallableOnceWithException(
             'RuntimeException',
@@ -549,7 +551,7 @@ class ClientTest extends TestCase
         gc_collect_cycles();
 
         $promise = $this->client->connect('google.com:80');
-        $deferred->reject(new RuntimeException());
+        $deferred->reject(new \RuntimeException());
         unset($deferred, $promise);
 
         $this->assertEquals(0, gc_collect_cycles());

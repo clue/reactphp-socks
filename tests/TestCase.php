@@ -1,23 +1,16 @@
 <?php
 
-(include_once __DIR__.'/../vendor/autoload.php') OR die(PHP_EOL.'ERROR: composer autoloader not found, run "composer install" or see README for instructions'.PHP_EOL);
+namespace Clue\Tests\React\Socks;
 
-class TestCase extends PHPUnit\Framework\TestCase
+class TestCase extends \PHPUnit\Framework\TestCase
 {
     protected function expectCallableOnce()
     {
         $mock = $this->createCallableMock();
 
-        if (func_num_args() > 0) {
-            $mock
-                ->expects($this->once())
-                ->method('__invoke')
-                ->with($this->equalTo(func_get_arg(0)));
-        } else {
-            $mock
-                ->expects($this->once())
-                ->method('__invoke');
-        }
+        $mock
+            ->expects($this->once())
+            ->method('__invoke');
 
         return $mock;
     }
@@ -59,7 +52,7 @@ class TestCase extends PHPUnit\Framework\TestCase
      */
     protected function createCallableMock()
     {
-        return $this->getMockBuilder('CallableStub')->getMock();
+        return $this->getMockBuilder('stdClass')->setMethods(array('__invoke'))->getMock();
     }
 
     protected function expectPromiseResolve($promise)
@@ -89,12 +82,5 @@ class TestCase extends PHPUnit\Framework\TestCase
         $promise->then($this->expectCallableNever(), $this->expectCallableOnce());
 
         return $promise;
-    }
-}
-
-class CallableStub
-{
-    public function __invoke()
-    {
     }
 }

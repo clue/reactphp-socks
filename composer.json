@@ -13,6 +13,9 @@
     "autoload": {
         "psr-4": {"Clue\\React\\Socks\\": "src/"}
     },
+    "autoload-dev": {
+        "psr-4": { "Clue\\Tests\\React\\Socks\\": "tests/" }
+    },
     "require": {
         "php": ">=5.3",
         "react/promise": "^2.1 || ^1.2",

@@ -1,5 +1,7 @@
 <?php
 
+namespace Clue\Tests\React\Socks;
+
 use Clue\React\Socks\StreamReader;
 
 class StreamReaderTest extends TestCase
@@ -13,7 +15,7 @@ class StreamReaderTest extends TestCase
 
     public function testReadByteAssertCorrect()
     {
-        $this->reader->readByteAssert(0x01)->then($this->expectCallableOnce(0x01));
+        $this->reader->readByteAssert(0x01)->then($this->expectCallableOnceWith(0x01));
 
         $this->reader->write("\x01");
     }
@@ -27,14 +29,14 @@ class StreamReaderTest extends TestCase
 
     public function testReadStringNull()
     {
-        $this->reader->readStringNull()->then($this->expectCallableOnce('hello'));
+        $this->reader->readStringNull()->then($this->expectCallableOnceWith('hello'));
 
         $this->reader->write("hello\x00");
     }
 
     public function testReadStringLength()
     {
-        $this->reader->readLength(5)->then($this->expectCallableOnce('hello'));
+        $this->reader->readLength(5)->then($this->expectCallableOnceWith('hello'));
 
         $this->reader->write('he');
         $this->reader->write('ll');
@@ -47,17 +49,17 @@ class StreamReaderTest extends TestCase
     {
         $this->reader->write('hello');
 
-        $this->reader->readLength(5)->then($this->expectCallableOnce('hello'));
+        $this->reader->readLength(5)->then($this->expectCallableOnceWith('hello'));
 
         $this->assertEquals('', $this->reader->getBuffer());
     }
 
     public function testSequence()
     {
-        $this->reader->readByte()->then($this->expectCallableOnce(ord('h')));
-        $this->reader->readByteAssert(ord('e'))->then($this->expectCallableOnce(ord('e')));
-        $this->reader->readLength(4)->then($this->expectCallableOnce('llo '));
-        $this->reader->readBinary(array('w'=>'C', 'o' => 'C'))->then($this->expectCallableOnce(array('w' => ord('w'), 'o' => ord('o'))));
+        $this->reader->readByte()->then($this->expectCallableOnceWith(ord('h')));
+        $this->reader->readByteAssert(ord('e'))->then($this->expectCallableOnceWith(ord('e')));
+        $this->reader->readLength(4)->then($this->expectCallableOnceWith('llo '));
+        $this->reader->readBinary(array('w'=>'C', 'o' => 'C'))->then($this->expectCallableOnceWith(array('w' => ord('w'), 'o' => ord('o'))));
 
         $this->reader->write('hello world');
 
