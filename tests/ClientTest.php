@@ -549,6 +549,7 @@ class ClientTest extends TestCase
         $this->connector->expects($this->once())->method('connect')->willReturn($deferred->promise());
 
         gc_collect_cycles();
+        gc_collect_cycles(); // clear twice to avoid leftovers in PHP 7.4 with ext-xdebug and code coverage turned on
 
         $promise = $this->client->connect('google.com:80');
         $deferred->reject(new \RuntimeException());
