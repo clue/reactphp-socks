@@ -1,5 +1,7 @@
 <?php
 
+namespace Clue\Tests\React\Socks;
+
 use Clue\React\Socks\Client;
 use Clue\React\Socks\Server;
 use Clue\React\Block;
@@ -20,9 +22,9 @@ class FunctionalTest extends TestCase
 
     public function setUp()
     {
-        $this->loop = React\EventLoop\Factory::create();
+        $this->loop = \React\EventLoop\Factory::create();
 
-        $socket = new React\Socket\Server(0, $this->loop);
+        $socket = new \React\Socket\Server(0, $this->loop);
         $address = $socket->getAddress();
         if (strpos($address, '://') === false) {
             $address = 'tcp://' . $address;
@@ -196,7 +198,7 @@ class FunctionalTest extends TestCase
     {
         $this->server = new Server($this->loop, null, array('name' => 'pass'));
 
-        $socket = new React\Socket\Server(0, $this->loop);
+        $socket = new \React\Socket\Server(0, $this->loop);
         $this->server->listen($socket);
         $this->port = parse_url($socket->getAddress(), PHP_URL_PORT);
 
@@ -219,7 +221,7 @@ class FunctionalTest extends TestCase
             return true;
         });
 
-        $socket = new React\Socket\Server(0, $this->loop);
+        $socket = new \React\Socket\Server(0, $this->loop);
         $this->server->listen($socket);
         $this->port = parse_url($socket->getAddress(), PHP_URL_PORT);
 
@@ -239,7 +241,7 @@ class FunctionalTest extends TestCase
             return true;
         });
 
-        $socket = new React\Socket\Server(0, $this->loop);
+        $socket = new \React\Socket\Server(0, $this->loop);
         $this->server->listen($socket);
         $this->port = parse_url($socket->getAddress(), PHP_URL_PORT);
 
@@ -254,7 +256,7 @@ class FunctionalTest extends TestCase
     {
         $this->server = new Server($this->loop, null, array('name' => 'p@ss:w0rd'));
 
-        $socket = new React\Socket\Server(0, $this->loop);
+        $socket = new \React\Socket\Server(0, $this->loop);
         $this->server->listen($socket);
         $this->port = parse_url($socket->getAddress(), PHP_URL_PORT);
 
@@ -268,7 +270,7 @@ class FunctionalTest extends TestCase
     {
         $this->server = new Server($this->loop, null, array('empty' => ''));
 
-        $socket = new React\Socket\Server(0, $this->loop);
+        $socket = new \React\Socket\Server(0, $this->loop);
         $this->server->listen($socket);
         $this->port = parse_url($socket->getAddress(), PHP_URL_PORT);
 
@@ -282,7 +284,7 @@ class FunctionalTest extends TestCase
     {
         $this->server = new Server($this->loop, null, array('user' => ''));
 
-        $socket = new React\Socket\Server(0, $this->loop);
+        $socket = new \React\Socket\Server(0, $this->loop);
         $this->server->listen($socket);
         $this->port = parse_url($socket->getAddress(), PHP_URL_PORT);
 
@@ -303,7 +305,7 @@ class FunctionalTest extends TestCase
     {
         $this->server = new Server($this->loop, null, array('name' => 'pass'));
 
-        $socket = new React\Socket\Server(0, $this->loop);
+        $socket = new \React\Socket\Server(0, $this->loop);
         $this->server->listen($socket);
         $this->port = parse_url($socket->getAddress(), PHP_URL_PORT);
 
@@ -316,7 +318,7 @@ class FunctionalTest extends TestCase
     {
         $this->server = new Server($this->loop, null, array('name' => 'pass'));
 
-        $socket = new React\Socket\Server(0, $this->loop);
+        $socket = new \React\Socket\Server(0, $this->loop);
         $this->server->listen($socket);
         $this->port = parse_url($socket->getAddress(), PHP_URL_PORT);
 
@@ -329,7 +331,7 @@ class FunctionalTest extends TestCase
     {
         $this->server = new Server($this->loop, null, array('name' => 'pass'));
 
-        $socket = new React\Socket\Server(0, $this->loop);
+        $socket = new \React\Socket\Server(0, $this->loop);
         $this->server->listen($socket);
         $this->port = parse_url($socket->getAddress(), PHP_URL_PORT);
 
@@ -344,7 +346,7 @@ class FunctionalTest extends TestCase
             return false;
         });
 
-        $socket = new React\Socket\Server(0, $this->loop);
+        $socket = new \React\Socket\Server(0, $this->loop);
         $this->server->listen($socket);
         $this->port = parse_url($socket->getAddress(), PHP_URL_PORT);
 
@@ -359,7 +361,7 @@ class FunctionalTest extends TestCase
             return \React\Promise\resolve(false);
         });
 
-        $socket = new React\Socket\Server(0, $this->loop);
+        $socket = new \React\Socket\Server(0, $this->loop);
         $this->server->listen($socket);
         $this->port = parse_url($socket->getAddress(), PHP_URL_PORT);
 
@@ -374,7 +376,7 @@ class FunctionalTest extends TestCase
             return \React\Promise\reject();
         });
 
-        $socket = new React\Socket\Server(0, $this->loop);
+        $socket = new \React\Socket\Server(0, $this->loop);
         $this->server->listen($socket);
         $this->port = parse_url($socket->getAddress(), PHP_URL_PORT);
 

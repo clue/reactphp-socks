@@ -1,5 +1,7 @@
 <?php
 
+namespace Clue\Tests\React\Socks;
+
 use Clue\React\Socks\Server;
 use React\Promise\Promise;
 use React\Promise\Timer\TimeoutException;
@@ -138,27 +140,27 @@ class ServerTest extends TestCase
     {
         return array(
             array(
-                new RuntimeException('', SOCKET_EACCES),
+                new \RuntimeException('', SOCKET_EACCES),
                 Server::ERROR_NOT_ALLOWED_BY_RULESET
             ),
             array(
-                new RuntimeException('', SOCKET_ENETUNREACH),
+                new \RuntimeException('', SOCKET_ENETUNREACH),
                 Server::ERROR_NETWORK_UNREACHABLE
             ),
             array(
-                new RuntimeException('', SOCKET_EHOSTUNREACH),
+                new \RuntimeException('', SOCKET_EHOSTUNREACH),
                 Server::ERROR_HOST_UNREACHABLE,
             ),
             array(
-                new RuntimeException('', SOCKET_ECONNREFUSED),
+                new \RuntimeException('', SOCKET_ECONNREFUSED),
                 Server::ERROR_CONNECTION_REFUSED
             ),
             array(
-                new RuntimeException('Connection refused'),
+                new \RuntimeException('Connection refused'),
                 Server::ERROR_CONNECTION_REFUSED
             ),
             array(
-                new RuntimeException('', SOCKET_ETIMEDOUT),
+                new \RuntimeException('', SOCKET_ETIMEDOUT),
                 Server::ERROR_TTL
             ),
             array(
@@ -166,7 +168,7 @@ class ServerTest extends TestCase
                 Server::ERROR_TTL
             ),
             array(
-                new RuntimeException(),
+                new \RuntimeException(),
                 Server::ERROR_GENERAL
             )
         );
@@ -174,7 +176,7 @@ class ServerTest extends TestCase
 
     /**
      * @dataProvider provideConnectionErrors
-     * @param Exception $error
+     * @param \Exception $error
      * @param int       $expectedCode
      */
     public function testConnectWillReturnMappedSocks5ErrorCodeFromConnector($error, $expectedCode)
@@ -342,7 +344,7 @@ class ServerTest extends TestCase
     {
         $connection = $this->getMockBuilder('React\Socket\Connection')->disableOriginalConstructor()->setMethods(array('pause', 'end', 'write'))->getMock();
 
-        $promise = \React\Promise\reject(new RuntimeException('Connection refused'));
+        $promise = \React\Promise\reject(new \RuntimeException('Connection refused'));
 
         $this->connector->expects($this->once())->method('connect')->with('example.com:80')->willReturn($promise);
 
