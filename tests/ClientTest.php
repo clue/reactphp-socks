@@ -16,7 +16,10 @@ class ClientTest extends TestCase
     /** @var  Client */
     private $client;
 
-    public function setUp()
+    /**
+     * @before
+     */
+    public function setUpMocks()
     {
         $this->loop = \React\EventLoop\Factory::create();
         $this->connector = $this->getMockBuilder('React\Socket\ConnectorInterface')->getMock();
@@ -72,11 +75,9 @@ class ClientTest extends TestCase
         $this->assertTrue(true);
     }
 
-    /**
-     * @expectedException InvalidArgumentException
-     */
     public function testCtorThrowsForInvalidUri()
     {
+        $this->setExpectedException("InvalidArgumentException");
         new Client('////', $this->connector);
     }
 
@@ -87,11 +88,9 @@ class ClientTest extends TestCase
         $this->assertTrue(true);
     }
 
-    /**
-     * @expectedException InvalidArgumentException
-     */
     public function testInvalidAuthInformation()
     {
+        $this->setExpectedException("InvalidArgumentException");
         new Client(str_repeat('a', 256) . ':test@127.0.0.1', $this->connector);
     }
 
@@ -102,19 +101,15 @@ class ClientTest extends TestCase
         $this->assertTrue(true);
     }
 
-    /**
-     * @expectedException InvalidArgumentException
-     */
     public function testInvalidCanNotSetAuthenticationForSocks4Uri()
     {
+        $this->setExpectedException("InvalidArgumentException");
         $this->client = new Client('socks4://username:password@127.0.0.1:9050', $this->connector);
     }
 
-    /**
-     * @expectedException InvalidArgumentException
-     */
     public function testInvalidProtocolVersion()
     {
+        $this->setExpectedException("InvalidArgumentException");
         $this->client = new Client('socks3://127.0.0.1:9050', $this->connector);
     }
 
