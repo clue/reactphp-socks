@@ -20,7 +20,10 @@ class FunctionalTest extends TestCase
     private $port;
     private $server;
 
-    public function setUp()
+    /**
+     * @before
+     */
+    public function setUpClientServer()
     {
         $this->loop = \React\EventLoop\Factory::create();
 

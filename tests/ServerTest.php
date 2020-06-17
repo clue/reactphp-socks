@@ -14,7 +14,10 @@ class ServerTest extends TestCase
     /** @var Server */
     private $server;
 
-    public function setUp()
+    /**
+     * @before
+     */
+    public function setUpServer()
     {
         $this->loop = $this->getMockBuilder('React\EventLoop\LoopInterface')
             ->getMock();
@@ -54,11 +57,9 @@ class ServerTest extends TestCase
         ));
     }
 
-    /**
-     * @expectedException InvalidArgumentException
-     */
     public function testConstructorWithInvalidAuthenticatorThrows()
     {
+        $this->setExpectedException("InvalidArgumentException");
         new Server($this->loop, $this->connector, true);
     }
 

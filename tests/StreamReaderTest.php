@@ -8,7 +8,10 @@ class StreamReaderTest extends TestCase
 {
     private $reader;
 
-    public function setUp()
+    /**
+     * @before
+     */
+    public function setUpReader()
     {
         $this->reader = new StreamReader();
     }
@@ -66,19 +69,15 @@ class StreamReaderTest extends TestCase
         $this->assertEquals('rld', $this->reader->getBuffer());
     }
 
-    /**
-     * @expectedException InvalidArgumentException
-     */
     public function testInvalidStructure()
     {
+        $this->setExpectedException("InvalidArgumentException");
         $this->reader->readBinary(array('invalid' => 'y'));
     }
 
-    /**
-     * @expectedException InvalidArgumentException
-     */
     public function testInvalidCallback()
     {
+        $this->setExpectedException("InvalidArgumentException");
         $this->reader->readBufferCallback(array());
     }
 }
