@@ -1,5 +1,15 @@
 # Changelog
 
+## 1.1.0 (2020-06-19)
+
+*   Feature / Fix: Support PHP 7.4 by skipping unneeded cleanup of exception trace args.
+    (#92 by @clue)
+
+*   Clean up test suite and add `.gitattributes` to exclude dev files from exports.
+    Run tests on PHP 7.4, PHPUnit 9 and simplify test matrix.
+    Link to using SSH proxy (SSH tunnel) as an alternative.
+    (#88 by @clue and #91 and #93 by @SimonFrings)
+
 ## 1.0.0 (2018-11-20)
 
 *   First stable release, now following SemVer!
