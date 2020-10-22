@@ -5,14 +5,7 @@
 // The listen address can be given as first argument.
 // The upstream proxy servers can be given as additional arguments.
 //
-// See also examples #01 and #02 for the client side.
-
-use React\EventLoop\Factory as LoopFactory;
-use ConnectionManager\Extra\Multiple\ConnectionManagerRandom;
-use React\Socket\Server as Socket;
-use Clue\React\Socks\Server;
-use Clue\React\Socks\Client;
-use React\Socket\Connector;
+// See also examples #12 and #14 for the client side.
 
 require __DIR__ . '/../vendor/autoload.php';
 
@@ -29,22 +22,22 @@ $pool = array_slice($argv, 2);
 //$listen = '127.0.0.1:9050';
 //$pool = array('127.0.0.1:9051', '127.0.0.1:9052', '127.0.0.1:9053');
 
-$loop = LoopFactory::create();
+$loop = React\EventLoop\Factory::create();
 
 // forward to socks server listening on 127.0.0.1:9051-9053
 // this connector randomly picks one of the the attached connectors from the pool
-$connector = new Connector($loop);
+$connector = new React\Socket\Connector($loop);
 $clients = array();
 foreach ($pool as $proxy) {
-    $clients []= new Client($proxy, $connector);
+    $clients []= new Clue\React\Socks\Client($proxy, $connector);
 }
-$connector = new ConnectionManagerRandom($clients);
+$connector = new ConnectionManager\Extra\Multiple\ConnectionManagerRandom($clients);
 
 // start the SOCKS proxy server using our connection manager for outgoing connections
-$server = new Server($loop, $socket, $connector);
+$server = new Clue\React\Socks\Server($loop, $socket, $connector);
 
 // listen on 127.0.0.1:1080 or first argument
-$socket = new Socket($listen, $loop);
+$socket = new React\Socket\Server($listen, $loop);
 $server->listen($socket);
 
 echo 'SOCKS server listening on ' . $socket->getAddress() . PHP_EOL;
