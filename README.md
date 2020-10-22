@@ -272,12 +272,35 @@ $connector = new React\Socket\Connector($loop, array(
 
 #### HTTP requests
 
-HTTP operates on a higher layer than this low-level SOCKS implementation.
-If you want to issue HTTP requests, you can add a dependency for
-[clue/reactphp-buzz](https://github.com/clue/reactphp-buzz).
-It can interact with this library by issuing all
-[HTTP requests through a SOCKS proxy server](https://github.com/clue/reactphp-buzz#socks-proxy).
-This works for both plain HTTP and TLS-encrypted HTTPS requests.
+This library also allows you to send
+[HTTP requests through a SOCKS proxy server](https://github.com/reactphp/http#socks-proxy).
+
+In order to send HTTP requests, you first have to add a dependency for
+[ReactPHP's async HTTP client](https://github.com/reactphp/http#client-usage).
+This allows you to send both plain HTTP and TLS-encrypted HTTPS requests like this:
+
+```php
+$proxy = new Clue\React\Socks\Client(
+    'socks://127.0.0.1:1080',
+    new React\Socket\Connector($loop)
+);
+
+$connector = new React\Socket\Connector($loop, array(
+    'tcp' => $proxy,
+    'dns' => false
+));
+
+$browser = new React\Http\Browser($loop, $connector);
+
+$browser->get('https://example.com/')->then(function (Psr\Http\Message\ResponseInterface $response) {
+    var_dump($response->getHeaders(), (string) $response->getBody());
+}, function (Exception $e) {
+    echo 'Error: ' . $e->getMessage() . PHP_EOL;
+});
+```
+
+See also [ReactPHP's HTTP client](https://github.com/reactphp/http#client-usage)
+and any of the [examples](examples) for more details.
 
 #### Protocol version
 
