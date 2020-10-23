@@ -23,7 +23,7 @@ which allows you to build your own SOCKS proxy servers with custom business logi
   Send any number of SOCKS requests in parallel and process their
   responses as soon as results come in.
   The Promise-based design provides a *sane* interface to working with out of
-  bound responses and possible connection errors.
+  order responses and possible connection errors.
 * **Standard interfaces** -
   Allows easy integration with existing higher-level components by implementing
   ReactPHP's standard
@@ -40,27 +40,27 @@ which allows you to build your own SOCKS proxy servers with custom business logi
 * [Support us](#support-us)
 * [Quickstart example](#quickstart-example)
 * [Usage](#usage)
-  * [Client](#client)
-    * [Plain TCP connections](#plain-tcp-connections)
-    * [Secure TLS connections](#secure-tls-connections)
-    * [HTTP requests](#http-requests)
-    * [Protocol version](#protocol-version)
-    * [DNS resolution](#dns-resolution)
-    * [Authentication](#authentication)
-    * [Proxy chaining](#proxy-chaining)
-    * [Connection timeout](#connection-timeout)
-    * [SOCKS over TLS](#socks-over-tls)
-    * [Unix domain sockets](#unix-domain-sockets)
-  * [Server](#server)
-    * [Server connector](#server-connector)
-    * [Authentication](#server-authentication)
-    * [Proxy chaining](#server-proxy-chaining)
-    * [SOCKS over TLS](#server-socks-over-tls)
-    * [Unix domain sockets](#server-unix-domain-sockets)
+    * [Client](#client)
+        * [Plain TCP connections](#plain-tcp-connections)
+        * [Secure TLS connections](#secure-tls-connections)
+        * [HTTP requests](#http-requests)
+        * [Protocol version](#protocol-version)
+        * [DNS resolution](#dns-resolution)
+        * [Authentication](#authentication)
+        * [Proxy chaining](#proxy-chaining)
+        * [Connection timeout](#connection-timeout)
+        * [SOCKS over TLS](#socks-over-tls)
+        * [Unix domain sockets](#unix-domain-sockets)
+    * [Server](#server)
+        * [Server connector](#server-connector)
+        * [Authentication](#server-authentication)
+        * [Proxy chaining](#server-proxy-chaining)
+        * [SOCKS over TLS](#server-socks-over-tls)
+        * [Unix domain sockets](#server-unix-domain-sockets)
 * [Servers](#servers)
-  * [Using a PHP SOCKS server](#using-a-php-socks-server)
-  * [Using SSH as a SOCKS server](#using-ssh-as-a-socks-server)
-  * [Using the Tor (anonymity network) to tunnel SOCKS connections](#using-the-tor-anonymity-network-to-tunnel-socks-connections)
+    * [Using a PHP SOCKS server](#using-a-php-socks-server)
+    * [Using SSH as a SOCKS server](#using-ssh-as-a-socks-server)
+    * [Using the Tor (anonymity network) to tunnel SOCKS connections](#using-the-tor-anonymity-network-to-tunnel-socks-connections)
 * [Install](#install)
 * [Tests](#tests)
 * [License](#license)
@@ -1019,7 +1019,7 @@ This project follows [SemVer](https://semver.org/).
 This will install the latest supported version:
 
 ```bash
-$ composer require clue/socks-react:^1.1
+$ composer require clue/socks-react:^1.2
 ```
 
 See also the [CHANGELOG](CHANGELOG.md) for details about version upgrades.
