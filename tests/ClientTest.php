@@ -168,7 +168,7 @@ class ClientTest extends TestCase
         $promise->then(null, $this->expectCallableOnceWithException(
             'RuntimeException',
             'Connection to tcp://google.com:80 failed because connection to proxy failed (ECONNREFUSED)',
-            SOCKET_ECONNREFUSED
+            defined('SOCKET_ECONNREFUSED') ? SOCKET_ECONNREFUSED : 111
         ));
     }
 
@@ -186,7 +186,7 @@ class ClientTest extends TestCase
         $promise->then(null, $this->expectCallableOnceWithException(
             'RuntimeException',
             'Connection to tcp://google.com:80 cancelled while waiting for proxy (ECONNABORTED)',
-            SOCKET_ECONNABORTED
+            defined('SOCKET_ECONNABORTED') ? SOCKET_ECONNABORTED : 103
         ));
     }
 
@@ -205,7 +205,7 @@ class ClientTest extends TestCase
         $promise->then(null, $this->expectCallableOnceWithException(
             'RuntimeException',
             'Connection to tcp://google.com:80 cancelled while waiting for proxy (ECONNABORTED)',
-            SOCKET_ECONNABORTED
+            defined('SOCKET_ECONNABORTED') ? SOCKET_ECONNABORTED : 103
         ));
     }
 
@@ -225,7 +225,7 @@ class ClientTest extends TestCase
         $promise->then(null, $this->expectCallableOnceWithException(
             'RuntimeException',
             'Connection to tcp://google.com:80 cancelled while waiting for proxy (ECONNABORTED)',
-            SOCKET_ECONNABORTED
+            defined('SOCKET_ECONNABORTED') ? SOCKET_ECONNABORTED : 103
         ));
     }
 
@@ -244,7 +244,7 @@ class ClientTest extends TestCase
         $promise->then(null, $this->expectCallableOnceWithException(
             'RuntimeException',
             'Connection to tcp://google.com:80 failed because connection to proxy was lost while waiting for response from proxy (ECONNRESET)',
-            SOCKET_ECONNRESET
+            defined('SOCKET_ECONNRESET') ? SOCKET_ECONNRESET : 104
         ));
     }
 
@@ -263,7 +263,7 @@ class ClientTest extends TestCase
         $promise->then(null, $this->expectCallableOnceWithException(
             'RuntimeException',
             'Connection to tcp://google.com:80 failed because connection to proxy caused a stream error (EIO)',
-            SOCKET_EIO
+            defined('SOCKET_EIO') ? SOCKET_EIO : 5
         ));
     }
 
@@ -283,7 +283,7 @@ class ClientTest extends TestCase
         $promise->then(null, $this->expectCallableOnceWithException(
             'RuntimeException',
             'Connection to tcp://google.com:80 failed because proxy returned invalid response (EBADMSG)',
-            SOCKET_EBADMSG
+            defined('SOCKET_EBADMSG') ? SOCKET_EBADMSG: 71
         ));
     }
 
@@ -305,7 +305,7 @@ class ClientTest extends TestCase
         $promise->then(null, $this->expectCallableOnceWithException(
             'RuntimeException',
             'Connection to tcp://google.com:80 failed because proxy returned invalid response (EBADMSG)',
-            SOCKET_EBADMSG
+            defined('SOCKET_EBADMSG') ? SOCKET_EBADMSG: 71
         ));
     }
 
@@ -327,7 +327,7 @@ class ClientTest extends TestCase
         $promise->then(null, $this->expectCallableOnceWithException(
             'RuntimeException',
             'Connection to tcp://google.com:80 failed because proxy refused connection with general server failure (ECONNREFUSED)',
-            SOCKET_ECONNREFUSED
+            defined('SOCKET_ECONNREFUSED') ? SOCKET_ECONNREFUSED : 111
         ));
     }
 
@@ -349,7 +349,7 @@ class ClientTest extends TestCase
         $promise->then(null, $this->expectCallableOnceWithException(
             'RuntimeException',
             'Connection to tcp://google.com:80 failed because proxy denied access due to unsupported authentication method (EACCES)',
-            SOCKET_EACCES
+            defined('SOCKET_EACCES') ? SOCKET_EACCES : 13
         ));
     }
 
@@ -371,7 +371,7 @@ class ClientTest extends TestCase
         $promise->then(null, $this->expectCallableOnceWithException(
             'RuntimeException',
             'Connection to tcp://google.com:80 failed because proxy denied access with given authentication details (EACCES)',
-            SOCKET_EACCES
+            defined('SOCKET_EACCES') ? SOCKET_EACCES : 13
         ));
     }
 
@@ -393,7 +393,7 @@ class ClientTest extends TestCase
         $promise->then(null, $this->expectCallableOnceWithException(
             'RuntimeException',
             'Connection to tcp://google.com:80 failed because proxy returned invalid response (EBADMSG)',
-            SOCKET_EBADMSG
+            defined('SOCKET_EBADMSG') ? SOCKET_EBADMSG: 71
         ));
     }
 
@@ -415,7 +415,7 @@ class ClientTest extends TestCase
         $promise->then(null, $this->expectCallableOnceWithException(
             'RuntimeException',
             'Connection to tcp://google.com:80 failed because proxy refused connection with error code 0x55 (ECONNREFUSED)',
-            SOCKET_ECONNREFUSED
+            defined('SOCKET_ECONNREFUSED') ? SOCKET_ECONNREFUSED : 111
         ));
     }
 
@@ -460,47 +460,47 @@ class ClientTest extends TestCase
         return array(
             array(
                 Server::ERROR_GENERAL,
-                SOCKET_ECONNREFUSED,
+                defined('SOCKET_ECONNREFUSED') ? SOCKET_ECONNREFUSED : 111,
                 'failed because proxy refused connection with general server failure (ECONNREFUSED)'
             ),
             array(
                 Server::ERROR_NOT_ALLOWED_BY_RULESET,
-                SOCKET_EACCES,
+                defined('SOCKET_EACCES') ? SOCKET_EACCES : 13,
                 'failed because proxy denied access due to ruleset (EACCES)'
             ),
             array(
                 Server::ERROR_NETWORK_UNREACHABLE,
-                SOCKET_ENETUNREACH,
+                defined('SOCKET_ENETUNREACH') ? SOCKET_ENETUNREACH : 101,
                 'failed because proxy reported network unreachable (ENETUNREACH)'
             ),
             array(
                 Server::ERROR_HOST_UNREACHABLE,
-                SOCKET_EHOSTUNREACH,
+                defined('SOCKET_EHOSTUNREACH') ? SOCKET_EHOSTUNREACH : 113,
                 'failed because proxy reported host unreachable (EHOSTUNREACH)'
             ),
             array(
                 Server::ERROR_CONNECTION_REFUSED,
-                SOCKET_ECONNREFUSED,
+                defined('SOCKET_ECONNREFUSED') ? SOCKET_ECONNREFUSED : 111,
                 'failed because proxy reported connection refused (ECONNREFUSED)'
             ),
             array(
                 Server::ERROR_TTL,
-                SOCKET_ETIMEDOUT,
+                defined('SOCKET_ETIMEDOUT') ? SOCKET_ETIMEDOUT : 110,
                 'failed because proxy reported TTL/timeout expired (ETIMEDOUT)'
             ),
             array(
                 Server::ERROR_COMMAND_UNSUPPORTED,
-                SOCKET_EPROTO,
+                defined('SOCKET_EPROTO') ? SOCKET_EPROTO : 71,
                 'failed because proxy does not support the CONNECT command (EPROTO)'
             ),
             array(
                 Server::ERROR_ADDRESS_UNSUPPORTED,
-                SOCKET_EPROTO,
+                defined('SOCKET_EPROTO') ? SOCKET_EPROTO : 71,
                 'failed because proxy does not support this address type (EPROTO)'
             ),
             array(
                 200,
-                SOCKET_ECONNREFUSED,
+                defined('SOCKET_ECONNREFUSED') ? SOCKET_ECONNREFUSED : 111,
                 'failed because proxy server refused connection with unknown error code 0xC8 (ECONNREFUSED)'
             )
         );
