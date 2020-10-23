@@ -5,12 +5,7 @@
 // The listen address can be given as first argument.
 // The upstream proxy servers can be given as additional arguments.
 //
-// See also examples #01 and #02 for the client side.
-
-use Clue\React\Socks\Client;
-use Clue\React\Socks\Server;
-use React\Socket\Server as Socket;
-use React\Socket\Connector;
+// See also examples #12 and #14 for the client side.
 
 require __DIR__ . '/../vendor/autoload.php';
 
@@ -30,16 +25,16 @@ $path = array_slice($argv, 2);
 $loop = React\EventLoop\Factory::create();
 
 // set next SOCKS server chain -> p1 -> p2 -> p3 -> destination
-$connector = new Connector($loop);
+$connector = new React\Socket\Connector($loop);
 foreach ($path as $proxy) {
-    $connector = new Client($proxy, $connector);
+    $connector = new Clue\React\Socks\Client($proxy, $connector);
 }
 
 // start a new SOCKS proxy server which forwards all connections to the other SOCKS server
-$server = new Server($loop, $connector);
+$server = new Clue\React\Socks\Server($loop, $connector);
 
 // listen on 127.0.0.1:1080 or first argument
-$socket = new Socket($listen, $loop);
+$socket = new React\Socket\Server($listen, $loop);
 $server->listen($socket);
 
 echo 'SOCKS server listening on ' . $socket->getAddress() . PHP_EOL;
