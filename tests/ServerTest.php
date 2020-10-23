@@ -141,19 +141,19 @@ class ServerTest extends TestCase
     {
         return array(
             array(
-                new \RuntimeException('', SOCKET_EACCES),
+                new \RuntimeException('', defined('SOCKET_EACCES') ? SOCKET_EACCES : 13),
                 Server::ERROR_NOT_ALLOWED_BY_RULESET
             ),
             array(
-                new \RuntimeException('', SOCKET_ENETUNREACH),
+                new \RuntimeException('', defined('SOCKET_ENETUNREACH') ? SOCKET_ENETUNREACH : 101),
                 Server::ERROR_NETWORK_UNREACHABLE
             ),
             array(
-                new \RuntimeException('', SOCKET_EHOSTUNREACH),
+                new \RuntimeException('', defined('SOCKET_EHOSTUNREACH') ? SOCKET_EHOSTUNREACH : 113),
                 Server::ERROR_HOST_UNREACHABLE,
             ),
             array(
-                new \RuntimeException('', SOCKET_ECONNREFUSED),
+                new \RuntimeException('', defined('SOCKET_ECONNREFUSED') ? SOCKET_ECONNREFUSED : 111),
                 Server::ERROR_CONNECTION_REFUSED
             ),
             array(
@@ -161,7 +161,7 @@ class ServerTest extends TestCase
                 Server::ERROR_CONNECTION_REFUSED
             ),
             array(
-                new \RuntimeException('', SOCKET_ETIMEDOUT),
+                new \RuntimeException('', defined('SOCKET_ETIMEDOUT') ? SOCKET_ETIMEDOUT : 110),
                 Server::ERROR_TTL
             ),
             array(

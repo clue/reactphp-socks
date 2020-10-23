@@ -327,7 +327,7 @@ class FunctionalTest extends TestCase
 
         $this->client = new Client('socks5://127.0.0.1:' . $this->port, $this->connector);
 
-        $this->assertRejectPromise($this->client->connect('www.google.com:80'), null, SOCKET_EACCES);
+        $this->assertRejectPromise($this->client->connect('www.google.com:80'), null, defined('SOCKET_EACCES') ? SOCKET_EACCES : 13);
     }
 
     public function testConnectionInvalidAuthenticationMismatch()
@@ -340,7 +340,7 @@ class FunctionalTest extends TestCase
 
         $this->client = new Client('user:pass@127.0.0.1:' . $this->port, $this->connector);
 
-        $this->assertRejectPromise($this->client->connect('www.google.com:80'), null, SOCKET_EACCES);
+        $this->assertRejectPromise($this->client->connect('www.google.com:80'), null, defined('SOCKET_EACCES') ? SOCKET_EACCES : 13);
     }
 
     public function testConnectionInvalidAuthenticatorReturnsFalse()
@@ -355,7 +355,7 @@ class FunctionalTest extends TestCase
 
         $this->client = new Client('user:pass@127.0.0.1:' . $this->port, $this->connector);
 
-        $this->assertRejectPromise($this->client->connect('www.google.com:80'), null, SOCKET_EACCES);
+        $this->assertRejectPromise($this->client->connect('www.google.com:80'), null, defined('SOCKET_EACCES') ? SOCKET_EACCES : 13);
     }
 
     public function testConnectionInvalidAuthenticatorReturnsPromiseFulfilledWithFalse()
@@ -370,7 +370,7 @@ class FunctionalTest extends TestCase
 
         $this->client = new Client('user:pass@127.0.0.1:' . $this->port, $this->connector);
 
-        $this->assertRejectPromise($this->client->connect('www.google.com:80'), null, SOCKET_EACCES);
+        $this->assertRejectPromise($this->client->connect('www.google.com:80'), null, defined('SOCKET_EACCES') ? SOCKET_EACCES : 13);
     }
 
     public function testConnectionInvalidAuthenticatorReturnsPromiseRejected()
@@ -385,7 +385,7 @@ class FunctionalTest extends TestCase
 
         $this->client = new Client('user:pass@127.0.0.1:' . $this->port, $this->connector);
 
-        $this->assertRejectPromise($this->client->connect('www.google.com:80'), null, SOCKET_EACCES);
+        $this->assertRejectPromise($this->client->connect('www.google.com:80'), null, defined('SOCKET_EACCES') ? SOCKET_EACCES : 13);
     }
 
     /** @group internet */
