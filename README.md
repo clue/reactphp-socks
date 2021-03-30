@@ -1,4 +1,6 @@
-# clue/reactphp-socks [![Build Status](https://travis-ci.org/clue/reactphp-socks.svg?branch=master)](https://travis-ci.org/clue/reactphp-socks)
+# clue/reactphp-socks
+
+[![CI status](https://github.com/clue/reactphp-socks/workflows/CI/badge.svg)](https://github.com/clue/reactphp-socks/actions)
 
 Async SOCKS proxy connector client and server implementation, tunnel any TCP/IP-based
 protocol through a SOCKS5 or SOCKS4(a) proxy server, built on top of
