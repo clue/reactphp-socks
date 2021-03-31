@@ -44,6 +44,9 @@ class FunctionalTest extends TestCase
     /** @group internet */
     public function testConnection()
     {
+        // max_nesting_level was set to 100 for PHP Versions < 5.4 which resulted in failing test for legacy PHP
+        ini_set('xdebug.max_nesting_level', 256);
+
         $this->assertResolveStream($this->client->connect('www.google.com:80'));
     }
 
@@ -92,8 +95,8 @@ class FunctionalTest extends TestCase
     /** @group internet */
     public function testConnectionSocksOverTls()
     {
-        if (!function_exists('stream_socket_enable_crypto')) {
-            $this->markTestSkipped('Required function does not exist in your environment (HHVM?)');
+        if (defined('HHVM_VERSION')) {
+            $this->markTestSkipped('Not supported on HHVM');
         }
 
         $socket = new \React\Socket\Server('tls://127.0.0.1:0', $this->loop, array('tls' => array(
@@ -117,8 +120,8 @@ class FunctionalTest extends TestCase
      */
     public function testConnectionSocksOverTlsUsesPeerNameFromSocksUri()
     {
-        if (!function_exists('stream_socket_enable_crypto')) {
-            $this->markTestSkipped('Required function does not exist in your environment (HHVM?)');
+        if (defined('HHVM_VERSION')) {
+            $this->markTestSkipped('Not supported on HHVM');
         }
 
         $socket = new \React\Socket\Server('tls://127.0.0.1:0', $this->loop, array('tls' => array(
@@ -421,8 +424,8 @@ class FunctionalTest extends TestCase
     /** @group internet */
     public function testSecureConnectorOkay()
     {
-        if (!function_exists('stream_socket_enable_crypto')) {
-            $this->markTestSkipped('Required function does not exist in your environment (HHVM?)');
+        if (defined('HHVM_VERSION')) {
+            $this->markTestSkipped('Not supported on HHVM');
         }
 
         $ssl = new SecureConnector($this->client, $this->loop);
@@ -445,8 +448,8 @@ class FunctionalTest extends TestCase
     /** @group internet */
     public function testSecureConnectorToBadSslWithoutVerifyWorks()
     {
-        if (!function_exists('stream_socket_enable_crypto')) {
-            $this->markTestSkipped('Required function does not exist in your environment (HHVM?)');
+        if (defined('HHVM_VERSION')) {
+            $this->markTestSkipped('Not supported on HHVM');
         }
 
         $ssl = new SecureConnector($this->client, $this->loop, array('verify_peer' => false));

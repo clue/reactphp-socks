@@ -1,4 +1,6 @@
-# clue/reactphp-socks [![Build Status](https://travis-ci.org/clue/reactphp-socks.svg?branch=master)](https://travis-ci.org/clue/reactphp-socks)
+# clue/reactphp-socks
+
+[![CI status](https://github.com/clue/reactphp-socks/workflows/CI/badge.svg)](https://github.com/clue/reactphp-socks/actions)
 
 Async SOCKS proxy connector client and server implementation, tunnel any TCP/IP-based
 protocol through a SOCKS5 or SOCKS4(a) proxy server, built on top of
@@ -1025,7 +1027,7 @@ $ composer require clue/socks-react:^1.2
 See also the [CHANGELOG](CHANGELOG.md) for details about version upgrades.
 
 This project aims to run on any platform and thus does not require any PHP
-extensions and supports running on legacy PHP 5.3 through current PHP 7+ and
+extensions and supports running on legacy PHP 5.3 through current PHP 8+ and
 HHVM.
 It's *highly recommended to use PHP 7+* for this project.
 
