@@ -35,10 +35,10 @@ $connector = new React\Socket\Connector($loop, array(
 
 echo 'Demo SOCKS client connecting to SOCKS server ' . $url . PHP_EOL;
 
-$connector->connect('tcp://www.google.com:80')->then(function (React\Socket\ConnectionInterface $stream) {
+$connector->connect('tcp://www.google.com:80')->then(function (React\Socket\ConnectionInterface $connection) {
     echo 'connected' . PHP_EOL;
-    $stream->write("GET / HTTP/1.0\r\n\r\n");
-    $stream->on('data', function ($data) {
+    $connection->write("GET / HTTP/1.0\r\n\r\n");
+    $connection->on('data', function ($data) {
         echo $data;
     });
 }, function (Exception $e) {
