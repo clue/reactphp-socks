@@ -86,10 +86,14 @@ to google.com via a local SOCKS proxy server:
 ```php
 $loop = React\EventLoop\Factory::create();
 $connector = new React\Socket\Connector($loop);
-$client = new Clue\React\Socks\Client('127.0.0.1:1080', $connector);
+$proxy = new Clue\React\Socks\Client('127.0.0.1:1080', $connector);
 
-$client->connect('tcp://www.google.com:80')->then(function (ConnectionInterface $stream) {
-    $stream->write("GET / HTTP/1.0\r\n\r\n");
+$proxy->connect('tcp://www.google.com:80')->then(function (React\Socket\ConnectionInterface $connection) {
+    $connection->write("GET / HTTP/1.0\r\n\r\n");
+
+    $connection->on('data', function ($chunk) {
+        echo $chunk;
+    });
 });
 
 $loop->run();
@@ -128,13 +132,13 @@ like this:
 
 ```php
 $connector = new React\Socket\Connector($loop);
-$client = new Client('127.0.0.1:1080', $connector);
+$proxy = new Clue\React\Socks\Client('127.0.0.1:1080', $connector);
 ```
 
 You can omit the port if you're using the default SOCKS port 1080:
 
 ```php
-$client = new Client('127.0.0.1', $connector);
+$proxy = new Clue\React\Socks\Client('127.0.0.1', $connector);
 ```
 
 If you need custom connector settings (DNS resolution, TLS parameters, timeouts,
@@ -149,7 +153,7 @@ $connector = new React\Socket\Connector($loop, array(
     )
 ));
 
-$client = new Client('my-socks-server.local:1080', $connector);
+$proxy = new Clue\React\Socks\Client('my-socks-server.local:1080', $connector);
 ```
 
 This is one of the two main classes in this package.
@@ -167,9 +171,9 @@ This makes it fairly simple to add SOCKS proxy support to pretty much any
 higher-level component:
 
 ```diff
-- $client = new SomeClient($connector);
-+ $proxy = new Client('127.0.0.1:1080', $connector);
-+ $client = new SomeClient($proxy);
+- $acme = new AcmeApi($connector);
++ $proxy = new Clue\React\Socks\Client('127.0.0.1:1080', $connector);
++ $acme = new AcmeApi($proxy);
 ```
 
 #### Plain TCP connections
@@ -181,10 +185,18 @@ As documented above, you can simply invoke its `connect()` method to establish
 a streaming plain TCP/IP connection and use any higher level protocol like so:
 
 ```php
-$client->connect('tcp://www.google.com:80')->then(function (ConnectonInterface $stream) {
+$proxy = new Clue\React\Socks\Client(
+    '127.0.0.1:1080',
+    new React\Socket\Connector($loop)
+);
+
+$proxy->connect('tcp://www.google.com:80')->then(function (React\Socket\ConnectionInterface $connection) {
     echo 'connected to www.google.com:80';
-    $stream->write("GET / HTTP/1.0\r\n\r\n");
-    // ...
+    $connection->write("GET / HTTP/1.0\r\n\r\n");
+
+    $connection->on('data', function ($chunk) {
+        echo $chunk;
+    });
 });
 ```
 
@@ -192,15 +204,23 @@ You can either use the `Client` directly or you may want to wrap this connector
 in ReactPHP's [`Connector`](https://github.com/reactphp/socket#connector):
 
 ```php
+$proxy = new Clue\React\Socks\Client(
+    '127.0.0.1:1080',
+    new React\Socket\Connector($loop)
+);
+
 $connector = new React\Socket\Connector($loop, array(
-    'tcp' => $client,
+    'tcp' => $proxy,
     'dns' => false
 ));
 
-$connector->connect('tcp://www.google.com:80')->then(function (ConnectonInterface $stream) {
+$connector->connect('tcp://www.google.com:80')->then(function (React\Socket\ConnectionInterface $connection) {
     echo 'connected to www.google.com:80';
-    $stream->write("GET / HTTP/1.0\r\n\r\n");
-    // ...
+    $connection->write("GET / HTTP/1.0\r\n\r\n");
+
+    $connection->on('data', function ($chunk) {
+        echo $chunk;
+    });
 });
 ```
 
@@ -230,18 +250,26 @@ ReactPHP's [`Connector`](https://github.com/reactphp/socket#connector) or the
 low-level [`SecureConnector`](https://github.com/reactphp/socket#secureconnector):
 
 ```php
+$proxy = new Clue\React\Socks\Client(
+    '127.0.0.1:1080',
+    new React\Socket\Connector($loop)
+);
+
 $connector = new React\Socket\Connector($loop, array(
-    'tcp' => $client,
+    'tcp' => $proxy,
     'dns' => false
 ));
 
 // now create an SSL encrypted connection (notice the $ssl instead of $tcp)
-$connector->connect('tls://www.google.com:443')->then(function (ConnectionInterface $stream) {
+$connector->connect('tls://www.google.com:443')->then(function (React\Socket\ConnectionInterface $connection) {
     // proceed with just the plain text data
     // everything is encrypted/decrypted automatically
     echo 'connected to SSL encrypted www.google.com';
-    $stream->write("GET / HTTP/1.0\r\n\r\n");
-    // ...
+    $connection->write("GET / HTTP/1.0\r\n\r\n");
+
+    $connection->on('data', function ($chunk) {
+        echo $chunk;
+    });
 });
 ```
 
@@ -263,7 +291,7 @@ to the constructor like this:
 
 ```php
 $connector = new React\Socket\Connector($loop, array(
-    'tcp' => $client,
+    'tcp' => $proxy,
     'tls' => array(
         'verify_peer' => false,
         'verify_peer_name' => false
@@ -283,7 +311,7 @@ This allows you to send both plain HTTP and TLS-encrypted HTTPS requests like th
 
 ```php
 $proxy = new Clue\React\Socks\Client(
-    'socks://127.0.0.1:1080',
+    '127.0.0.1:1080',
     new React\Socket\Connector($loop)
 );
 
@@ -380,16 +408,16 @@ URI scheme acts as an alias for the default `socks://` URI scheme.
 
 ```php
 // all three forms are equivalent
-$client = new Client('127.0.0.1', $connector);
-$client = new Client('socks://127.0.0.1', $connector);
-$client = new Client('socks5://127.0.0.1', $connector);
+$proxy = new Clue\React\Socks\Client('127.0.0.1', $connector);
+$proxy = new Clue\React\Socks\Client('socks://127.0.0.1', $connector);
+$proxy = new Clue\React\Socks\Client('socks5://127.0.0.1', $connector);
 ```
 
 If want to explicitly set the protocol version to SOCKS4(a), you can use the URI
 scheme `socks4://` as part of the SOCKS URI:
 
 ```php
-$client = new Client('socks4://127.0.0.1', $connector);
+$proxy = new Clue\React\Socks\Client('socks4://127.0.0.1', $connector);
 ```
 
 #### DNS resolution
@@ -418,11 +446,16 @@ However, wrapping the `Client` in ReactPHP's
 [`Connector`](https://github.com/reactphp/socket#connector) actually
 performs local DNS resolution unless explicitly defined otherwise.
 Given that remote DNS resolution is assumed to be the preferred mode, all
-other examples explicitly disable DNS resoltion like this:
+other examples explicitly disable DNS resolution like this:
 
 ```php
+$proxy = new Clue\React\Socks\Client(
+    '127.0.0.1:1080',
+    new React\Socket\Connector($loop)
+);
+
 $connector = new React\Socket\Connector($loop, array(
-    'tcp' => $client,
+    'tcp' => $proxy,
     'dns' => false
 ));
 ```
@@ -431,9 +464,14 @@ If you want to explicitly use *local DNS resolution* (such as when explicitly
 using SOCKS4), you can use the following code:
 
 ```php
+$proxy = new Clue\React\Socks\Client(
+    '127.0.0.1:1080',
+    new React\Socket\Connector($loop)
+);
+
 // set up Connector which uses Google's public DNS (8.8.8.8)
 $connector = new React\Socket\Connector($loop, array(
-    'tcp' => $client,
+    'tcp' => $proxy,
     'dns' => '8.8.8.8'
 ));
 ```
@@ -464,7 +502,7 @@ so this methods should not be used on a network where you have to worry about ea
 You can simply pass the authentication information as part of the SOCKS URI:
 
 ```php
-$client = new Client('username:password@127.0.0.1', $connector);
+$proxy = new Clue\React\Socks\Client('username:password@127.0.0.1', $connector);
 ```
 
 Note that both the username and password must be percent-encoded if they contain
@@ -474,7 +512,7 @@ special characters:
 $user = 'he:llo';
 $pass = 'p@ss';
 
-$client = new Client(
+$proxy = new Clue\React\Socks\Client(
     rawurlencode($user) . ':' . rawurlencode($pass) . '@127.0.0.1',
     $connector
 );
@@ -492,7 +530,7 @@ version 5 and complains if you have explicitly set anything else:
 
 ```php
 // throws InvalidArgumentException
-new Client('socks4://user:pass@127.0.0.1', $connector);
+new Clue\React\Socks\Client('socks4://user:pass@127.0.0.1', $connector);
 ```
 
 #### Proxy chaining
@@ -523,15 +561,21 @@ SOCKS connector from another SOCKS client like this:
 // which in turn then uses MiddlemanSocksServer.
 // this creates a TCP/IP connection to MiddlemanSocksServer, which then connects
 // to TargetSocksServer, which then connects to the TargetHost
-$middle = new Client('127.0.0.1:1080', new Connector($loop));
-$target = new Client('example.com:1080', $middle);
+$middle = new Clue\React\Socks\Client(
+    '127.0.0.1:1080',
+    new React\Socket\Connector($loop)
+);
+$target = new Clue\React\Socks\Client(
+    'example.com:1080',
+    $middle
+);
 
 $connector = new React\Socket\Connector($loop, array(
     'tcp' => $target,
     'dns' => false
 ));
 
-$connector->connect('tls://www.google.com:443')->then(function ($stream) {
+$connector->connect('tls://www.google.com:443')->then(function (React\Socket\ConnectionInterface $connection) {
     // …
 });
 ```
@@ -572,13 +616,18 @@ It provides the same `connect()` method, but will automatically reject the
 underlying connection attempt if it takes too long:
 
 ```php
-$connector = new Connector($loop, array(
-    'tcp' => $client,
+$proxy = new Clue\React\Socks\Client(
+    '127.0.0.1:1080',
+    new React\Socket\Connector($loop)
+);
+
+$connector = new React\Socket\Connector($loop, array(
+    'tcp' => $proxy,
     'dns' => false,
     'timeout' => 3.0
 ));
 
-$connector->connect('tcp://google.com:80')->then(function ($stream) {
+$connector->connect('tcp://google.com:80')->then(function (React\Socket\ConnectionInterface $connection) {
     // connection succeeded within 3.0 seconds
 });
 ```
@@ -615,9 +664,15 @@ You can use the `sockss://` URI scheme or use an explicit
 [SOCKS protocol version](#protocol-version) like this:
 
 ```php
-$client = new Client('sockss://127.0.0.1:1080', new Connector($loop));
+$proxy = new Clue\React\Socks\Client(
+    'sockss://127.0.0.1:1080',
+    new React\Socket\Connector($loop)
+);
 
-$client = new Client('socks4s://127.0.0.1:1080', new Connector($loop));
+$proxy = new Clue\React\Socks\Client(
+    'socks4s://127.0.0.1:1080',
+    new React\Socket\Connector($loop)
+);
 ```
 
 See also [example 32](examples).
@@ -626,7 +681,10 @@ Similarly, you can also combine this with [authentication](#authentication)
 like this:
 
 ```php
-$client = new Client('sockss://user:pass@127.0.0.1:1080', new Connector($loop));
+$proxy = new Clue\React\Socks\Client(
+    'sockss://user:pass@127.0.0.1:1080',
+    new React\Socket\Connector($loop)
+);
 ```
 
 > Note that for most use cases, [secure TLS connections](#secure-tls-connections)
@@ -658,16 +716,25 @@ You can use the `socks+unix://` URI scheme or use an explicit
 [SOCKS protocol version](#protocol-version) like this:
 
 ```php
-$client = new Client('socks+unix:///tmp/proxy.sock', new Connector($loop));
+$proxy = new Clue\React\Socks\Client(
+    'socks+unix:///tmp/proxy.sock'
+    new React\Socket\Connector($loop)
+);
 
-$client = new Client('socks4+unix:///tmp/proxy.sock', new Connector($loop));
+$proxy = new Clue\React\Socks\Client(
+    'socks4+unix:///tmp/proxy.sock',
+    new React\Socket\Connector($loop)
+);
 ```
 
 Similarly, you can also combine this with [authentication](#authentication)
 like this:
 
 ```php
-$client = new Client('socks+unix://user:pass@/tmp/proxy.sock', new Connector($loop));
+$proxy = new Clue\React\Socks\Client(
+    'socks+unix://user:pass@/tmp/proxy.sock',
+    new React\Socket\Connector($loop)
+);
 ```
 
 > Note that Unix domain sockets (UDS) are considered advanced usage and PHP only
@@ -830,10 +897,10 @@ $loop = React\EventLoop\Factory::create();
 
 // set next SOCKS server example.com:1080 as target
 $connector = new React\Socket\Connector($loop);
-$client = new Clue\React\Socks\Client('user:pass@example.com:1080', $connector);
+$proxy = new Clue\React\Socks\Client('user:pass@example.com:1080', $connector);
 
 // start a new server which forwards all connections to the other SOCKS server
-$server = new Clue\React\Socks\Server($loop, $client);
+$server = new Clue\React\Socks\Server($loop, $proxy);
 
 // listen on localhost:1080
 $socket = new React\Socket\Server('127.0.0.1:1080', $loop);
@@ -970,7 +1037,18 @@ $ ssh -D 1080 example.com
 Now you can simply use this SSH SOCKS server like this:
 
 ```PHP
-$client = new Client('127.0.0.1:1080', $connector);
+$proxy = new Clue\React\Socks\Client(
+    '127.0.0.1:1080',
+    new React\Socket\Connector($loop)
+);
+
+$proxy->connect('tcp://www.google.com:80')->then(function (React\Socket\ConnectionInterface $connection) {
+    $connection->write("GET / HTTP/1.0\r\n\r\n");
+
+    $connection->on('data', function ($chunk) {
+        echo $chunk;
+    });
+});
 ```
 
 Note that the above will allow all users on the local system to connect over
@@ -986,7 +1064,18 @@ $ ssh -D/tmp/proxy.sock example.com
 Now you can simply use this SSH SOCKS server like this:
 
 ```PHP
-$client = new Client('socks+unix:///tmp/proxy.sock', $connector);
+$proxy = new Clue\React\Socks\Client(
+    'socks+unix:///tmp/proxy.sock',
+    new React\Socket\Connector($loop)
+);
+
+$proxy->connect('tcp://www.google.com:80')->then(function (React\Socket\ConnectionInterface $connection) {
+    $connection->write("GET / HTTP/1.0\r\n\r\n");
+
+    $connection->on('data', function ($chunk) {
+        echo $chunk;
+    });
+});
 ```
 
 > As an alternative to requiring this manual setup, you may also want to look
@@ -1003,7 +1092,18 @@ It presents a SOCKS5 and SOCKS4(a) interface on TCP port 9050 by default
 which allows you to tunnel any traffic through the anonymity network:
 
 ```php
-$client = new Client('127.0.0.1:9050', $connector);
+$proxy = new Clue\React\Socks\Client(
+    '127.0.0.1:9050',
+    new React\Socket\Connector($loop)
+);
+
+$proxy->connect('tcp://www.google.com:80')->then(function (React\Socket\ConnectionInterface $connection) {
+    $connection->write("GET / HTTP/1.0\r\n\r\n");
+
+    $connection->on('data', function ($chunk) {
+        echo $chunk;
+    });
+});
 ```
 
 In most common scenarios you probably want to stick to default

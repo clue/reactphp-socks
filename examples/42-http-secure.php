@@ -10,26 +10,29 @@
 
 require __DIR__ . '/../vendor/autoload.php';
 
-$proxy = isset($argv[1]) ? $argv[1] : '127.0.0.1:1080';
+$url = isset($argv[1]) ? $argv[1] : '127.0.0.1:1080';
 
 $loop = React\EventLoop\Factory::create();
 
-$client = new Clue\React\Socks\Client('sockss://' . $proxy, new React\Socket\Connector($loop, array('tls' => array(
-    'verify_peer' => false,
-    'verify_peer_name' => false
-))));
+$proxy = new Clue\React\Socks\Client(
+    'sockss://' . $url,
+    new React\Socket\Connector($loop, array('tls' => array(
+        'verify_peer' => false,
+        'verify_peer_name' => false
+    )))
+);
 $connector = new React\Socket\Connector($loop, array(
-    'tcp' => $client,
+    'tcp' => $proxy,
     'timeout' => 3.0,
     'dns' => false
 ));
 
 echo 'Demo SOCKS over TLS client connecting to secure SOCKS server ' . $proxy . PHP_EOL;
 
-$connector->connect('tcp://www.google.com:80')->then(function (React\Socket\ConnectionInterface $stream) {
+$connector->connect('tcp://www.google.com:80')->then(function (React\Socket\ConnectionInterface $connection) {
     echo 'connected' . PHP_EOL;
-    $stream->write("GET / HTTP/1.0\r\n\r\n");
-    $stream->on('data', function ($data) {
+    $connection->write("GET / HTTP/1.0\r\n\r\n");
+    $connection->on('data', function ($data) {
         echo $data;
     });
 }, function (Exception $e) {
