@@ -26,9 +26,12 @@ if ($url === false) {
 
 $loop = React\EventLoop\Factory::create();
 
-$client = new Clue\React\Socks\Client($url, new React\Socket\Connector($loop));
+$proxy = new Clue\React\Socks\Client(
+    $url,
+    new React\Socket\Connector($loop)
+);
 $connector = new React\Socket\Connector($loop, array(
-    'tcp' => $client,
+    'tcp' => $proxy,
     'timeout' => 3.0,
     'dns' => false
 ));

@@ -27,11 +27,11 @@ $loop = React\EventLoop\Factory::create();
 // forward to socks server listening on 127.0.0.1:9051-9053
 // this connector randomly picks one of the the attached connectors from the pool
 $connector = new React\Socket\Connector($loop);
-$clients = array();
+$proxies = array();
 foreach ($pool as $proxy) {
-    $clients []= new Clue\React\Socks\Client($proxy, $connector);
+    $proxies []= new Clue\React\Socks\Client($proxy, $connector);
 }
-$connector = new ConnectionManager\Extra\Multiple\ConnectionManagerRandom($clients);
+$connector = new ConnectionManager\Extra\Multiple\ConnectionManagerRandom($proxies);
 
 // start the SOCKS proxy server using our connection manager for outgoing connections
 $server = new Clue\React\Socks\Server($loop, $socket, $connector);

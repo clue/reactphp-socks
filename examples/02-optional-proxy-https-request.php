@@ -20,10 +20,12 @@ $loop = React\EventLoop\Factory::create();
 $connector = null;
 $url = getenv('socks_proxy');
 if ($url !== false) {
-    $connector = new React\Socket\Connector($loop);
-    $client = new Clue\React\Socks\Client($url, $connector);
+    $proxy = new Clue\React\Socks\Client(
+        $url,
+        new React\Socket\Connector($loop)
+    );
     $connector = new React\Socket\Connector($loop, array(
-        'tcp' => $client,
+        'tcp' => $proxy,
         'timeout' => 3.0,
         'dns' => false
     ));

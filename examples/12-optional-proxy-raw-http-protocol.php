@@ -28,9 +28,9 @@ $connector = new React\Socket\Connector($loop);
 
 $url = getenv('socks_proxy');
 if ($url !== false) {
-    $client = new Clue\React\Socks\Client($url, $connector);
+    $proxy = new Clue\React\Socks\Client($url, $connector);
     $connector = new React\Socket\Connector($loop, array(
-        'tcp' => $client,
+        'tcp' => $proxy,
         'timeout' => 3.0,
         'dns' => false
     ));
