@@ -3,7 +3,7 @@
 // A more advanced example which requests http://www.google.com/ through a chain of SOCKS proxy servers.
 // The proxy servers can be given as arguments.
 //
-// Not already running a SOCKS proxy server? See also example #21 or try this: 
+// Not already running a SOCKS proxy server? See also example #21 or try this:
 // $ ssh -D 1080 localhost
 //
 // For illustration purposes only. If you want to send HTTP requests in a real
@@ -22,17 +22,15 @@ $path = array_slice($argv, 1);
 // Alternatively, you can also hard-code this value like this:
 //$path = array('127.0.0.1:9051', '127.0.0.1:9052', '127.0.0.1:9053');
 
-$loop = React\EventLoop\Factory::create();
-
 // set next SOCKS server chain via p1 -> p2 -> p3 -> destination
-$connector = new React\Socket\Connector($loop);
+$connector = new React\Socket\Connector();
 foreach ($path as $proxy) {
     $connector = new Clue\React\Socks\Client($proxy, $connector);
 }
 
 // please note how the client uses p3 (not p1!), which in turn then uses the complete chain
 // this creates a TCP/IP connection to p1, which then connects to p2, then to p3, which then connects to the target
-$connector = new React\Socket\Connector($loop, array(
+$connector = new React\Socket\Connector(null, array(
     'tcp' => $connector,
     'timeout' => 3.0,
     'dns' => false
@@ -49,5 +47,3 @@ $connector->connect('tls://www.google.com:443')->then(function (React\Socket\Con
 }, function (Exception $e) {
     echo 'Error: ' . $e->getMessage() . PHP_EOL;
 });
-
-$loop->run();

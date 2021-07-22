@@ -21,24 +21,18 @@ if ($url === false) {
     $url = 'localhost:1080';
 }
 
-$loop = React\EventLoop\Factory::create();
-$proxy = new Clue\React\Socks\Client(
-    $url,
-    new React\Socket\Connector($loop)
-);
+$proxy = new Clue\React\Socks\Client($url);
 
-$connector = new React\Socket\Connector($loop, array(
+$connector = new React\Socket\Connector(null, array(
     'tcp' => $proxy,
     'timeout' => 3.0,
     'dns' => false
 ));
 
-$browser = new React\Http\Browser($loop, $connector);
+$browser = new React\Http\Browser(null, $connector);
 
 $browser->get('https://example.com/')->then(function (Psr\Http\Message\ResponseInterface $response) {
     var_dump($response->getHeaders(), (string) $response->getBody());
 }, function (Exception $e) {
     echo 'Error: ' . $e->getMessage() . PHP_EOL;
 });
-
-$loop->run();

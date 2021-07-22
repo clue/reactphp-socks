@@ -7,15 +7,11 @@
 
 require __DIR__ . '/../vendor/autoload.php';
 
-$loop = React\EventLoop\Factory::create();
-
 // start a new SOCKS proxy server
-$server = new Clue\React\Socks\Server($loop);
+$server = new Clue\React\Socks\Server();
 
 // listen on 127.0.0.1:1080 or first argument
-$socket = new React\Socket\Server(isset($argv[1]) ? $argv[1] : '127.0.0.1:1080', $loop);
+$socket = new React\Socket\Server(isset($argv[1]) ? $argv[1] : '127.0.0.1:1080');
 $server->listen($socket);
 
 echo 'SOCKS server listening on ' . $socket->getAddress() . PHP_EOL;
-
-$loop->run();

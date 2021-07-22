@@ -7,6 +7,7 @@ use React\Promise\PromiseInterface;
 use React\Socket\ConnectorInterface;
 use React\Socket\Connector;
 use React\Socket\ConnectionInterface;
+use React\EventLoop\Loop;
 use React\EventLoop\LoopInterface;
 use \UnexpectedValueException;
 use \InvalidArgumentException;
@@ -33,8 +34,10 @@ final class Server
     /** @internal */
     const ERROR_ADDRESS_UNSUPPORTED = 0x08;
 
+    /** @var LoopInterface */
     private $loop;
 
+    /** @var ConnectorInterface */
     private $connector;
 
     /**
@@ -43,16 +46,19 @@ final class Server
     private $auth;
 
     /**
-     * @param LoopInterface           $loop
-     * @param null|ConnectorInterface $connector
-     * @param null|array|callable     $auth
+     *
+     * This class takes an optional `LoopInterface|null $loop` parameter that can be used to
+     * pass the event loop instance to use for this object. You can use a `null` value
+     * here in order to use the [default loop](https://github.com/reactphp/event-loop#loop).
+     * This value SHOULD NOT be given unless you're sure you want to explicitly use a
+     * given event loop instance.
+     *
+     * @param ?LoopInterface      $loop
+     * @param ?ConnectorInterface $connector
+     * @param null|array|callable $auth
      */
-    public function __construct(LoopInterface $loop, ConnectorInterface $connector = null, $auth = null)
+    public function __construct(LoopInterface $loop = null, ConnectorInterface $connector = null, $auth = null)
     {
-        if ($connector === null) {
-            $connector = new Connector($loop);
-        }
-
         if (\is_array($auth)) {
             // wrap authentication array in authentication callback
             $this->auth = function ($username, $password) use ($auth) {
@@ -71,8 +77,8 @@ final class Server
             throw new \InvalidArgumentException('Invalid authenticator given');
         }
 
-        $this->loop = $loop;
-        $this->connector = $connector;
+        $this->loop = $loop ?: Loop::get();
+        $this->connector = $connector ?: new Connector($this->loop);
     }
 
     /**

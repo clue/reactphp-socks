@@ -6,16 +6,16 @@ use React\Promise;
 use React\Promise\PromiseInterface;
 use React\Promise\Deferred;
 use React\Socket\ConnectionInterface;
+use React\Socket\Connector;
 use React\Socket\ConnectorInterface;
 use React\Socket\FixedUriConnector;
-use \Exception;
-use \InvalidArgumentException;
+use Exception;
+use InvalidArgumentException;
 use RuntimeException;
 
 final class Client implements ConnectorInterface
 {
     /**
-     *
      * @var ConnectorInterface
      */
     private $connector;
@@ -26,7 +26,12 @@ final class Client implements ConnectorInterface
 
     private $auth = null;
 
-    public function __construct($socksUri, ConnectorInterface $connector)
+    /**
+     * @param string              $socksUri
+     * @param ?ConnectorInterface $connector
+     * @throws InvalidArgumentException
+     */
+    public function __construct($socksUri, ConnectorInterface $connector = null)
     {
         // support `sockss://` scheme for SOCKS over TLS
         // support `socks+unix://` scheme for Unix domain socket (UDS) paths
@@ -37,7 +42,7 @@ final class Client implements ConnectorInterface
             // connector uses appropriate transport scheme and explicit host given
             $connector = new FixedUriConnector(
                 ($match[2] === 's' ? 'tls://' : 'unix://') . $match[4],
-                $connector
+                $connector ?: new Connector()
             );
         }
 
@@ -49,7 +54,7 @@ final class Client implements ConnectorInterface
         // parse URI into individual parts
         $parts = parse_url($socksUri);
         if (!$parts || !isset($parts['scheme'], $parts['host'])) {
-            throw new \InvalidArgumentException('Invalid SOCKS server URI "' . $socksUri . '"');
+            throw new InvalidArgumentException('Invalid SOCKS server URI "' . $socksUri . '"');
         }
 
         // assume default port
@@ -71,7 +76,7 @@ final class Client implements ConnectorInterface
         $this->setProtocolVersionFromScheme($parts['scheme']);
 
         $this->socksUri = $parts['host'] . ':' . $parts['port'];
-        $this->connector = $connector;
+        $this->connector = $connector ?: new Connector();
     }
 
     private function setProtocolVersionFromScheme($scheme)

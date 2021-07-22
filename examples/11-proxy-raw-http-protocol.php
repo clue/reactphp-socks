@@ -24,13 +24,9 @@ if ($url === false) {
     $url = 'localhost:1080';
 }
 
-$loop = React\EventLoop\Factory::create();
+$proxy = new Clue\React\Socks\Client($url);
 
-$proxy = new Clue\React\Socks\Client(
-    $url,
-    new React\Socket\Connector($loop)
-);
-$connector = new React\Socket\Connector($loop, array(
+$connector = new React\Socket\Connector(null, array(
     'tcp' => $proxy,
     'timeout' => 3.0,
     'dns' => false
@@ -47,5 +43,3 @@ $connector->connect('tcp://www.google.com:80')->then(function (React\Socket\Conn
 }, function (Exception $e) {
     echo 'Error: ' . $e->getMessage() . PHP_EOL;
 });
-
-$loop->run();

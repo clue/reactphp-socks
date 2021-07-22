@@ -28,6 +28,17 @@ class ServerTest extends TestCase
         $this->server = new Server($this->loop, $this->connector);
     }
 
+    public function testConstructWithoutLoopAssignsLoopAutomatically()
+    {
+        $server = new Server();
+
+        $ref = new \ReflectionProperty($server, 'loop');
+        $ref->setAccessible(true);
+        $loop = $ref->getValue($server);
+
+        $this->assertInstanceOf('React\EventLoop\LoopInterface', $loop);
+    }
+
     /**
      * @doesNotPerformAssertions
      */

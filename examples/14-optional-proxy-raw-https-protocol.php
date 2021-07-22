@@ -22,18 +22,17 @@
 
 require __DIR__ . '/../vendor/autoload.php';
 
-$loop = React\EventLoop\Factory::create();
-
-$connector = new React\Socket\Connector($loop);
-
 $url = getenv('socks_proxy');
 if ($url !== false) {
-    $proxy = new Clue\React\Socks\Client($url, $connector);
-    $connector = new React\Socket\Connector($loop, array(
+    $proxy = new Clue\React\Socks\Client($url);
+
+    $connector = new React\Socket\Connector(null, array(
         'tcp' => $proxy,
         'timeout' => 3.0,
         'dns' => false
     ));
+} else {
+    $connector = new React\Socket\Connector();
 }
 
 echo 'Demo SOCKS client connecting to SOCKS server ' . $url . PHP_EOL;
@@ -47,5 +46,3 @@ $connector->connect('tls://www.google.com:443')->then(function (React\Socket\Con
 }, function (Exception $e) {
     echo 'Error: ' . $e->getMessage() . PHP_EOL;
 });
-
-$loop->run();
