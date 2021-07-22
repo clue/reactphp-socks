@@ -22,16 +22,17 @@
 
 require __DIR__ . '/../vendor/autoload.php';
 
-$connector = new React\Socket\Connector();
-
 $url = getenv('socks_proxy');
 if ($url !== false) {
-    $proxy = new Clue\React\Socks\Client($url, $connector);
+    $proxy = new Clue\React\Socks\Client($url);
+
     $connector = new React\Socket\Connector(null, array(
         'tcp' => $proxy,
         'timeout' => 3.0,
         'dns' => false
     ));
+} else {
+    $connector = new React\Socket\Connector();
 }
 
 echo 'Demo SOCKS client connecting to SOCKS server ' . $url . PHP_EOL;

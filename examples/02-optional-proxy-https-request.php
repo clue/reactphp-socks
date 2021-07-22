@@ -18,10 +18,8 @@ require __DIR__ . '/../vendor/autoload.php';
 $connector = null;
 $url = getenv('socks_proxy');
 if ($url !== false) {
-    $proxy = new Clue\React\Socks\Client(
-        $url,
-        new React\Socket\Connector()
-    );
+    $proxy = new Clue\React\Socks\Client($url);
+
     $connector = new React\Socket\Connector(null, array(
         'tcp' => $proxy,
         'timeout' => 3.0,

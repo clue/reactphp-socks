@@ -13,18 +13,16 @@ require __DIR__ . '/../vendor/autoload.php';
 
 $url = isset($argv[1]) ? $argv[1] : '127.0.0.1:1080';
 
+$proxy = new Clue\React\Socks\Client($url);
+
 // set up DNS server to use (Google's public DNS)
-$proxy = new Clue\React\Socks\Client(
-    $url,
-    new React\Socket\Connector()
-);
 $connector = new React\Socket\Connector(null, array(
     'tcp' => $proxy,
     'timeout' => 3.0,
     'dns' => '8.8.8.8'
 ));
 
-echo 'Demo SOCKS client connecting to SOCKS server ' . $proxy . PHP_EOL;
+echo 'Demo SOCKS client connecting to SOCKS server ' . $url . PHP_EOL;
 
 $connector->connect('tls://www.google.com:443')->then(function (React\Socket\ConnectionInterface $connection) {
     echo 'connected' . PHP_EOL;

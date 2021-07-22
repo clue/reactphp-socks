@@ -12,13 +12,13 @@ require __DIR__ . '/../vendor/autoload.php';
 
 $url = isset($argv[1]) ? $argv[1] : '127.0.0.1:1080';
 
-$proxy = new Clue\React\Socks\Client(
-    'sockss://' . $url,
-    new React\Socket\Connector(null, array('tls' => array(
-        'verify_peer' => false,
-        'verify_peer_name' => false
-    )))
-);
+$connector = new React\Socket\Connector(null, array('tls' => array(
+    'verify_peer' => false,
+    'verify_peer_name' => false
+)));
+
+$proxy = new Clue\React\Socks\Client($url, $connector);
+
 $connector = new React\Socket\Connector(null, array(
     'tcp' => $proxy,
     'timeout' => 3.0,

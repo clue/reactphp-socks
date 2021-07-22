@@ -24,10 +24,8 @@ if ($url === false) {
     $url = 'localhost:1080';
 }
 
-$proxy = new Clue\React\Socks\Client(
-    $url,
-    new React\Socket\Connector()
-);
+$proxy = new Clue\React\Socks\Client($url);
+
 $connector = new React\Socket\Connector(null, array(
     'tcp' => $proxy,
     'timeout' => 3.0,

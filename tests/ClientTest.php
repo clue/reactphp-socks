@@ -26,6 +26,17 @@ class ClientTest extends TestCase
         $this->client = new Client('127.0.0.1:1080', $this->connector);
     }
 
+    public function testConstructWithoutConnectorAssignsConnectorAutomatically()
+    {
+        $proxy = new Client('127.0.0.1:1080');
+
+        $ref = new \ReflectionProperty($proxy, 'connector');
+        $ref->setAccessible(true);
+        $connector = $ref->getValue($proxy);
+
+        $this->assertInstanceOf('React\Socket\ConnectorInterface', $connector);
+    }
+
     public function testCtorAcceptsUriWithHostAndPort()
     {
         $client = new Client('127.0.0.1:9050', $this->connector);
