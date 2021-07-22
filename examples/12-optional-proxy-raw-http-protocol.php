@@ -22,14 +22,12 @@
 
 require __DIR__ . '/../vendor/autoload.php';
 
-$loop = React\EventLoop\Factory::create();
-
-$connector = new React\Socket\Connector($loop);
+$connector = new React\Socket\Connector();
 
 $url = getenv('socks_proxy');
 if ($url !== false) {
     $proxy = new Clue\React\Socks\Client($url, $connector);
-    $connector = new React\Socket\Connector($loop, array(
+    $connector = new React\Socket\Connector(null, array(
         'tcp' => $proxy,
         'timeout' => 3.0,
         'dns' => false
@@ -47,5 +45,3 @@ $connector->connect('tcp://www.google.com:80')->then(function (React\Socket\Conn
 }, function (Exception $e) {
     echo 'Error: ' . $e->getMessage() . PHP_EOL;
 });
-
-$loop->run();

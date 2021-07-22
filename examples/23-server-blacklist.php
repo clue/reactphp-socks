@@ -10,13 +10,11 @@
 
 require __DIR__ . '/../vendor/autoload.php';
 
-$loop = React\EventLoop\Factory::create();
-
 // create a connector that rejects the connection
 $reject = new ConnectionManager\Extra\ConnectionManagerReject();
 
 // create an actual connector that establishes real connections
-$permit = new React\Socket\Connector($loop);
+$permit = new React\Socket\Connector();
 
 // this connector selectively picks one of the the attached connectors depending on the target address
 // reject youtube.com and unencrypted HTTP for google.com
@@ -28,12 +26,10 @@ $connector = new ConnectionManager\Extra\Multiple\ConnectionManagerSelective(arr
 ));
 
 // start a new SOCKS proxy server using our connection manager for outgoing connections
-$server = new Clue\React\Socks\Server($loop, $connector);
+$server = new Clue\React\Socks\Server(null, $connector);
 
 // listen on 127.0.0.1:1080 or first argument
-$socket = new React\Socket\Server(isset($argv[1]) ? $argv[1] : '127.0.0.1:1080', $loop);
+$socket = new React\Socket\Server(isset($argv[1]) ? $argv[1] : '127.0.0.1:1080');
 $server->listen($socket);
 
 echo 'SOCKS server listening on ' . $socket->getAddress() . PHP_EOL;
-
-$loop->run();

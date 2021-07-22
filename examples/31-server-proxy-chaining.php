@@ -22,22 +22,18 @@ $path = array_slice($argv, 2);
 //$listen = '127.0.0.1:9050';
 //$path = array('127.0.0.1:9051', '127.0.0.1:9052', '127.0.0.1:9053');
 
-$loop = React\EventLoop\Factory::create();
-
 // set next SOCKS server chain -> p1 -> p2 -> p3 -> destination
-$connector = new React\Socket\Connector($loop);
+$connector = new React\Socket\Connector();
 foreach ($path as $proxy) {
     $connector = new Clue\React\Socks\Client($proxy, $connector);
 }
 
 // start a new SOCKS proxy server which forwards all connections to the other SOCKS server
-$server = new Clue\React\Socks\Server($loop, $connector);
+$server = new Clue\React\Socks\Server(null, $connector);
 
 // listen on 127.0.0.1:1080 or first argument
-$socket = new React\Socket\Server($listen, $loop);
+$socket = new React\Socket\Server($listen);
 $server->listen($socket);
 
 echo 'SOCKS server listening on ' . $socket->getAddress() . PHP_EOL;
 echo 'Forwarding via: ' . implode(' -> ', $path) . PHP_EOL;
-
-$loop->run();

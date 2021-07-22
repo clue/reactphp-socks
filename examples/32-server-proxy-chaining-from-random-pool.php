@@ -22,11 +22,9 @@ $pool = array_slice($argv, 2);
 //$listen = '127.0.0.1:9050';
 //$pool = array('127.0.0.1:9051', '127.0.0.1:9052', '127.0.0.1:9053');
 
-$loop = React\EventLoop\Factory::create();
-
 // forward to socks server listening on 127.0.0.1:9051-9053
 // this connector randomly picks one of the the attached connectors from the pool
-$connector = new React\Socket\Connector($loop);
+$connector = new React\Socket\Connector();
 $proxies = array();
 foreach ($pool as $proxy) {
     $proxies []= new Clue\React\Socks\Client($proxy, $connector);
@@ -34,13 +32,11 @@ foreach ($pool as $proxy) {
 $connector = new ConnectionManager\Extra\Multiple\ConnectionManagerRandom($proxies);
 
 // start the SOCKS proxy server using our connection manager for outgoing connections
-$server = new Clue\React\Socks\Server($loop, $socket, $connector);
+$server = new Clue\React\Socks\Server(null, $connector);
 
 // listen on 127.0.0.1:1080 or first argument
-$socket = new React\Socket\Server($listen, $loop);
+$socket = new React\Socket\Server($listen);
 $server->listen($socket);
 
 echo 'SOCKS server listening on ' . $socket->getAddress() . PHP_EOL;
 echo 'Randomly picking from: ' . implode(', ', $pool) . PHP_EOL;
-
-$loop->run();
