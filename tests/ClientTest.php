@@ -3,14 +3,12 @@
 namespace Clue\Tests\React\Socks;
 
 use Clue\React\Socks\Client;
-use React\Promise\Promise;
 use Clue\React\Socks\Server;
 use React\Promise\Deferred;
+use React\Promise\Promise;
 
 class ClientTest extends TestCase
 {
-    private $loop;
-
     private $connector;
 
     /** @var  Client */
@@ -21,7 +19,6 @@ class ClientTest extends TestCase
      */
     public function setUpMocks()
     {
-        $this->loop = \React\EventLoop\Factory::create();
         $this->connector = $this->getMockBuilder('React\Socket\ConnectorInterface')->getMock();
         $this->client = new Client('127.0.0.1:1080', $this->connector);
     }

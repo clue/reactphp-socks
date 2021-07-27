@@ -30,7 +30,7 @@ foreach ($path as $proxy) {
 
 // please note how the client uses p3 (not p1!), which in turn then uses the complete chain
 // this creates a TCP/IP connection to p1, which then connects to p2, then to p3, which then connects to the target
-$connector = new React\Socket\Connector(null, array(
+$connector = new React\Socket\Connector(array(
     'tcp' => $connector,
     'timeout' => 3.0,
     'dns' => false

@@ -11,10 +11,12 @@ require __DIR__ . '/../vendor/autoload.php';
 $server = new Clue\React\Socks\Server();
 
 // listen on tls://127.0.0.1:1080 or first argument
-$listen = isset($argv[1]) ? $argv[1] : '127.0.0.1:1080';
-$socket = new React\Socket\Server('tls://' . $listen, null, array('tls' => array(
-    'local_cert' => __DIR__ . '/localhost.pem',
-)));
+$uri = 'tls://' . (isset($argv[1]) ? $argv[1] : '127.0.0.1:1080');
+$socket = new React\Socket\SocketServer($uri, array(
+    'tls' => array(
+        'local_cert' => __DIR__ . '/localhost.pem',
+    )
+));
 $server->listen($socket);
 
 echo 'SOCKS over TLS server listening on ' . str_replace('tls:', 'sockss:', $socket->getAddress()) . PHP_EOL;

@@ -13,14 +13,14 @@
     "require": {
         "php": ">=5.3",
         "react/promise": "^2.1 || ^1.2",
-        "react/socket": "^1.8"
+        "react/socket": "^1.9"
     },
     "require-dev": {
         "clue/block-react": "^1.1",
         "clue/connection-manager-extra": "^1.0 || ^0.7",
         "phpunit/phpunit": "^9.3 || ^5.7 || ^4.8.35",
         "react/event-loop": "^1.2",
-        "react/http": "^1.4"
+        "react/http": "^1.5"
     },
     "autoload": {
         "psr-4": { "Clue\\React\\Socks\\": "src/" }
