@@ -2,7 +2,7 @@
 
 // A more advanced example which runs a SOCKS proxy server that rejects connections
 // to some domains (blacklist /filtering).
-// The listen address can be given as first argument and defaults to localhost:1080 otherwise.
+// The listen address can be given as first argument and defaults to 127.0.0.1:1080 otherwise.
 //
 // See also examples #12 and #14 for the client side.
 // Client example #12 is expected to fail because port 80 is blocked in this server example.
@@ -26,10 +26,10 @@ $connector = new ConnectionManager\Extra\Multiple\ConnectionManagerSelective(arr
 ));
 
 // start a new SOCKS proxy server using our connection manager for outgoing connections
-$server = new Clue\React\Socks\Server(null, $connector);
+$socks = new Clue\React\Socks\Server(null, $connector);
 
 // listen on 127.0.0.1:1080 or first argument
 $socket = new React\Socket\SocketServer(isset($argv[1]) ? $argv[1] : '127.0.0.1:1080');
-$server->listen($socket);
+$socks->listen($socket);
 
 echo 'SOCKS server listening on ' . $socket->getAddress() . PHP_EOL;

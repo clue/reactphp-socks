@@ -1,7 +1,7 @@
 <?php
 
 // A more advanced example which requests http://google.com/ through a secure SOCKS over TLS proxy.
-// The proxy can be given as first argument and defaults to localhost:1080 otherwise.
+// The proxy can be given as first argument and defaults to 127.0.0.1:1080 otherwise.
 //
 // See also example #41 for the server side.
 //

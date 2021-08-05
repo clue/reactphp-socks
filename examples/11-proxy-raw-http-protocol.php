@@ -5,7 +5,7 @@
 //
 // $ php leproxy.php
 //
-// The proxy in this example defaults to localhost:1080.
+// The proxy in this example defaults to 127.0.0.1:1080.
 // To run the example, go to the project root and run:
 //
 // $ php examples/11-proxy-raw-http-protocol.php
@@ -21,7 +21,7 @@ require __DIR__ . '/../vendor/autoload.php';
 
 $url = getenv('socks_proxy');
 if ($url === false) {
-    $url = 'localhost:1080';
+    $url = '127.0.0.1:1080';
 }
 
 $proxy = new Clue\React\Socks\Client($url);
