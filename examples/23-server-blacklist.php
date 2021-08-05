@@ -29,7 +29,7 @@ $connector = new ConnectionManager\Extra\Multiple\ConnectionManagerSelective(arr
 $server = new Clue\React\Socks\Server(null, $connector);
 
 // listen on 127.0.0.1:1080 or first argument
-$socket = new React\Socket\Server(isset($argv[1]) ? $argv[1] : '127.0.0.1:1080');
+$socket = new React\Socket\SocketServer(isset($argv[1]) ? $argv[1] : '127.0.0.1:1080');
 $server->listen($socket);
 
 echo 'SOCKS server listening on ' . $socket->getAddress() . PHP_EOL;

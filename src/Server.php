@@ -78,7 +78,7 @@ final class Server
         }
 
         $this->loop = $loop ?: Loop::get();
-        $this->connector = $connector ?: new Connector($this->loop);
+        $this->connector = $connector ?: new Connector(array(), $this->loop);
     }
 
     /**

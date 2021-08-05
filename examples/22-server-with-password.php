@@ -21,7 +21,7 @@ $server = new Clue\React\Socks\Server(null, null, array(
 ));
 
 // listen on 127.0.0.1:1080 or first argument
-$socket = new React\Socket\Server(isset($argv[1]) ? $argv[1] : '127.0.0.1:1080');
+$socket = new React\Socket\SocketServer(isset($argv[1]) ? $argv[1] : '127.0.0.1:1080');
 $server->listen($socket);
 
 echo 'SOCKS5 server requiring authentication listening on ' . $socket->getAddress() . PHP_EOL;

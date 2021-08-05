@@ -2,18 +2,19 @@
 
 namespace Clue\Tests\React\Socks;
 
+use Clue\React\Block;
 use Clue\React\Socks\Client;
 use Clue\React\Socks\Server;
-use Clue\React\Block;
-use React\Socket\TimeoutConnector;
-use React\Socket\SecureConnector;
-use React\Socket\TcpConnector;
-use React\Socket\UnixServer;
+use React\EventLoop\Loop;
 use React\Socket\Connector;
+use React\Socket\SecureConnector;
+use React\Socket\SocketServer;
+use React\Socket\TcpConnector;
+use React\Socket\TimeoutConnector;
+use React\Socket\UnixServer;
 
 class FunctionalTest extends TestCase
 {
-    private $loop;
     private $connector;
     private $client;
 
@@ -25,9 +26,7 @@ class FunctionalTest extends TestCase
      */
     public function setUpClientServer()
     {
-        $this->loop = \React\EventLoop\Factory::create();
-
-        $socket = new \React\Socket\Server(0, $this->loop);
+        $socket = new SocketServer('127.0.0.1:0');
         $address = $socket->getAddress();
         if (strpos($address, '://') === false) {
             $address = 'tcp://' . $address;
@@ -35,9 +34,9 @@ class FunctionalTest extends TestCase
         $this->port = parse_url($address, PHP_URL_PORT);
         $this->assertNotEquals(0, $this->port);
 
-        $this->server = new Server($this->loop);
+        $this->server = new Server();
         $this->server->listen($socket);
-        $this->connector = new TcpConnector($this->loop);
+        $this->connector = new TcpConnector();
         $this->client = new Client('127.0.0.1:' . $this->port, $this->connector);
     }
 
@@ -99,16 +98,20 @@ class FunctionalTest extends TestCase
             $this->markTestSkipped('Not supported on HHVM');
         }
 
-        $socket = new \React\Socket\Server('tls://127.0.0.1:0', $this->loop, array('tls' => array(
-            'local_cert' => __DIR__ . '/../examples/localhost.pem',
-        )));
-        $this->server = new Server($this->loop);
+        $socket = new SocketServer('tls://127.0.0.1:0', array(
+            'tls' => array(
+                'local_cert' => __DIR__ . '/../examples/localhost.pem',
+            )
+        ));
+        $this->server = new Server();
         $this->server->listen($socket);
 
-        $this->connector = new Connector($this->loop, array('tls' => array(
-            'verify_peer' => false,
-            'verify_peer_name' => false
-        )));
+        $this->connector = new Connector(array(
+            'tls' => array(
+                'verify_peer' => false,
+                'verify_peer_name' => false
+            )
+        ));
         $this->client = new Client(str_replace('tls:', 'sockss:', $socket->getAddress()), $this->connector);
 
         $this->assertResolveStream($this->client->connect('www.google.com:80'));
@@ -124,16 +127,20 @@ class FunctionalTest extends TestCase
             $this->markTestSkipped('Not supported on HHVM');
         }
 
-        $socket = new \React\Socket\Server('tls://127.0.0.1:0', $this->loop, array('tls' => array(
-            'local_cert' => __DIR__ . '/../examples/localhost.pem',
-        )));
-        $this->server = new Server($this->loop);
+        $socket = new SocketServer('tls://127.0.0.1:0',array(
+            'tls' => array(
+                'local_cert' => __DIR__ . '/../examples/localhost.pem',
+            )
+        ));
+        $this->server = new Server();
         $this->server->listen($socket);
 
-        $this->connector = new Connector($this->loop, array('tls' => array(
-            'verify_peer' => false,
-            'verify_peer_name' => true
-        )));
+        $this->connector = new Connector(array(
+            'tls' => array(
+                'verify_peer' => false,
+                'verify_peer_name' => true
+            )
+        ));
         $this->client = new Client(str_replace('tls:', 'sockss:', $socket->getAddress()), $this->connector);
 
         $this->assertResolveStream($this->client->connect('www.google.com:80'));
@@ -147,11 +154,11 @@ class FunctionalTest extends TestCase
         }
 
         $path = sys_get_temp_dir() . '/test' . mt_rand(1000, 9999) . '.sock';
-        $socket = new UnixServer($path, $this->loop);
-        $this->server = new Server($this->loop);
+        $socket = new UnixServer($path);
+        $this->server = new Server();
         $this->server->listen($socket);
 
-        $this->connector = new Connector($this->loop);
+        $this->connector = new Connector();
         $this->client = new Client('socks+unix://' . $path, $this->connector);
 
         $this->assertResolveStream($this->client->connect('www.google.com:80'));
@@ -167,11 +174,11 @@ class FunctionalTest extends TestCase
         }
 
         $path = sys_get_temp_dir() . '/test' . mt_rand(1000, 9999) . '.sock';
-        $socket = new UnixServer($path, $this->loop);
-        $this->server = new Server($this->loop);
+        $socket = new UnixServer($path);
+        $this->server = new Server();
         $this->server->listen($socket);
 
-        $this->connector = new Connector($this->loop);
+        $this->connector = new Connector();
         $this->client = new Client('socks5+unix://' . $path, $this->connector);
 
         $this->assertResolveStream($this->client->connect('www.google.com:80'));
@@ -187,11 +194,11 @@ class FunctionalTest extends TestCase
         }
 
         $path = sys_get_temp_dir() . '/test' . mt_rand(1000, 9999) . '.sock';
-        $socket = new UnixServer($path, $this->loop);
-        $this->server = new Server($this->loop, null, array('name' => 'pass'));
+        $socket = new UnixServer($path);
+        $this->server = new Server(null, null, array('name' => 'pass'));
         $this->server->listen($socket);
 
-        $this->connector = new Connector($this->loop);
+        $this->connector = new Connector();
         $this->client = new Client('socks+unix://name:pass@' . $path, $this->connector);
 
         $this->assertResolveStream($this->client->connect('www.google.com:80'));
@@ -202,9 +209,9 @@ class FunctionalTest extends TestCase
     /** @group internet */
     public function testConnectionAuthenticationFromUri()
     {
-        $this->server = new Server($this->loop, null, array('name' => 'pass'));
+        $this->server = new Server(null, null, array('name' => 'pass'));
 
-        $socket = new \React\Socket\Server(0, $this->loop);
+        $socket = new SocketServer('127.0.0.1:0');
         $this->server->listen($socket);
         $this->port = parse_url($socket->getAddress(), PHP_URL_PORT);
 
@@ -218,7 +225,7 @@ class FunctionalTest extends TestCase
     {
         $called = 0;
         $that = $this;
-        $this->server = new Server($this->loop, null, function ($name, $pass, $remote) use ($that, &$called) {
+        $this->server = new Server(null, null, function ($name, $pass, $remote) use ($that, &$called) {
             ++$called;
             $that->assertEquals('name', $name);
             $that->assertEquals('pass', $pass);
@@ -227,7 +234,7 @@ class FunctionalTest extends TestCase
             return true;
         });
 
-        $socket = new \React\Socket\Server(0, $this->loop);
+        $socket = new SocketServer('127.0.0.1:0');
         $this->server->listen($socket);
         $this->port = parse_url($socket->getAddress(), PHP_URL_PORT);
 
@@ -241,13 +248,13 @@ class FunctionalTest extends TestCase
     public function testConnectionAuthenticationCallbackWillNotBeInvokedIfClientsSendsNoAuth()
     {
         $called = 0;
-        $this->server = new Server($this->loop, null, function () use (&$called) {
+        $this->server = new Server(null, null, function () use (&$called) {
             ++$called;
 
             return true;
         });
 
-        $socket = new \React\Socket\Server(0, $this->loop);
+        $socket = new SocketServer('127.0.0.1:0');
         $this->server->listen($socket);
         $this->port = parse_url($socket->getAddress(), PHP_URL_PORT);
 
@@ -260,9 +267,9 @@ class FunctionalTest extends TestCase
     /** @group internet */
     public function testConnectionAuthenticationFromUriEncoded()
     {
-        $this->server = new Server($this->loop, null, array('name' => 'p@ss:w0rd'));
+        $this->server = new Server(null, null, array('name' => 'p@ss:w0rd'));
 
-        $socket = new \React\Socket\Server(0, $this->loop);
+        $socket = new SocketServer('127.0.0.1:0');
         $this->server->listen($socket);
         $this->port = parse_url($socket->getAddress(), PHP_URL_PORT);
 
@@ -274,9 +281,9 @@ class FunctionalTest extends TestCase
     /** @group internet */
     public function testConnectionAuthenticationFromUriWithOnlyUserAndNoPassword()
     {
-        $this->server = new Server($this->loop, null, array('empty' => ''));
+        $this->server = new Server(null, null, array('empty' => ''));
 
-        $socket = new \React\Socket\Server(0, $this->loop);
+        $socket = new SocketServer('127.0.0.1:0');
         $this->server->listen($socket);
         $this->port = parse_url($socket->getAddress(), PHP_URL_PORT);
 
@@ -288,9 +295,9 @@ class FunctionalTest extends TestCase
     /** @group internet */
     public function testConnectionAuthenticationEmptyPassword()
     {
-        $this->server = new Server($this->loop, null, array('user' => ''));
+        $this->server = new Server(null, null, array('user' => ''));
 
-        $socket = new \React\Socket\Server(0, $this->loop);
+        $socket = new SocketServer('127.0.0.1:0');
         $this->server->listen($socket);
         $this->port = parse_url($socket->getAddress(), PHP_URL_PORT);
 
@@ -309,9 +316,9 @@ class FunctionalTest extends TestCase
 
     public function testConnectionInvalidNoAuthenticationOverLegacySocks4()
     {
-        $this->server = new Server($this->loop, null, array('name' => 'pass'));
+        $this->server = new Server(null, null, array('name' => 'pass'));
 
-        $socket = new \React\Socket\Server(0, $this->loop);
+        $socket = new SocketServer('127.0.0.1:0');
         $this->server->listen($socket);
         $this->port = parse_url($socket->getAddress(), PHP_URL_PORT);
 
@@ -322,9 +329,9 @@ class FunctionalTest extends TestCase
 
     public function testConnectionInvalidNoAuthentication()
     {
-        $this->server = new Server($this->loop, null, array('name' => 'pass'));
+        $this->server = new Server(null, null, array('name' => 'pass'));
 
-        $socket = new \React\Socket\Server(0, $this->loop);
+        $socket = new SocketServer('127.0.0.1:0');
         $this->server->listen($socket);
         $this->port = parse_url($socket->getAddress(), PHP_URL_PORT);
 
@@ -335,9 +342,9 @@ class FunctionalTest extends TestCase
 
     public function testConnectionInvalidAuthenticationMismatch()
     {
-        $this->server = new Server($this->loop, null, array('name' => 'pass'));
+        $this->server = new Server(null, null, array('name' => 'pass'));
 
-        $socket = new \React\Socket\Server(0, $this->loop);
+        $socket = new SocketServer('127.0.0.1:0');
         $this->server->listen($socket);
         $this->port = parse_url($socket->getAddress(), PHP_URL_PORT);
 
@@ -348,11 +355,11 @@ class FunctionalTest extends TestCase
 
     public function testConnectionInvalidAuthenticatorReturnsFalse()
     {
-        $this->server = new Server($this->loop, null, function () {
+        $this->server = new Server(null, null, function () {
             return false;
         });
 
-        $socket = new \React\Socket\Server(0, $this->loop);
+        $socket = new SocketServer('127.0.0.1:0');
         $this->server->listen($socket);
         $this->port = parse_url($socket->getAddress(), PHP_URL_PORT);
 
@@ -363,11 +370,11 @@ class FunctionalTest extends TestCase
 
     public function testConnectionInvalidAuthenticatorReturnsPromiseFulfilledWithFalse()
     {
-        $this->server = new Server($this->loop, null, function () {
+        $this->server = new Server(null, null, function () {
             return \React\Promise\resolve(false);
         });
 
-        $socket = new \React\Socket\Server(0, $this->loop);
+        $socket = new SocketServer('127.0.0.1:0');
         $this->server->listen($socket);
         $this->port = parse_url($socket->getAddress(), PHP_URL_PORT);
 
@@ -378,11 +385,11 @@ class FunctionalTest extends TestCase
 
     public function testConnectionInvalidAuthenticatorReturnsPromiseRejected()
     {
-        $this->server = new Server($this->loop, null, function () {
+        $this->server = new Server(null, null, function () {
             return \React\Promise\reject();
         });
 
-        $socket = new \React\Socket\Server(0, $this->loop);
+        $socket = new SocketServer('127.0.0.1:0');
         $this->server->listen($socket);
         $this->port = parse_url($socket->getAddress(), PHP_URL_PORT);
 
@@ -416,7 +423,7 @@ class FunctionalTest extends TestCase
     public function testConnectorInvalidUnboundPortTimeout()
     {
         // time out the connection attempt in 0.1s (as expected)
-        $tcp = new TimeoutConnector($this->client, 0.1, $this->loop);
+        $tcp = new TimeoutConnector($this->client, 0.1);
 
         $this->assertRejectPromise($tcp->connect('www.google.com:8080'));
     }
@@ -428,7 +435,7 @@ class FunctionalTest extends TestCase
             $this->markTestSkipped('Not supported on HHVM');
         }
 
-        $ssl = new SecureConnector($this->client, $this->loop);
+        $ssl = new SecureConnector($this->client);
 
         $this->assertResolveStream($ssl->connect('www.google.com:443'));
     }
@@ -440,7 +447,7 @@ class FunctionalTest extends TestCase
             $this->markTestSkipped('Required function does not exist in your environment (HHVM?)');
         }
 
-        $ssl = new SecureConnector($this->client, $this->loop, array('verify_peer' => true));
+        $ssl = new SecureConnector($this->client, null, array('verify_peer' => true));
 
         $this->assertRejectPromise($ssl->connect('self-signed.badssl.com:443'));
     }
@@ -452,7 +459,7 @@ class FunctionalTest extends TestCase
             $this->markTestSkipped('Not supported on HHVM');
         }
 
-        $ssl = new SecureConnector($this->client, $this->loop, array('verify_peer' => false));
+        $ssl = new SecureConnector($this->client, null, array('verify_peer' => false));
 
         $this->assertResolveStream($ssl->connect('self-signed.badssl.com:443'));
     }
@@ -464,7 +471,7 @@ class FunctionalTest extends TestCase
             $this->markTestSkipped('Required function does not exist in your environment (HHVM?)');
         }
 
-        $ssl = new SecureConnector($this->client, $this->loop);
+        $ssl = new SecureConnector($this->client);
 
         $this->assertRejectPromise($ssl->connect('www.google.com:80'));
     }
@@ -472,10 +479,10 @@ class FunctionalTest extends TestCase
     /** @group internet */
     public function testSecureConnectorInvalidUnboundPortTimeout()
     {
-        $ssl = new SecureConnector($this->client, $this->loop);
+        $ssl = new SecureConnector($this->client);
 
         // time out the connection attempt in 0.1s (as expected)
-        $ssl = new TimeoutConnector($ssl, 0.1, $this->loop);
+        $ssl = new TimeoutConnector($ssl, 0.1);
 
         $this->assertRejectPromise($ssl->connect('www.google.com:8080'));
     }
@@ -488,7 +495,7 @@ class FunctionalTest extends TestCase
             $stream->close();
         });
 
-        Block\await($promise, $this->loop, 2.0);
+        Block\await($promise, Loop::get(), 2.0);
     }
 
     private function assertRejectPromise($promise, $message = null, $code = null)
@@ -507,6 +514,6 @@ class FunctionalTest extends TestCase
             $this->setExpectedException('Exception', $message, $code);
         }
 
-        Block\await($promise, $this->loop, 2.0);
+        Block\await($promise, Loop::get(), 2.0);
     }
 }

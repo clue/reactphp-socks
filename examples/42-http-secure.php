@@ -10,22 +10,24 @@
 
 require __DIR__ . '/../vendor/autoload.php';
 
-$url = isset($argv[1]) ? $argv[1] : '127.0.0.1:1080';
+$url = isset($argv[1]) ? $argv[1] : 'sockss://127.0.0.1:1080';
 
-$connector = new React\Socket\Connector(null, array('tls' => array(
-    'verify_peer' => false,
-    'verify_peer_name' => false
-)));
+$connector = new React\Socket\Connector(array(
+    'tls' => array(
+        'verify_peer' => false,
+        'verify_peer_name' => false
+    )
+));
 
 $proxy = new Clue\React\Socks\Client($url, $connector);
 
-$connector = new React\Socket\Connector(null, array(
+$connector = new React\Socket\Connector(array(
     'tcp' => $proxy,
     'timeout' => 3.0,
     'dns' => false
 ));
 
-echo 'Demo SOCKS over TLS client connecting to secure SOCKS server ' . $proxy . PHP_EOL;
+echo 'Demo SOCKS over TLS client connecting to secure SOCKS server ' . $url . PHP_EOL;
 
 $connector->connect('tcp://www.google.com:80')->then(function (React\Socket\ConnectionInterface $connection) {
     echo 'connected' . PHP_EOL;

@@ -16,7 +16,7 @@ $url = isset($argv[1]) ? $argv[1] : '127.0.0.1:1080';
 $proxy = new Clue\React\Socks\Client($url);
 
 // set up DNS server to use (Google's public DNS)
-$connector = new React\Socket\Connector(null, array(
+$connector = new React\Socket\Connector(array(
     'tcp' => $proxy,
     'timeout' => 3.0,
     'dns' => '8.8.8.8'
