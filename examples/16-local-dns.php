@@ -1,7 +1,7 @@
 <?php
 
 // A simple example which requests https://www.google.com/ through a SOCKS proxy with local DNS resolution.
-// The proxy can be given as first argument and defaults to localhost:1080 otherwise.
+// The proxy can be given as first argument and defaults to 127.0.0.1:1080 otherwise.
 //
 // Not already running a SOCKS proxy server? See also example #21 or try this:
 // $ ssh -D 1080 localhost

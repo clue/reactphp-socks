@@ -32,11 +32,11 @@ foreach ($pool as $proxy) {
 $connector = new ConnectionManager\Extra\Multiple\ConnectionManagerRandom($proxies);
 
 // start the SOCKS proxy server using our connection manager for outgoing connections
-$server = new Clue\React\Socks\Server(null, $connector);
+$socks = new Clue\React\Socks\Server(null, $connector);
 
 // listen on 127.0.0.1:1080 or first argument
 $socket = new React\Socket\SocketServer($listen);
-$server->listen($socket);
+$socks->listen($socket);
 
 echo 'SOCKS server listening on ' . $socket->getAddress() . PHP_EOL;
 echo 'Randomly picking from: ' . implode(', ', $pool) . PHP_EOL;

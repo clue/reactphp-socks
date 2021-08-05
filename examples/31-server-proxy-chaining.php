@@ -29,11 +29,11 @@ foreach ($path as $proxy) {
 }
 
 // start a new SOCKS proxy server which forwards all connections to the other SOCKS server
-$server = new Clue\React\Socks\Server(null, $connector);
+$socks = new Clue\React\Socks\Server(null, $connector);
 
 // listen on 127.0.0.1:1080 or first argument
 $socket = new React\Socket\SocketServer($listen);
-$server->listen($socket);
+$socks->listen($socket);
 
 echo 'SOCKS server listening on ' . $socket->getAddress() . PHP_EOL;
 echo 'Forwarding via: ' . implode(' -> ', $path) . PHP_EOL;

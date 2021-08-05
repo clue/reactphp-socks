@@ -5,7 +5,7 @@
 
 Async SOCKS proxy connector client and server implementation, tunnel any TCP/IP-based
 protocol through a SOCKS5 or SOCKS4(a) proxy server, built on top of
-[ReactPHP](https://reactphp.org).
+[ReactPHP](https://reactphp.org/).
 
 The SOCKS proxy protocol family (SOCKS5, SOCKS4 and SOCKS4a) is commonly used to
 tunnel HTTP(S) traffic through an intermediary ("proxy"), to conceal the origin
@@ -81,32 +81,45 @@ Let's take these projects to the next level together! 🚀
 
 ## Quickstart example
 
-Once [installed](#install), you can use the following code to create a connection
-to google.com via a local SOCKS proxy server:
+Once [installed](#install), you can use the following code to send a secure
+HTTPS request to google.com through a local SOCKS proxy server:
 
 ```php
+<?php
+
+require __DIR__ . '/vendor/autoload.php';
+
 $proxy = new Clue\React\Socks\Client('127.0.0.1:1080');
 
-$proxy->connect('tcp://www.google.com:80')->then(function (React\Socket\ConnectionInterface $connection) {
-    $connection->write("GET / HTTP/1.0\r\n\r\n");
+$connector = new React\Socket\Connector(array(
+    'tcp' => $proxy,
+    'dns' => false
+));
 
-    $connection->on('data', function ($chunk) {
-        echo $chunk;
-    });
+$browser = new React\Http\Browser($connector);
+
+$browser->get('https://google.com/')->then(function (Psr\Http\Message\ResponseInterface $response) {
+    var_dump($response->getHeaders(), (string) $response->getBody());
+}, function (Exception $e) {
+    echo 'Error: ' . $e->getMessage() . PHP_EOL;
 });
 ```
 
 If you're not already running any other [SOCKS proxy server](#servers),
 you can use the following code to create a SOCKS
-proxy server listening for connections on `localhost:1080`:
+proxy server listening for connections on `127.0.0.1:1080`:
 
 ```php
-// start a new SOCKS proxy server
-$server = new Clue\React\Socks\Server();
+<?php
 
-// listen on localhost:1080
+require __DIR__ . '/vendor/autoload.php';
+
+// start a new SOCKS proxy server
+$socks = new Clue\React\Socks\Server();
+
+// listen on 127.0.0.1:1080
 $socket = new React\Socket\SocketServer('127.0.0.1:1080');
-$server->listen($socket);
+$socks->listen($socket);
 ```
 
 See also the [examples](examples).
@@ -379,16 +392,16 @@ URI scheme acts as an alias for the default `socks://` URI scheme.
 
 ```php
 // all three forms are equivalent
-$proxy = new Clue\React\Socks\Client('127.0.0.1');
-$proxy = new Clue\React\Socks\Client('socks://127.0.0.1');
-$proxy = new Clue\React\Socks\Client('socks5://127.0.0.1');
+$proxy = new Clue\React\Socks\Client('127.0.0.1:1080');
+$proxy = new Clue\React\Socks\Client('socks://127.0.0.1:1080');
+$proxy = new Clue\React\Socks\Client('socks5://127.0.0.1:1080');
 ```
 
 If want to explicitly set the protocol version to SOCKS4(a), you can use the URI
 scheme `socks4://` as part of the SOCKS URI:
 
 ```php
-$proxy = new Clue\React\Socks\Client('socks4://127.0.0.1');
+$proxy = new Clue\React\Socks\Client('socks4://127.0.0.1:1080');
 ```
 
 #### DNS resolution
@@ -467,7 +480,7 @@ so this methods should not be used on a network where you have to worry about ea
 You can simply pass the authentication information as part of the SOCKS URI:
 
 ```php
-$proxy = new Clue\React\Socks\Client('username:password@127.0.0.1');
+$proxy = new Clue\React\Socks\Client('alice:password@127.0.0.1:1080');
 ```
 
 Note that both the username and password must be percent-encoded if they contain
@@ -476,7 +489,7 @@ special characters:
 ```php
 $user = 'he:llo';
 $pass = 'p@ss';
-$url = rawurlencode($user) . ':' . rawurlencode($pass) . '@127.0.0.1';
+$url = rawurlencode($user) . ':' . rawurlencode($pass) . '@127.0.0.1:1080';
 
 $proxy = new Clue\React\Socks\Client($url);
 ```
@@ -493,7 +506,7 @@ version 5 and complains if you have explicitly set anything else:
 
 ```php
 // throws InvalidArgumentException
-new Clue\React\Socks\Client('socks4://user:pass@127.0.0.1');
+new Clue\React\Socks\Client('socks4://alice:password@127.0.0.1:1080');
 ```
 
 #### Proxy chaining
@@ -627,7 +640,7 @@ Similarly, you can also combine this with [authentication](#authentication)
 like this:
 
 ```php
-$proxy = new Clue\React\Socks\Client('sockss://user:pass@127.0.0.1:1080');
+$proxy = new Clue\React\Socks\Client('sockss://alice:password@127.0.0.1:1080');
 ```
 
 > Note that for most use cases, [secure TLS connections](#secure-tls-connections)
@@ -668,7 +681,7 @@ Similarly, you can also combine this with [authentication](#authentication)
 like this:
 
 ```php
-$proxy = new Clue\React\Socks\Client('socks+unix://user:pass@/tmp/proxy.sock');
+$proxy = new Clue\React\Socks\Client('socks+unix://alice:password@/tmp/proxy.sock');
 ```
 
 > Note that Unix domain sockets (UDS) are considered advanced usage and PHP only
@@ -690,11 +703,11 @@ It supports the SOCKS5 and SOCKS4(a) protocol versions by default.
 You can start listening on an underlying TCP/IP socket server like this:
 
 ```php
-$server = new Clue\React\Socks\Server();
+$socks = new Clue\React\Socks\Server();
 
-// listen on localhost:1080
+// listen on 127.0.0.1:1080
 $socket = new React\Socket\SocketServer('127.0.0.1:1080');
-$server->listen($socket);
+$socks->listen($socket);
 ```
 
 This class takes an optional `LoopInterface|null $loop` parameter that can be used to
@@ -725,7 +738,7 @@ $connector = new React\Socket\Connector(array(
     )
 ));
 
-$server = new Clue\React\Socks\Server(null, $connector);
+$socks = new Clue\React\Socks\Server(null, $connector);
 ```
 
 If you want to forward the outgoing connection through another SOCKS proxy, you
@@ -736,7 +749,7 @@ Internally, the `Server` uses ReactPHP's normal
 [`connect()`](https://github.com/reactphp/socket#connect) method, but
 it also passes the original client IP as the `?source={remote}` parameter.
 The `source` parameter contains the full remote URI, including the protocol
-and any authentication details, for example `socks://user:pass@1.2.3.4:5678`
+and any authentication details, for example `socks://alice:password@1.2.3.4:5678`
 or `socks4://1.2.3.4:5678` for legacy SOCKS4(a).
 You can use this parameter for logging purposes or to restrict connection
 requests for certain clients by providing a custom implementation of the
@@ -758,9 +771,9 @@ If you only want to accept static authentication details, you can simply pass an
 additional assoc array with your authentication details to the `Server` like this:
 
 ```php
-$server = new Clue\React\Socks\Server(null, null, array(
-    'tom' => 'password',
-    'admin' => 'root'
+$socks = new Clue\React\Socks\Server(null, null, array(
+    'alice' => 'password',
+    'bob' => 's3cret!1'
 ));
 ```
 
@@ -770,14 +783,14 @@ If you want more control over authentication, you can pass an authenticator
 function that should return a `bool` value like this synchronous example:
 
 ```php
-$server = new Clue\React\Socks\Server(null, null, function ($user, $pass, $remote) {
-    // $remote is a full URI à la socks://user:pass@192.168.1.1:1234
-    // or sockss://user:pass@192.168.1.1:1234 for SOCKS over TLS
+$socks = new Clue\React\Socks\Server(null, null, function ($username, $password, $remote) {
+    // $remote is a full URI à la socks://alice:password@192.168.1.1:1234
+    // or sockss://alice:password@192.168.1.1:1234 for SOCKS over TLS
     // or may be null when remote is unknown (SOCKS over Unix Domain Sockets)
     // useful for logging or extracting parts, such as the remote IP
     $ip = parse_url($remote, PHP_URL_HOST);
 
-    return ($user === 'root' && $pass === 'secret' && $ip === '127.0.0.1');
+    return ($username === 'root' && $password === 'secret' && $ip === '127.0.0.1');
 });
 ```
 
@@ -791,7 +804,7 @@ from the authenticator function that will fulfill with a `bool` value like this
 async example:
 
 ```php
-$server = new Clue\React\Socks\Server(null, null, function ($user, $pass) use ($db) {
+$socks = new Clue\React\Socks\Server(null, null, function ($username, $password) use ($db) {
     // pseudo-code: query database for given authentication details
     return $db->query(
         'SELECT 1 FROM users WHERE name = ? AND password = ?',
@@ -829,14 +842,14 @@ You can create a SOCKS `Client` instance like this:
 
 ```php
 // set next SOCKS server example.com:1080 as target
-$proxy = new Clue\React\Socks\Client('user:pass@example.com:1080');
+$proxy = new Clue\React\Socks\Client('alice:password@example.com:1080');
 
 // start a new server which forwards all connections to the other SOCKS server
-$server = new Clue\React\Socks\Server(null, $proxy);
+$socks = new Clue\React\Socks\Server(null, $proxy);
 
-// listen on localhost:1080
+// listen on 127.0.0.1:1080
 $socket = new React\Socket\SocketServer('127.0.0.1:1080');
-$server->listen($socket);
+$socks->listen($socket);
 ```
 
 See also [example #21](examples).
@@ -877,7 +890,7 @@ details.
 You can simply start your listening socket on the `tls://` URI scheme like this:
 
 ```php
-$server = new Clue\React\Socks\Server();
+$socks = new Clue\React\Socks\Server();
 
 // listen on tls://127.0.0.1:1080 with the given server certificate
 $socket = new React\Socket\SocketServer('tls://127.0.0.1:1080', array(
@@ -885,7 +898,7 @@ $socket = new React\Socket\SocketServer('tls://127.0.0.1:1080', array(
         'local_cert' => __DIR__ . '/localhost.pem',
     )
 ));
-$server->listen($socket);
+$socks->listen($socket);
 ```
 
 See also [example 31](examples).
@@ -912,11 +925,11 @@ having to rely on explicit [authentication](#server-authentication).
 You can simply start your listening socket on the `unix://` URI scheme like this:
 
 ```php
-$server = new Clue\React\Socks\Server();
+$socks = new Clue\React\Socks\Server();
 
 // listen on /tmp/proxy.sock
 $socket = new React\Socket\SocketServer('unix:///tmp/proxy.sock');
-$server->listen($socket);
+$socks->listen($socket);
 ```
 
 > Note that Unix domain sockets (UDS) are considered advanced usage and that
@@ -1002,7 +1015,7 @@ $proxy->connect('tcp://www.google.com:80')->then(function (React\Socket\Connecti
 
 ### Using the Tor (anonymity network) to tunnel SOCKS connections
 
-The [Tor anonymity network](https://www.torproject.org) client software is designed
+The [Tor anonymity network](https://www.torproject.org/) client software is designed
 to encrypt your traffic and route it over a network of several nodes to conceal its origin.
 It presents a SOCKS5 and SOCKS4(a) interface on TCP port 9050 by default
 which allows you to tunnel any traffic through the anonymity network:
@@ -1027,7 +1040,7 @@ which have to be resolved by Tor.
 
 ## Install
 
-The recommended way to install this library is [through Composer](https://getcomposer.org).
+The recommended way to install this library is [through Composer](https://getcomposer.org/).
 [New to Composer?](https://getcomposer.org/doc/00-intro.md)
 
 This project follows [SemVer](https://semver.org/).
@@ -1042,12 +1055,12 @@ See also the [CHANGELOG](CHANGELOG.md) for details about version upgrades.
 This project aims to run on any platform and thus does not require any PHP
 extensions and supports running on legacy PHP 5.3 through current PHP 8+ and
 HHVM.
-It's *highly recommended to use PHP 7+* for this project.
+It's *highly recommended to use the latest supported PHP version* for this project.
 
 ## Tests
 
 To run the test suite, you first need to clone this repo and then install all
-dependencies [through Composer](https://getcomposer.org):
+dependencies [through Composer](https://getcomposer.org/):
 
 ```bash
 $ composer install
@@ -1056,14 +1069,14 @@ $ composer install
 To run the test suite, go to the project root and run:
 
 ```bash
-$ php vendor/bin/phpunit
+$ vendor/bin/phpunit
 ```
 
 The test suite contains a number of tests that rely on a working internet
 connection, alternatively you can also run it like this:
 
 ```bash
-$ php vendor/bin/phpunit --exclude-group internet
+$ vendor/bin/phpunit --exclude-group internet
 ```
 
 ## License
