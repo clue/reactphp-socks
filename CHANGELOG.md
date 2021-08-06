@@ -1,5 +1,31 @@
 # Changelog
 
+## 1.3.0 (2021-08-06)
+
+*   Feature: Simplify usage by supporting new default loop and making `Connector` optional.
+    (#100 and #101 by @clue)
+
+    ```php
+    // old (still supported)
+    $proxy = new Clue\React\Socks\Client(
+        $url,
+        new React\Socket\Connector($loop)
+    );
+    $server = new Clue\React\Socks\Server($loop);
+    $server->listen(new React\Socket\Server('127.0.0.1:1080', $loop));
+
+    // new (using default loop)
+    $proxy = new Clue\React\Socks\Client('127.0.0.1:1080');
+    $socks = new Clue\React\Socks\Server();
+    $socks->listen(new React\Socket\SocketServer('127.0.0.1:1080'));
+    ```
+
+*   Documentation improvements and updated examples.
+    (#98 and #102 by @clue and #99 by @PaulRotmann)
+
+*   Improve test suite and use GitHub actions for continuous integration (CI).
+    (#97 by @SimonFrings)
+
 ## 1.2.0 (2020-10-23)
 
 *   Enhanced documentation for ReactPHP's new HTTP client.
