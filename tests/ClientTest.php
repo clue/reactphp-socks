@@ -173,11 +173,17 @@ class ClientTest extends TestCase
 
         $promise = $this->client->connect('google.com:80');
 
-        $promise->then(null, $this->expectCallableOnceWithException(
-            'RuntimeException',
-            'Connection to tcp://google.com:80 failed because connection to proxy failed (ECONNREFUSED)',
-            defined('SOCKET_ECONNREFUSED') ? SOCKET_ECONNREFUSED : 111
-        ));
+        $exception = null;
+        $promise->then(null, function ($reason) use (&$exception) {
+            $exception = $reason;
+        });
+
+        assert($exception instanceof \RuntimeException);
+        $this->assertInstanceOf('RuntimeException', $exception);
+        $this->assertEquals('Connection to tcp://google.com:80 failed because connection to proxy failed (ECONNREFUSED)', $exception->getMessage());
+        $this->assertEquals(defined('SOCKET_ECONNREFUSED') ? SOCKET_ECONNREFUSED : 111, $exception->getCode());
+        $this->assertInstanceOf('RuntimeException', $exception->getPrevious());
+        $this->assertNotEquals('', $exception->getTraceAsString());
     }
 
     public function testCancelConnectionDuringConnectionWillCancelConnection()
