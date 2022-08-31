@@ -959,14 +959,14 @@ You can start a local SOCKS server by creating a loopback connection to your
 local system if you already run an SSH daemon:
 
 ```bash
-$ ssh -D 1080 localhost
+ssh -D 1080 localhost
 ```
 
 Alternatively, you can start a local SOCKS server tunneling through a given
 remote host that runs an SSH daemon:
 
 ```bash
-$ ssh -D 1080 example.com
+ssh -D 1080 example.com
 ```
 
 Now you can simply use this SSH SOCKS server like this:
@@ -990,7 +990,7 @@ As an alternative, recent OpenSSH client versions also support
 on Unix file system permissions instead:
 
 ```bash
-$ ssh -D/tmp/proxy.sock example.com
+ssh -D/tmp/proxy.sock example.com
 ```
 
 Now you can simply use this SSH SOCKS server like this:
@@ -1047,7 +1047,7 @@ This project follows [SemVer](https://semver.org/).
 This will install the latest supported version:
 
 ```bash
-$ composer require clue/socks-react:^1.3
+composer require clue/socks-react:^1.4
 ```
 
 See also the [CHANGELOG](CHANGELOG.md) for details about version upgrades.
@@ -1063,20 +1063,20 @@ To run the test suite, you first need to clone this repo and then install all
 dependencies [through Composer](https://getcomposer.org/):
 
 ```bash
-$ composer install
+composer install
 ```
 
 To run the test suite, go to the project root and run:
 
 ```bash
-$ vendor/bin/phpunit
+vendor/bin/phpunit
 ```
 
 The test suite contains a number of tests that rely on a working internet
 connection, alternatively you can also run it like this:
 
 ```bash
-$ vendor/bin/phpunit --exclude-group internet
+vendor/bin/phpunit --exclude-group internet
 ```
 
 ## License
