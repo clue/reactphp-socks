@@ -31,8 +31,11 @@ final class Client implements ConnectorInterface
      * @param ?ConnectorInterface $connector
      * @throws InvalidArgumentException
      */
-    public function __construct($socksUri, ConnectorInterface $connector = null)
-    {
+    public function __construct(
+        #[\SensitiveParameter]
+        $socksUri,
+        ConnectorInterface $connector = null
+    ) {
         // support `sockss://` scheme for SOCKS over TLS
         // support `socks+unix://` scheme for Unix domain socket (UDS) paths
         if (preg_match('/^(socks(?:5|4)?)(s|\+unix):\/\/(.*?@)?(.+?)$/', $socksUri, $match)) {
@@ -97,8 +100,11 @@ final class Client implements ConnectorInterface
      * @param string $password
      * @link http://tools.ietf.org/html/rfc1929
      */
-    private function setAuth($username, $password)
-    {
+    private function setAuth(
+        $username,
+        #[\SensitiveParameter]
+        $password
+    ) {
         if (strlen($username) > 255 || strlen($password) > 255) {
             throw new InvalidArgumentException('Both username and password MUST NOT exceed a length of 255 bytes each');
         }

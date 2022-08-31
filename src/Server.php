@@ -57,18 +57,32 @@ final class Server
      * @param ?ConnectorInterface $connector
      * @param null|array|callable $auth
      */
-    public function __construct(LoopInterface $loop = null, ConnectorInterface $connector = null, $auth = null)
-    {
+    public function __construct(
+        LoopInterface $loop = null,
+        ConnectorInterface $connector = null,
+        #[\SensitiveParameter]
+        $auth = null
+    ) {
         if (\is_array($auth)) {
             // wrap authentication array in authentication callback
-            $this->auth = function ($username, $password) use ($auth) {
+            $this->auth = function (
+                $username,
+                #[\SensitiveParameter]
+                $password
+            ) use ($auth) {
                 return \React\Promise\resolve(
                     isset($auth[$username]) && (string)$auth[$username] === $password
                 );
             };
         } elseif (\is_callable($auth)) {
             // wrap authentication callback in order to cast its return value to a promise
-            $this->auth = function($username, $password, $remote) use ($auth) {
+            $this->auth = function(
+                $username,
+                #[\SensitiveParameter]
+                $password,
+                #[\SensitiveParameter]
+                $remote
+            ) use ($auth) {
                 return  \React\Promise\resolve(
                     \call_user_func($auth, $username, $password, $remote)
                 );
@@ -247,7 +261,10 @@ final class Server
                 })->then(function ($username) use ($reader, $auth, $stream, &$remote) {
                     return $reader->readByte()->then(function ($length) use ($reader) {
                         return $reader->readLength($length);
-                    })->then(function ($password) use ($username, $auth, $stream, &$remote) {
+                    })->then(function (
+                        #[\SensitiveParameter]
+                        $password
+                    ) use ($username, $auth, $stream, &$remote) {
                         // username and password given => authenticate
 
                         // prefix username/password to remote URI
