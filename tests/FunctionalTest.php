@@ -2,10 +2,8 @@
 
 namespace Clue\Tests\React\Socks;
 
-use Clue\React\Block;
 use Clue\React\Socks\Client;
 use Clue\React\Socks\Server;
-use React\EventLoop\Loop;
 use React\Promise\Promise;
 use React\Socket\ConnectionInterface;
 use React\Socket\Connector;
@@ -568,7 +566,7 @@ class FunctionalTest extends TestCase
             $stream->close();
         });
 
-        Block\await($promise, Loop::get(), 2.0);
+        \React\Async\await($promise);
     }
 
     private function assertRejectPromise($promise, $message = null, $code = null)
@@ -585,6 +583,6 @@ class FunctionalTest extends TestCase
             $this->setExpectedException('Exception', $message, $code);
         }
 
-        Block\await($promise, Loop::get(), 2.0);
+        \React\Async\await($promise);
     }
 }
