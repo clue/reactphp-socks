@@ -18,6 +18,7 @@ class FunctionalTest extends TestCase
     private $connector;
     private $client;
 
+    private $socket;
     private $port;
     private $server;
 
@@ -26,8 +27,8 @@ class FunctionalTest extends TestCase
      */
     public function setUpClientServer()
     {
-        $socket = new SocketServer('127.0.0.1:0');
-        $address = $socket->getAddress();
+        $this->socket = new SocketServer('127.0.0.1:0');
+        $address = $this->socket->getAddress();
         if (strpos($address, '://') === false) {
             $address = 'tcp://' . $address;
         }
@@ -35,9 +36,17 @@ class FunctionalTest extends TestCase
         $this->assertNotEquals(0, $this->port);
 
         $this->server = new Server();
-        $this->server->listen($socket);
+        $this->server->listen($this->socket);
         $this->connector = new TcpConnector();
         $this->client = new Client('127.0.0.1:' . $this->port, $this->connector);
+    }
+
+    /**
+     * @after
+     */
+    public function closeSocket()
+    {
+        $this->socket->close();
     }
 
     /** @group internet */
@@ -115,6 +124,8 @@ class FunctionalTest extends TestCase
         $this->client = new Client(str_replace('tls:', 'sockss:', $socket->getAddress()), $this->connector);
 
         $this->assertResolveStream($this->client->connect('www.google.com:80'));
+
+        $socket->close();
     }
 
     /**
@@ -144,6 +155,8 @@ class FunctionalTest extends TestCase
         $this->client = new Client(str_replace('tls:', 'sockss:', $socket->getAddress()), $this->connector);
 
         $this->assertResolveStream($this->client->connect('www.google.com:80'));
+
+        $socket->close();
     }
 
     /** @group internet */
@@ -164,6 +177,8 @@ class FunctionalTest extends TestCase
         $this->assertResolveStream($this->client->connect('www.google.com:80'));
 
         unlink($path);
+
+        $socket->close();
     }
 
     /** @group internet */
@@ -184,6 +199,8 @@ class FunctionalTest extends TestCase
         $this->assertResolveStream($this->client->connect('www.google.com:80'));
 
         unlink($path);
+
+        $socket->close();
     }
 
     /** @group internet */
@@ -204,6 +221,8 @@ class FunctionalTest extends TestCase
         $this->assertResolveStream($this->client->connect('www.google.com:80'));
 
         unlink($path);
+
+        $socket->close();
     }
 
     /** @group internet */
@@ -218,6 +237,8 @@ class FunctionalTest extends TestCase
         $this->client = new Client('name:pass@127.0.0.1:' . $this->port, $this->connector);
 
         $this->assertResolveStream($this->client->connect('www.google.com:80'));
+
+        $socket->close();
     }
 
     /** @group internet */
@@ -242,6 +263,8 @@ class FunctionalTest extends TestCase
 
         $this->assertResolveStream($this->client->connect('www.google.com:80'));
         $this->assertEquals(1, $called);
+
+        $socket->close();
     }
 
     /** @group internet */
@@ -262,6 +285,8 @@ class FunctionalTest extends TestCase
 
         $this->assertRejectPromise($this->client->connect('www.google.com:80'));
         $this->assertEquals(0, $called);
+
+        $socket->close();
     }
 
     /** @group internet */
@@ -276,6 +301,8 @@ class FunctionalTest extends TestCase
         $this->client = new Client(rawurlencode('name') . ':' . rawurlencode('p@ss:w0rd') . '@127.0.0.1:' . $this->port, $this->connector);
 
         $this->assertResolveStream($this->client->connect('www.google.com:80'));
+
+        $socket->close();
     }
 
     /** @group internet */
@@ -290,6 +317,8 @@ class FunctionalTest extends TestCase
         $this->client = new Client('empty@127.0.0.1:' . $this->port, $this->connector);
 
         $this->assertResolveStream($this->client->connect('www.google.com:80'));
+
+        $socket->close();
     }
 
     /** @group internet */
@@ -304,6 +333,8 @@ class FunctionalTest extends TestCase
         $this->client = new Client('user@127.0.0.1:' . $this->port, $this->connector);
 
         $this->assertResolveStream($this->client->connect('www.google.com:80'));
+
+        $socket->close();
     }
 
     /** @group internet */
@@ -325,6 +356,8 @@ class FunctionalTest extends TestCase
         $this->client = new Client('socks4://127.0.0.1:' . $this->port, $this->connector);
 
         $this->assertRejectPromise($this->client->connect('www.google.com:80'));
+
+        $socket->close();
     }
 
     public function testConnectionInvalidNoAuthentication()
@@ -338,6 +371,8 @@ class FunctionalTest extends TestCase
         $this->client = new Client('socks5://127.0.0.1:' . $this->port, $this->connector);
 
         $this->assertRejectPromise($this->client->connect('www.google.com:80'), null, defined('SOCKET_EACCES') ? SOCKET_EACCES : 13);
+
+        $socket->close();
     }
 
     public function testConnectionInvalidAuthenticationMismatch()
@@ -351,6 +386,8 @@ class FunctionalTest extends TestCase
         $this->client = new Client('user:pass@127.0.0.1:' . $this->port, $this->connector);
 
         $this->assertRejectPromise($this->client->connect('www.google.com:80'), null, defined('SOCKET_EACCES') ? SOCKET_EACCES : 13);
+
+        $socket->close();
     }
 
     public function testConnectionInvalidAuthenticatorReturnsFalse()
@@ -366,6 +403,8 @@ class FunctionalTest extends TestCase
         $this->client = new Client('user:pass@127.0.0.1:' . $this->port, $this->connector);
 
         $this->assertRejectPromise($this->client->connect('www.google.com:80'), null, defined('SOCKET_EACCES') ? SOCKET_EACCES : 13);
+
+        $socket->close();
     }
 
     public function testConnectionInvalidAuthenticatorReturnsPromiseFulfilledWithFalse()
@@ -381,6 +420,8 @@ class FunctionalTest extends TestCase
         $this->client = new Client('user:pass@127.0.0.1:' . $this->port, $this->connector);
 
         $this->assertRejectPromise($this->client->connect('www.google.com:80'), null, defined('SOCKET_EACCES') ? SOCKET_EACCES : 13);
+
+        $socket->close();
     }
 
     public function testConnectionInvalidAuthenticatorReturnsPromiseRejected()
@@ -396,6 +437,8 @@ class FunctionalTest extends TestCase
         $this->client = new Client('user:pass@127.0.0.1:' . $this->port, $this->connector);
 
         $this->assertRejectPromise($this->client->connect('www.google.com:80'), null, defined('SOCKET_EACCES') ? SOCKET_EACCES : 13);
+
+        $socket->close();
     }
 
     /** @group internet */
