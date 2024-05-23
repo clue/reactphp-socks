@@ -7,6 +7,7 @@ use Clue\React\Socks\Client;
 use Clue\React\Socks\Server;
 use React\EventLoop\Loop;
 use React\Promise\Promise;
+use React\Socket\ConnectionInterface;
 use React\Socket\Connector;
 use React\Socket\SecureConnector;
 use React\Socket\SocketServer;
@@ -506,9 +507,7 @@ class FunctionalTest extends TestCase
 
     private function assertResolveStream($promise)
     {
-        $this->expectPromiseResolve($promise);
-
-        $promise->then(function ($stream) {
+        $promise = $promise->then(function (ConnectionInterface $stream) {
             $stream->close();
         });
 
@@ -517,8 +516,6 @@ class FunctionalTest extends TestCase
 
     private function assertRejectPromise($promise, $message = null, $code = null)
     {
-        $this->expectPromiseReject($promise);
-
         if (method_exists($this, 'expectException')) {
             $this->expectException('Exception');
             if ($message !== null) {

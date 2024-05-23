@@ -152,6 +152,8 @@ class ClientTest extends TestCase
         $promise = $this->client->connect(str_repeat('a', '256') . ':80');
 
         $this->assertInstanceOf('\React\Promise\PromiseInterface', $promise);
+
+        $promise->then(null, $this->expectCallableOnce()); // avoid reporting unhandled rejection
     }
 
     public function testCreateWithInvalidPortDoesNotConnect()
@@ -163,6 +165,8 @@ class ClientTest extends TestCase
         $promise = $this->client->connect('some-random-site:some-random-port');
 
         $this->assertInstanceOf('\React\Promise\PromiseInterface', $promise);
+
+        $promise->then(null, $this->expectCallableOnce()); // avoid reporting unhandled rejection
     }
 
     public function testConnectorRejectsWillRejectConnection()
@@ -561,6 +565,9 @@ class ClientTest extends TestCase
         gc_collect_cycles(); // clear twice to avoid leftovers in PHP 7.4 with ext-xdebug and code coverage turned on
 
         $promise = $this->client->connect('google.com:80');
+
+        $promise->then(null, $this->expectCallableOnce()); // avoid reporting unhandled rejection
+
         $deferred->reject(new \RuntimeException());
         unset($deferred, $promise);
 
