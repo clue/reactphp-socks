@@ -18,14 +18,18 @@
     "require-dev": {
         "clue/block-react": "^1.5",
         "clue/connection-manager-extra": "^1.3",
-        "phpunit/phpunit": "^9.3 || ^5.7 || ^4.8.35",
+        "phpunit/phpunit": "^9.6 || ^5.7 || ^4.8.36",
         "react/event-loop": "^1.2",
         "react/http": "^1.6"
     },
     "autoload": {
-        "psr-4": { "Clue\\React\\Socks\\": "src/" }
+        "psr-4": {
+            "Clue\\React\\Socks\\": "src/" 
+        }
     },
     "autoload-dev": {
-        "psr-4": { "Clue\\Tests\\React\\Socks\\": "tests/" }
+        "psr-4": {
+            "Clue\\Tests\\React\\Socks\\": "tests/"
+        }
     }
 }
