@@ -176,7 +176,7 @@
 
     ```php
     $promise = $proxy->connect('imap.example.com:143');
-    $promise->then(null, function (Exeption $e) {
+    $promise->then(null, function (Exception $e) {
         if ($e->getCode() === SOCKET_EACCES) {
             echo 'Failed to authenticate with proxy!';
         }
@@ -250,7 +250,7 @@
 
 ## 0.7.0 (2017-04-14)
 
-*   Feature / BC break: Replace depreacted SocketClient with Socket v0.7 and
+*   Feature / BC break: Replace deprecated SocketClient with Socket v0.7 and
     use `connect($uri)` instead of `create($host, $port)`
     (#51 by @clue)
 
@@ -470,7 +470,7 @@
 *   First stable release
 *   Async SOCKS `Client` and `Server` implementation
 *   Project was originally part of [clue/socks](https://github.com/clue/php-socks)
-    and was split off from its latest releave v0.4.0
+    and was split off from its latest release v0.4.0
     ([#1](https://github.com/clue/reactphp-socks/issues/1))
 
     > Upgrading from clue/socks v0.4.0? Use namespace `Clue\React\Socks` instead of `Socks` and you're ready to go!

@@ -451,7 +451,7 @@ final class Client implements ConnectorInterface
                 // IPv6 address => skip IP and port
                 return $reader->readLength(18);
             } else {
-                throw new Exception('Invalid SOCKS reponse: Invalid address type');
+                throw new Exception('Invalid SOCKS response: Invalid address type');
             }
         });
     }
