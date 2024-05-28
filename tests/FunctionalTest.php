@@ -6,6 +6,7 @@ use Clue\React\Block;
 use Clue\React\Socks\Client;
 use Clue\React\Socks\Server;
 use React\EventLoop\Loop;
+use React\Promise\Promise;
 use React\Socket\Connector;
 use React\Socket\SecureConnector;
 use React\Socket\SocketServer;
@@ -440,28 +441,44 @@ class FunctionalTest extends TestCase
         $this->assertResolveStream($ssl->connect('www.google.com:443'));
     }
 
-    /** @group internet */
-    public function testSecureConnectorToBadSslWithVerifyFails()
+    public function testSecureConnectionToTlsServerWithSelfSignedCertificateFailsWithVerifyPeer()
     {
         if (!function_exists('stream_socket_enable_crypto')) {
             $this->markTestSkipped('Required function does not exist in your environment (HHVM?)');
         }
 
+        $socket = new SocketServer('tls://127.0.0.1:0', array(
+            'tls' => array(
+                'local_cert' => __DIR__ . '/../examples/localhost.pem',
+            )
+        ));
+        $socket->on('connection', $this->expectCallableNever());
+
         $ssl = new SecureConnector($this->client, null, array('verify_peer' => true));
 
-        $this->assertRejectPromise($ssl->connect('self-signed.badssl.com:443'));
+        $this->assertRejectPromise($ssl->connect($socket->getAddress()));
     }
 
-    /** @group internet */
-    public function testSecureConnectorToBadSslWithoutVerifyWorks()
+    public function testSecureConnectionToTlsServerWithSelfSignedCertificateWorksWithoutVerifyPeer()
     {
         if (defined('HHVM_VERSION')) {
             $this->markTestSkipped('Not supported on HHVM');
         }
 
+        $socket = new SocketServer('tls://127.0.0.1:0', array(
+            'tls' => array(
+                'local_cert' => __DIR__ . '/../examples/localhost.pem',
+            )
+        ));
+        $socket->on('connection', $this->expectCallableOnce());
+        $promise = new Promise(function ($resolve) use ($socket) {
+            $socket->on('connection', $resolve);
+        });
+
         $ssl = new SecureConnector($this->client, null, array('verify_peer' => false));
 
-        $this->assertResolveStream($ssl->connect('self-signed.badssl.com:443'));
+        $this->assertResolveStream($ssl->connect($socket->getAddress()));
+        $this->assertResolveStream($promise);
     }
 
     /** @group internet */
