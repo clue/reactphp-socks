@@ -387,9 +387,6 @@ final class Server
                 $that->endConnection($remote);
             });
 
-            // set bigger buffer size of 100k to improve performance
-            $stream->bufferSize = $remote->bufferSize = 100 * 1024 * 1024;
-
             return $remote;
         }, function(Exception $error) {
             // default to general/unknown error
