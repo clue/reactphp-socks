@@ -55,35 +55,6 @@ class TestCase extends \PHPUnit\Framework\TestCase
         return $this->getMockBuilder('stdClass')->setMethods(array('__invoke'))->getMock();
     }
 
-    protected function expectPromiseResolve($promise)
-    {
-        $this->assertInstanceOf('React\Promise\PromiseInterface', $promise);
-
-        $that = $this;
-        $promise->then(null, function($error) use ($that) {
-            $that->assertNull($error);
-            $that->fail('promise rejected');
-        });
-        $promise->then($this->expectCallableOnce(), $this->expectCallableNever());
-
-        return $promise;
-    }
-
-    protected function expectPromiseReject($promise)
-    {
-        $this->assertInstanceOf('React\Promise\PromiseInterface', $promise);
-
-        $that = $this;
-        $promise->then(function($value) use ($that) {
-            $that->assertNull($value);
-            $that->fail('promise resolved');
-        });
-
-        $promise->then($this->expectCallableNever(), $this->expectCallableOnce());
-
-        return $promise;
-    }
-
     public function setExpectedException($exception, $message = '', $code = 0)
     {
         if (method_exists($this, 'expectException')) {

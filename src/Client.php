@@ -180,6 +180,8 @@ final class Client implements ConnectorInterface
             // either close active connection or cancel pending connection attempt
             $connecting->then(function (ConnectionInterface $stream) {
                 $stream->close();
+            }, function () {
+                // ignore to avoid reporting unhandled rejection
             });
             $connecting->cancel();
         });
