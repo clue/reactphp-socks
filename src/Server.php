@@ -119,8 +119,10 @@ final class Server
     {
         $that = $this;
         $handling = $this->handleSocks($connection)->then(null, function () use ($connection, $that) {
-            // SOCKS failed => close connection
-            $that->endConnection($connection);
+            // SOCKS failed => close connection (unless already closed)
+            if ($connection->isWritable()) {
+                $that->endConnection($connection);
+            }
         });
 
         $connection->on('close', function () use ($handling) {

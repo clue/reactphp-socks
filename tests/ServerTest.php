@@ -225,9 +225,10 @@ class ServerTest extends TestCase
 
     public function testHandleSocksConnectionWillEndOnInvalidData()
     {
-        $connection = $this->getMockBuilder('React\Socket\Connection')->disableOriginalConstructor()->setMethods(array('pause', 'end'))->getMock();
+        $connection = $this->getMockBuilder('React\Socket\Connection')->disableOriginalConstructor()->setMethods(array('pause', 'end', 'isWritable'))->getMock();
         $connection->expects($this->once())->method('pause');
         $connection->expects($this->once())->method('end');
+        $connection->expects($this->once())->method('isWritable')->willReturn(true);
 
         $this->server->onConnection($connection);
 
@@ -290,7 +291,8 @@ class ServerTest extends TestCase
 
     public function testHandleSocks4aConnectionWithInvalidHostnameWillNotEstablishOutgoingConnection()
     {
-        $connection = $this->getMockBuilder('React\Socket\Connection')->disableOriginalConstructor()->setMethods(array('pause', 'end'))->getMock();
+        $connection = $this->getMockBuilder('React\Socket\Connection')->disableOriginalConstructor()->setMethods(array('pause', 'end', 'isWritable'))->getMock();
+        $connection->expects($this->once())->method('isWritable')->willReturn(true);
 
         $this->connector->expects($this->never())->method('connect');
 
@@ -368,7 +370,8 @@ class ServerTest extends TestCase
 
     public function testHandleSocks5ConnectionWithConnectorRefusedWillReturnReturnRefusedError()
     {
-        $connection = $this->getMockBuilder('React\Socket\Connection')->disableOriginalConstructor()->setMethods(array('pause', 'end', 'write'))->getMock();
+        $connection = $this->getMockBuilder('React\Socket\Connection')->disableOriginalConstructor()->setMethods(array('pause', 'end', 'write', 'isWritable'))->getMock();
+        $connection->expects($this->once())->method('isWritable')->willReturn(true);
 
         $promise = \React\Promise\reject(new \RuntimeException('Connection refused'));
 
@@ -383,7 +386,8 @@ class ServerTest extends TestCase
 
     public function testHandleSocks5UdpCommandWillNotEstablishOutgoingConnectionAndReturnCommandError()
     {
-        $connection = $this->getMockBuilder('React\Socket\Connection')->disableOriginalConstructor()->setMethods(array('pause', 'end', 'write'))->getMock();
+        $connection = $this->getMockBuilder('React\Socket\Connection')->disableOriginalConstructor()->setMethods(array('pause', 'end', 'write', 'isWritable'))->getMock();
+        $connection->expects($this->once())->method('isWritable')->willReturn(true);
 
         $this->connector->expects($this->never())->method('connect');
 
@@ -396,7 +400,8 @@ class ServerTest extends TestCase
 
     public function testHandleSocks5ConnectionWithInvalidHostnameWillNotEstablishOutgoingConnectionAndReturnGeneralError()
     {
-        $connection = $this->getMockBuilder('React\Socket\Connection')->disableOriginalConstructor()->setMethods(array('pause', 'end', 'write'))->getMock();
+        $connection = $this->getMockBuilder('React\Socket\Connection')->disableOriginalConstructor()->setMethods(array('pause', 'end', 'write', 'isWritable'))->getMock();
+        $connection->expects($this->once())->method('isWritable')->willReturn(true);
 
         $this->connector->expects($this->never())->method('connect');
 
@@ -412,6 +417,25 @@ class ServerTest extends TestCase
         $connection = $this->getMockBuilder('React\Socket\Connection')->disableOriginalConstructor()->setMethods(array('pause', 'end'))->getMock();
 
         $promise = new Promise(function () { }, $this->expectCallableOnce());
+
+        $this->connector->expects($this->once())->method('connect')->with('127.0.0.1:80')->willReturn($promise);
+
+        $this->server->onConnection($connection);
+
+        $connection->emit('data', array("\x04\x01" . "\x00\x50" . pack('N', ip2long('127.0.0.1')) . "\x00"));
+        $connection->emit('close');
+    }
+
+    public function testHandleSocksConnectionWillNotCallEndConnectionIfAlreadyClosed()
+    {
+        $connection = $this->getMockBuilder('React\Socket\Connection')->disableOriginalConstructor()->setMethods(array('pause', 'end', 'isWritable'))->getMock();
+        $connection->expects($this->never())->method('pause');
+        $connection->expects($this->once())->method('end');
+        $connection->expects($this->once())->method('isWritable')->willReturn(false);
+
+        $promise = new Promise(function () { }, function () {
+            throw new \RuntimeException();
+        });
 
         $this->connector->expects($this->once())->method('connect')->with('127.0.0.1:80')->willReturn($promise);
 
