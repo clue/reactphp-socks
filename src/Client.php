@@ -34,8 +34,12 @@ final class Client implements ConnectorInterface
     public function __construct(
         #[\SensitiveParameter]
         $socksUri,
-        ConnectorInterface $connector = null
+        $connector = null
     ) {
+        if ($connector !== null && !$connector instanceof ConnectorInterface) { // manual type check to support legacy PHP < 7.1
+            throw new InvalidArgumentException('Argument #2 ($connector) expected null|React\Socket\ConnectorInterface');
+        }
+
         // support `sockss://` scheme for SOCKS over TLS
         // support `socks+unix://` scheme for Unix domain socket (UDS) paths
         if (preg_match('/^(socks(?:5|4)?)(s|\+unix):\/\/(.*?@)?(.+?)$/', $socksUri, $match)) {

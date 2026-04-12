@@ -121,6 +121,12 @@ class ClientTest extends TestCase
         $this->client = new Client('socks3://127.0.0.1:9050', $this->connector);
     }
 
+    public function testCtorThrowsForInvalidConnector()
+    {
+        $this->setExpectedException('InvalidArgumentException', 'Argument #2 ($connector) expected null|React\Socket\ConnectorInterface');
+        new Client('127.0.0.1:1080', 'connector');
+    }
+
     public function testCreateWillConnectToProxy()
     {
         $promise = new Promise(function () { });
