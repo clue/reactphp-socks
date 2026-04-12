@@ -28,7 +28,9 @@ class ClientTest extends TestCase
         $proxy = new Client('127.0.0.1:1080');
 
         $ref = new \ReflectionProperty($proxy, 'connector');
-        $ref->setAccessible(true);
+        if (PHP_VERSION_ID < 80100) {
+            $ref->setAccessible(true);
+        }
         $connector = $ref->getValue($proxy);
 
         $this->assertInstanceOf('React\Socket\ConnectorInterface', $connector);
