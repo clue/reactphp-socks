@@ -68,6 +68,18 @@ class ServerTest extends TestCase
         ));
     }
 
+    public function testConstructorThrowsForInvalidLoop()
+    {
+        $this->setExpectedException('InvalidArgumentException', 'Argument #1 ($loop) expected null|React\EventLoop\LoopInterface');
+        new Server('loop');
+    }
+
+    public function testConstructorThrowsForInvalidConnector()
+    {
+        $this->setExpectedException('InvalidArgumentException', 'Argument #2 ($connector) expected null|React\Socket\ConnectorInterface');
+        new Server(null, 'connector');
+    }
+
     public function testConstructorWithInvalidAuthenticatorThrows()
     {
         $this->setExpectedException("InvalidArgumentException");

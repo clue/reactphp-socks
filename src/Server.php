@@ -58,11 +58,18 @@ final class Server
      * @param null|array|callable $auth
      */
     public function __construct(
-        LoopInterface $loop = null,
-        ConnectorInterface $connector = null,
+        $loop = null,
+        $connector = null,
         #[\SensitiveParameter]
         $auth = null
     ) {
+        if ($loop !== null && !$loop instanceof LoopInterface) { // manual type check to support legacy PHP < 7.1
+            throw new \InvalidArgumentException('Argument #1 ($loop) expected null|React\EventLoop\LoopInterface');
+        }
+        if ($connector !== null && !$connector instanceof ConnectorInterface) { // manual type check to support legacy PHP < 7.1
+            throw new \InvalidArgumentException('Argument #2 ($connector) expected null|React\Socket\ConnectorInterface');
+        }
+
         if (\is_array($auth)) {
             // wrap authentication array in authentication callback
             $this->auth = function (
