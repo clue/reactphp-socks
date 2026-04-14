@@ -1,5 +1,22 @@
 # Changelog
 
+## 1.5.0 (2026-04-14)
+
+*   Feature: Improve PHP 8.5+, PHP 8.4+, PHP 8.3+ and PHP 8.2+ support.
+    (#118, #123 and #124 by @clue and #113 by @yadaiio)
+
+*   Feature / Fix: Update close handler to avoid unhandled promise rejections.
+    (#117 by @clue)
+
+*   Fix: Avoid unneeded shutdown timer on already closed connection.
+    (#125 by @clue)
+
+*   Minor documentation improvements.
+    (#112 by @yadaiio)
+
+*   Improve test suite, use reactphp/async instead of clue/reactphp-block and support legacy PHP 7.2 with PHPUnit 8.5.
+    (#121 by @dinooo13 and @clue and #116, #120 and #122 by @clue)
+
 ## 1.4.0 (2022-08-31)
 
 *   Feature: Full support for PHP 8.1 and PHP 8.2.
